@@ -1,0 +1,36 @@
+﻿# Secrets and credentials
+.env
+.env.*
+*.key
+*secret*
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+venv_new/
+venv_windows/
+
+# Build and package outputs
+dist/
+build/
+*.egg-info/
+
+# Large assets and binaries
+*.mmdb
+*.wasm
+*.zip
+*.tar.gz
+*.7z
+nginx/html/canvaskit/
+backend/static/assets/web/
+backend/staticfiles/
+
+# Documentation with possible secrets
+docs/general/DEPLOYMENT_MASTER.md
+backend/docs/md/*.md
+
+# Frontend build
+node_modules/
+flutter/build/

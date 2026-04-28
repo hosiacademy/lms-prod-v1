@@ -1,0 +1,39 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="90" fill="#F79150" fill-opacity="0.1"/>
+  <circle cx="100" cy="100" r="85" stroke="#F79150" stroke-width="2" stroke-dasharray="8 4"/>
+  
+  <!-- Building/Corporate Icon -->
+  <g transform="translate(50, 40)">
+    <!-- Main Building -->
+    <rect x="10" y="20" width="80" height="100" rx="4" fill="#F79150" opacity="0.9"/>
+    <rect x="10" y="20" width="80" height="25" rx="4" fill="#8C4928"/>
+    
+    <!-- Windows -->
+    <rect x="20" y="55" width="15" height="15" rx="2" fill="white" opacity="0.9"/>
+    <rect x="45" y="55" width="15" height="15" rx="2" fill="white" opacity="0.9"/>
+    <rect x="70" y="55" width="15" height="15" rx="2" fill="white" opacity="0.9"/>
+    
+    <rect x="20" y="80" width="15" height="15" rx="2" fill="white" opacity="0.9"/>
+    <rect x="45" y="80" width="15" height="15" rx="2" fill="white" opacity="0.9"/>
+    <rect x="70" y="80" width="15" height="15" rx="2" fill="white" opacity="0.9"/>
+    
+    <!-- Door -->
+    <rect x="35" y="105" width="30" height="15" rx="2" fill="#F79150"/>
+  </g>
+  
+  <!-- People/Training Icons -->
+  <g transform="translate(40, 145)">
+    <circle cx="15" cy="10" r="8" fill="#8C4928" opacity="0.8"/>
+    <path d="M5 25 Q15 15 25 25" stroke="#8C4928" stroke-width="3" stroke-linecap="round"/>
+    
+    <circle cx="55" cy="10" r="8" fill="#8C4928" opacity="0.8"/>
+    <path d="M45 25 Q55 15 65 25" stroke="#8C4928" stroke-width="3" stroke-linecap="round"/>
+    
+    <circle cx="95" cy="10" r="8" fill="#8C4928" opacity="0.8"/>
+    <path d="M85 25 Q95 15 105 25" stroke="#8C4928" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Label -->
+  <text x="100" y="195" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#F79150">Corporate Training</text>
+</svg>

@@ -1,0 +1,124 @@
+/* static/admin/css/color-preview.css */
+
+/* Color preview boxes in list view */
+.field-primary_color_preview div,
+.field-theme_preview div {
+    display: inline-block;
+    vertical-align: middle;
+    transition: transform 0.2s ease;
+}
+
+.field-primary_color_preview div:hover,
+.field-theme_preview div:hover {
+    transform: scale(1.1);
+}
+
+/* Form color fields enhancement */
+.form-row.field-primary_color input,
+.form-row.field-primary_variant input,
+.form-row.field-secondary_color input,
+.form-row.field-background_color input,
+.form-row.field-surface_color input,
+.form-row.field-text_primary input,
+.form-row.field-text_secondary input {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+/* Color palette preview enhancement */
+.field-color_preview div[style*="grid-template-columns"] {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 2px solid #e0e0e0 !important;
+}
+
+.field-color_preview div[style*="grid-template-columns"] > div {
+    font-size: 11px !important;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.field-color_preview div[style*="grid-template-columns"] > div:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+.field-color_preview div[style*="grid-template-columns"] > div::after {
+    content: attr(style);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    font-size: 9px;
+    padding: 2px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.field-color_preview div[style*="grid-template-columns"] > div:hover::after {
+    opacity: 1;
+}
+
+/* African theme inspiration */
+.african-theme-btn {
+    background: linear-gradient(135deg, #008000, #FFD700, #DC143C, #000000) !important;
+    color: white !important;
+    font-weight: bold !important;
+    border: none !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 128, 0, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(0, 128, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 128, 0, 0); }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .field-color_preview div[style*="grid-template-columns"] {
+        border-color: #444 !important;
+    }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .field-color_preview div[style*="grid-template-columns"] {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    
+    .color-picker-container {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .color-presets {
+        max-width: 100% !important;
+    }
+}
+
+/* Accessibility */
+.color-preview:focus,
+input[type="color"]:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* Tooltips */
+[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    background: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-top: 5px;
+}

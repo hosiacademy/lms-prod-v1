@@ -1,0 +1,233 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Mark Leads as Contacted{% endblock %}
+
+{% block extrastyle %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 20px auto;
+        background: white;
+        padding: 30px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .selected-leads {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+
+    .selected-leads h3 {
+        margin-top: 0;
+        color: #417690;
+    }
+
+    .lead-item {
+        padding: 10px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+
+    .lead-item strong {
+        color: #417690;
+    }
+
+    .form-row {
+        margin-bottom: 20px;
+    }
+
+    .form-row label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    .form-row input[type="text"],
+    .form-row input[type="datetime-local"],
+    .form-row select,
+    .form-row textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .form-row textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .form-row .helptext {
+        display: block;
+        margin-top: 5px;
+        color: #666;
+        font-size: 12px;
+    }
+
+    .button-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 30px;
+    }
+
+    .btn-submit {
+        background: #417690;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .btn-submit:hover {
+        background: #2e5a6e;
+    }
+
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-cancel:hover {
+        background: #5a6268;
+    }
+
+    .required-indicator {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Mark Leads as Contacted</h1>
+    <p>Record marketing follow-up for selected wishlist leads</p>
+
+    <div class="selected-leads">
+        <h3>Selected Leads ({{ leads.count }})</h3>
+        {% for lead in leads %}
+        <div class="lead-item">
+            <strong>{{ lead.user.get_full_name|default:lead.user.username }}</strong> - {{ lead.course_title }}<br>
+            <small>{{ lead.get_training_type_display }} | Interest: {{ lead.get_interest_level_display }}</small>
+        </div>
+        {% endfor %}
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <input type="hidden" name="action" value="mark_as_contacted">
+        {% for lead in leads %}
+        <input type="hidden" name="_selected_action" value="{{ lead.id }}">
+        {% endfor %}
+
+        <div class="form-row">
+            <label for="contacted_by">
+                Contacted By <span class="required-indicator">*</span>
+            </label>
+            <input type="text" id="contacted_by" name="contacted_by"
+                   value="{{ request.user.get_full_name|default:request.user.username }}"
+                   readonly>
+            <span class="helptext">Marketing team member who contacted the leads</span>
+        </div>
+
+        <div class="form-row">
+            <label for="contacted_at">
+                Contact Date & Time <span class="required-indicator">*</span>
+            </label>
+            <input type="datetime-local" id="contacted_at" name="contacted_at"
+                   value="{{ now|date:'Y-m-d\TH:i' }}" required>
+            <span class="helptext">When the follow-up contact was made</span>
+        </div>
+
+        <div class="form-row">
+            <label for="contact_method">
+                Contact Method <span class="required-indicator">*</span>
+            </label>
+            <select id="contact_method" name="contact_method" required>
+                <option value="">-- Select Method --</option>
+                <option value="email">Email</option>
+                <option value="phone">Phone Call</option>
+                <option value="sms">SMS/WhatsApp</option>
+                <option value="meeting">In-Person Meeting</option>
+                <option value="video_call">Video Call</option>
+            </select>
+            <span class="helptext">How was the learner contacted?</span>
+        </div>
+
+        <div class="form-row">
+            <label for="outcome">
+                Follow-up Outcome <span class="required-indicator">*</span>
+            </label>
+            <select id="outcome" name="outcome" required>
+                <option value="">-- Select Outcome --</option>
+                <option value="interested">Still Interested - Ready to Enroll</option>
+                <option value="considering">Considering - Needs Time</option>
+                <option value="requires_info">Requires More Information</option>
+                <option value="budget_concerns">Budget Concerns</option>
+                <option value="timing_issues">Timing Not Right</option>
+                <option value="not_interested">No Longer Interested</option>
+                <option value="already_enrolled">Already Enrolled Elsewhere</option>
+                <option value="no_response">No Response</option>
+            </select>
+            <span class="helptext">What was the result of the follow-up?</span>
+        </div>
+
+        <div class="form-row">
+            <label for="marketing_notes">
+                Follow-up Notes <span class="required-indicator">*</span>
+            </label>
+            <textarea id="marketing_notes" name="marketing_notes" required placeholder="Enter detailed notes about the conversation, learner concerns, next steps, etc."></textarea>
+            <span class="helptext">Record key discussion points, objections, and recommended next actions</span>
+        </div>
+
+        <div class="form-row">
+            <label for="next_followup_date">
+                Next Follow-up Date (Optional)
+            </label>
+            <input type="date" id="next_followup_date" name="next_followup_date">
+            <span class="helptext">Schedule a reminder for future follow-up if needed</span>
+        </div>
+
+        <div class="form-row">
+            <label>
+                <input type="checkbox" name="mark_high_priority" value="1">
+                Mark as High Priority for urgent follow-up
+            </label>
+        </div>
+
+        <div class="button-row">
+            <button type="submit" class="btn-submit">Save Contact Records</button>
+            <a href="{% url 'admin:learner_portal_wishlist_changelist' %}" class="btn-cancel">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Auto-adjust outcome options based on contact method
+document.getElementById('contact_method').addEventListener('change', function() {
+    const outcome = document.getElementById('outcome');
+    if (this.value === 'no_response') {
+        outcome.value = 'no_response';
+    }
+});
+</script>
+{% endblock %}

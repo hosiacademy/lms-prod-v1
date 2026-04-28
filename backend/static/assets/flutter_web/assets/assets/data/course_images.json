@@ -1,0 +1,138 @@
+{
+  "last_sync": "2026-01-24T00:32:51.481032",
+  "courses": [
+    {
+      "source_name": "AI+ Pharma",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/11/AIC_AI-Pharma-1.svg",
+      "local_svg": "images/courses/ai-pharma.svg",
+      "local_png": "images/courses/ai-pharma.png",
+      "last_updated": null
+    },
+    {
+      "source_name": "Practitioners Playbook for RSAIF",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/10/AIC_Practitioners-Playbook-for-RSAIF.svg",
+      "local_svg": "images/courses/rsaif-playbook.svg",
+      "local_png": "images/courses/rsaif-playbook.png",
+      "last_updated": null
+    },
+    {
+      "source_name": "AI+ Marketing™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2024/08/AIC-AI-Marketing.svg",
+      "local_svg": "images/courses/ai-marketing.svg",
+      "local_png": "images/courses/ai-marketing.png",
+      "last_updated": null
+    },
+    {
+      "source_name": "Blockchain Fundamentals",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2024/01/blockchain-fundamentals-badge.svg",
+      "local_svg": "images/courses/blockchain-fundamentals.svg",
+      "local_png": "images/courses/blockchain-fundamentals.png",
+      "last_updated": null
+    },
+    {
+      "source_name": "AI+ Executive Leadership™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2024/08/AIC-Executive-Leadership.svg",
+      "local_svg": "images/courses/ai-executive-leadership.svg",
+      "local_png": "images/courses/ai-executive-leadership.png",
+      "last_updated": null
+    },
+    {
+      "source_name": "Certified Ethical Hacker",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2024/01/ethical-hacker-badge.svg",
+      "local_svg": "images/courses/ethical-hacker.svg",
+      "local_png": "images/courses/ethical-hacker.png",
+      "last_updated": null
+    },
+    {
+      "source_name": "AI+ Product Management™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2024/08/AIC-AI-Product-Management.svg",
+      "local_svg": "images/courses/ai-product-management.svg",
+      "local_png": "images/courses/ai-product-management.png",
+      "last_updated": null
+    },
+    {
+      "source_name": "Data Science Professional",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2024/01/data-science-badge.svg",
+      "local_svg": "images/courses/data-science.svg",
+      "local_png": "images/courses/data-science.png",
+      "last_updated": null
+    },
+    {
+      "source_name": "AI+ Sales™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2024/08/AIC-AI-Sales.svg",
+      "local_svg": "images/courses/ai-sales.svg",
+      "local_png": "images/courses/ai-sales.png",
+      "last_updated": null
+    },
+    {
+      "source_name": "AI+ Context Engineering™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/11/AIC_AI-Context-Engineering.svg",
+      "local_svg": "images/courses/ai-context-engineering.svg",
+      "local_png": "images/courses/ai-context-engineering.png",
+      "last_updated": "2026-01-24T00:32:43.406382"
+    },
+    {
+      "source_name": "AI+ Pharma™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/11/AIC_AI-Pharma-1.svg",
+      "local_svg": "images/courses/ai-pharma.svg",
+      "local_png": "images/courses/ai-pharma.png",
+      "last_updated": "2026-01-24T00:32:44.314229"
+    },
+    {
+      "source_name": "Practitioner’s Playbook for RSAIF ",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/10/AIC_Practitioners-Playbook-for-RSAIF.svg",
+      "local_svg": "images/courses/practitioners-playbook-for-rsaif-.svg",
+      "local_png": "images/courses/practitioners-playbook-for-rsaif-.png",
+      "last_updated": "2026-01-24T00:32:45.234145"
+    },
+    {
+      "source_name": "AI+ Real Estate™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Real-Estate.svg",
+      "local_svg": "images/courses/ai-real-estate.svg",
+      "local_png": "images/courses/ai-real-estate.png",
+      "last_updated": "2026-01-24T00:32:45.996390"
+    },
+    {
+      "source_name": "AI+ Project Management Practitioner™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Project-Management-Practitioner.svg",
+      "local_svg": "images/courses/ai-project-management-practitioner.svg",
+      "local_png": "images/courses/ai-project-management-practitioner.png",
+      "last_updated": "2026-01-24T00:32:46.871809"
+    },
+    {
+      "source_name": "AI+ Program Director &#8211; Practitioner™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Program-Director-Practitioner.svg",
+      "local_svg": "images/courses/ai-program-director-8211-practitioner.svg",
+      "local_png": "images/courses/ai-program-director-8211-practitioner.png",
+      "last_updated": "2026-01-24T00:32:47.791928"
+    },
+    {
+      "source_name": "AI+ Agent™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Agents.svg",
+      "local_svg": "images/courses/ai-agent.svg",
+      "local_png": "images/courses/ai-agent.png",
+      "last_updated": "2026-01-24T00:32:48.713895"
+    },
+    {
+      "source_name": "AI+ Sustainability™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Sustainability-1.svg",
+      "local_svg": "images/courses/ai-sustainability.svg",
+      "local_png": "images/courses/ai-sustainability.png",
+      "last_updated": "2026-01-24T00:32:49.635192"
+    },
+    {
+      "source_name": "AI+ Vibe Coder™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Vibe-Coder.svg",
+      "local_svg": "images/courses/ai-vibe-coder.svg",
+      "local_png": "images/courses/ai-vibe-coder.png",
+      "last_updated": "2026-01-24T00:32:50.557250"
+    },
+    {
+      "source_name": "AI+ Healthcare Administrator™",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/06/AIC_AI-Healthcare-Administrator.svg",
+      "local_svg": "images/courses/ai-healthcare-administrator.svg",
+      "local_png": "images/courses/ai-healthcare-administrator.png",
+      "last_updated": "2026-01-24T00:32:51.470332"
+    }
+  ]
+}

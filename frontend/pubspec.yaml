@@ -1,0 +1,166 @@
+name: frontend
+description: Hosi Academy LMS - Flutter cross-platform app (Africa-first education platform)
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: '>=3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Web support
+  universal_html: ^2.2.4
+
+  # Core & networking
+  dio: ^5.7.0
+  http: ^1.1.0
+  pretty_dio_logger: ^1.4.0
+
+  # State management
+  flutter_bloc: ^8.1.6
+  bloc: ^8.1.4
+  equatable: ^2.0.7
+  provider: ^6.1.1
+
+  # Navigation
+  go_router: ^14.2.0
+
+  # Storage & security
+  shared_preferences: ^2.3.2
+  flutter_secure_storage: ^9.0.0
+
+  # UI & animations
+  flutter_animate: ^4.5.0
+  shimmer: ^3.0.0
+  percent_indicator: ^4.2.3
+  fl_chart: ^0.68.0
+
+  # Images & assets
+  cached_network_image: ^3.3.0
+  flutter_svg: ^2.0.9
+
+  # Utilities
+  intl: ^0.19.0
+  crypto: ^3.0.3
+  path_provider: ^2.1.0
+
+  # International phone input (used in enrollment forms)
+  intl_phone_number_input: ^0.7.4
+
+  # Calendar & file picker
+  table_calendar: ^3.0.9
+  file_picker: ^8.1.4
+
+  # WebView (for AI Pathfinder & other embedded content)
+  webview_flutter: ^4.7.0
+  webview_flutter_android: ^3.10.0
+  webview_flutter_wkwebview: ^3.10.0
+  webview_flutter_web: ^0.2.2+2
+  
+  # In-App WebView for payment gateways (Flutterwave, Paystack, etc.)
+  flutter_inappwebview: ^6.0.0
+
+  # URL launching
+  url_launcher: ^6.3.0
+
+  # Card input formatting
+  mask_text_input_formatter: ^2.9.0
+
+  # QR Code support
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^3.5.5
+  image_gallery_saver: ^2.0.3
+
+  # Voice & permissions
+  speech_to_text: ^7.0.0
+  flutter_tts: ^4.2.5
+  permission_handler: ^11.3.1
+
+  # Real-time communication
+  socket_io_client: ^2.0.3+1
+
+  # Media & video players
+  better_player: ^0.0.84
+  audio_video_progress_bar: ^2.0.3
+  subtitle_wrapper_package: ^2.2.1
+
+  # PDF & Printing
+  pdf: ^3.11.1
+  printing: ^5.13.0
+  syncfusion_flutter_pdfviewer: ^27.1.48
+
+  # Sharing
+  share_plus: ^10.0.0
+
+  web: ^1.1.1
+
+  # Error tracking & monitoring
+  sentry_flutter: ^8.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    # Folders
+    - assets/images/
+    - assets/images/onboarding/
+    - assets/images/placeholders/
+    - assets/images/payments/
+    - assets/images/masterclasses/
+    - assets/images/courses/
+    - assets/images/testimonials/
+    - assets/images/pathways/
+    # Data files
+    - assets/data/
+    - assets/data/course_images.json
+    # Explicit files
+    - assets/images/logo.png
+    - assets/images/default_avatar.png
+    - assets/images/onboarding/africa_map.png
+    - assets/images/onboarding/aicerts.png
+    - assets/images/onboarding/course_1.jpg
+    - assets/images/onboarding/course_2.jpg
+    - assets/images/onboarding/course_3.jpg
+    - assets/images/onboarding/course_3.png
+    - assets/images/onboarding/course_4.jpg
+    - assets/images/onboarding/course_5.jpg
+    - assets/images/onboarding/course_6.jpg
+    - assets/images/onboarding/course_7.jpg
+    - assets/images/onboarding/course_8.jpg
+    # New AI images (replacing images with wrong spelling/inscriptions)
+    - assets/images/AI_1.png
+    - assets/images/AI_2.png
+    - assets/images/AI_3.png
+    - assets/images/testimonial_avatar.png
+    - assets/images/social/
+    # Pathway SVG images
+    - assets/images/pathways/corporate_training.svg
+    - assets/images/pathways/custom_selection.svg
+    - assets/images/pathways/industry_training.svg
+    - assets/images/pathways/masterclasses.svg
+
+  fonts:
+    - family: OpenSans
+      fonts:
+        - asset: assets/fonts/OpenSans-Regular.ttf
+        - asset: assets/fonts/OpenSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/OpenSans-SemiBold.ttf
+          weight: 600
+
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600

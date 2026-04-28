@@ -1,0 +1,208 @@
+﻿/* Hosi Technologies Admin Theme - Dark Blue & Gold */
+:root {
+    --hosi-primary: #1a365d;       /* Dark blue - main header background */
+    --hosi-secondary: #2c5282;     /* Medium blue - buttons, accents */
+    --hosi-accent: #d4af37;        /* Gold accent - highlights, hover states */
+    --hosi-light: #f8f9fa;         /* Light background */
+    --hosi-dark: #2d3748;          /* Dark text/backgrounds */
+    --hosi-text-light: #ffffff;    /* White text */
+    --hosi-border: #e2e8f0;        /* Light borders */
+}
+
+/* ===== HEADER & BRANDING ===== */
+#header {
+    background: linear-gradient(135deg, var(--hosi-primary), #0d223f) !important;
+    color: var(--hosi-text-light);
+    border-bottom: 3px solid var(--hosi-accent);
+}
+
+#branding h1 {
+    font-weight: 700;
+    font-size: 1.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#branding h1 a {
+    color: var(--hosi-text-light) !important;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+
+#branding h1 a:before {
+    content: "🏢";
+    margin-right: 10px;
+    font-size: 1.6rem;
+}
+
+/* ===== MODULES & SECTIONS ===== */
+.module h2, .module caption, .selector-chosen h2 {
+    background: var(--hosi-secondary) !important;
+    color: white;
+    font-weight: 600;
+    padding: 12px 15px !important;
+}
+
+.module {
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+    border: 1px solid var(--hosi-border);
+}
+
+/* ===== BUTTONS ===== */
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+    background: var(--hosi-secondary) !important;
+    color: white !important;
+    border-radius: 4px !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease !important;
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover, a.button:hover {
+    background: var(--hosi-accent) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+.button.default, input[type=submit].default, .submit-row input.default {
+    background: var(--hosi-accent) !important;
+    color: var(--hosi-primary) !important;
+}
+
+.button.default:hover {
+    background: #e6c12e !important; /* Lighter gold on hover */
+}
+
+/* ===== TABLES ===== */
+#changelist {
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+#changelist table thead th {
+    background: var(--hosi-primary) !important;
+    color: white;
+    font-weight: 600;
+    padding: 14px 12px;
+    border: none;
+}
+
+#changelist table tbody tr:hover {
+    background: rgba(44, 82, 130, 0.05) !important;
+}
+
+/* ===== FORM ELEMENTS ===== */
+input[type=text], input[type=password], input[type=email], input[type=url],
+input[type=number], textarea, select, .vTextField {
+    border: 1px solid var(--hosi-border) !important;
+    border-radius: 4px !important;
+    padding: 8px 12px !important;
+}
+
+input[type=text]:focus, input[type=password]:focus, input[type=email]:focus,
+textarea:focus, select:focus {
+    border-color: var(--hosi-accent) !important;
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
+    outline: none !important;
+}
+
+/* ===== SIDEBAR ===== */
+#nav-sidebar {
+    background: var(--hosi-light);
+    border-right: 1px solid var(--hosi-border);
+}
+
+#nav-sidebar .current-model {
+    background: rgba(44, 82, 130, 0.1) !important;
+    border-left: 3px solid var(--hosi-accent) !important;
+}
+
+/* ===== BREADCRUMBS ===== */
+.breadcrumbs {
+    background: var(--hosi-light) !important;
+    border-bottom: 1px solid var(--hosi-border);
+    padding: 12px 20px !important;
+}
+
+/* ===== MESSAGES ===== */
+.messagelist .success {
+    background: rgba(0, 208, 130, 0.1) !important;
+    border-left: 4px solid #00d084 !important;
+    color: #155724 !important;
+}
+
+.messagelist .warning {
+    background: rgba(255, 193, 7, 0.1) !important;
+    border-left: 4px solid #ffc107 !important;
+    color: #856404 !important;
+}
+
+.messagelist .error {
+    background: rgba(220, 53, 69, 0.1) !important;
+    border-left: 4px solid #dc3545 !important;
+    color: #721c24 !important;
+}
+
+/* ===== STATUS BADGES ===== */
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-active {
+    background: rgba(0, 208, 130, 0.15);
+    color: #00d084;
+    border: 1px solid rgba(0, 208, 130, 0.3);
+}
+
+.status-pending {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-inactive {
+    background: rgba(108, 117, 125, 0.15);
+    color: #6c757d;
+    border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+/* ===== CUSTOM FOOTER ===== */
+/* Uncomment to add a custom footer
+#footer {
+    background: var(--hosi-primary);
+    color: white;
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px;
+    border-top: 3px solid var(--hosi-accent);
+}
+*/
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    #header {
+        padding: 10px 15px !important;
+    }
+    
+    #branding h1 {
+        font-size: 1.2rem;
+    }
+    
+    .module {
+        margin-bottom: 15px;
+    }
+}

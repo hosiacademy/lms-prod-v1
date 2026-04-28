@@ -1,0 +1,30 @@
+{{ site_name }} - Session Invitation
+
+Dear {{ student_name }},
+
+You have been invited to attend a live session:
+
+{{ session_title }}
+
+Instructor: {{ instructor_name }}
+Date & Time: {{ scheduled_start|date:"F d, Y" }} at {{ scheduled_start|time:"H:i" }} UTC
+Duration: {{ session_duration_minutes }} minutes
+
+{% if session_description %}
+Description:
+{{ session_description }}
+{% endif %}
+
+To join the session, visit:
+{{ join_url }}
+
+Important: Please join 5 minutes before the session starts to ensure your audio and video are working properly.
+
+If you have any questions or need assistance, please don't hesitate to contact your instructor.
+
+Best regards,
+The {{ site_name }} Team
+
+---
+© {{ site_name }}. All rights reserved.
+This is an automated message. Please do not reply to this email.

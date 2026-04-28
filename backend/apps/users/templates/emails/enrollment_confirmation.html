@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment Confirmation - Hosi Academy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+        }
+        .success-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .details-box {
+            background: #f8fafc;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .details-box h3 {
+            color: #1e3a8a;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #64748b;
+        }
+        .detail-value {
+            color: #1e293b;
+            font-weight: 500;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .steps {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .steps h3 {
+            color: #92400e;
+            margin-bottom: 15px;
+        }
+        .steps ol {
+            margin-left: 20px;
+        }
+        .steps li {
+            margin: 8px 0;
+            color: #78350f;
+        }
+        .footer {
+            background: #f1f5f9;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .social-links {
+            margin-top: 15px;
+        }
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            color: #3b82f6;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎓 Hosi Academy</h1>
+            <p>The Future of Learning</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">
+                Dear {{ user.name|default:user.username }},
+            </div>
+
+            <div class="success-badge">
+                ✅ ENROLLMENT CONFIRMED
+            </div>
+
+            <p style="margin-bottom: 20px;">
+                Congratulations! Your enrollment has been successfully processed and confirmed.
+            </p>
+
+            <!-- Enrollment Details -->
+            <div class="details-box">
+                <h3>📋 ENROLLMENT DETAILS</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Enrollment ID:</span>
+                    <span class="detail-value">{{ enrollment.id }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Programme:</span>
+                    <span class="detail-value">{{ programme.title }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">✅ {{ enrollment.status|title }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Payment:</span>
+                    <span class="detail-value">✅ {{ enrollment.payment_status|title }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Enrollment Date:</span>
+                    <span class="detail-value">{{ enrollment.enrolled_at|date:"d F Y" }}</span>
+                </div>
+            </div>
+
+            <!-- Instructor Information -->
+            <div class="details-box" style="border-left-color: #10b981;">
+                <h3>👨‍🏫 INSTRUCTOR INFORMATION</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Instructor:</span>
+                    <span class="detail-value">{{ instructor_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Email:</span>
+                    <span class="detail-value">{{ instructor_email }}</span>
+                </div>
+            </div>
+
+            <!-- Login Credentials -->
+            <div class="details-box" style="border-left-color: #f59e0b;">
+                <h3>🔐 YOUR LOGIN CREDENTIALS</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Student Portal:</span>
+                    <span class="detail-value"><a href="{{ portal_url }}" style="color: #3b82f6;">Login Here</a></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Email:</span>
+                    <span class="detail-value">{{ user.email }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Password:</span>
+                    <span class="detail-value">[Your Password]</span>
+                </div>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ portal_url }}" class="cta-button">
+                    🚀 Access Your Dashboard
+                </a>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="steps">
+                <h3>📝 NEXT STEPS</h3>
+                <ol>
+                    <li>Log in to your student dashboard using the credentials above</li>
+                    <li>Navigate to <strong>"My Courses"</strong> to access your learning materials</li>
+                    <li>Join live sessions with your instructor</li>
+                    <li>Complete your profile and upload required documents</li>
+                    <li>Review the course syllabus and assessment schedule</li>
+                </ol>
+            </div>
+
+            <!-- Support -->
+            <div style="background: #eff6ff; border: 1px solid #3b82f6; border-radius: 6px; padding: 20px; margin-top: 20px;">
+                <h4 style="color: #1e3a8a; margin-bottom: 10px;">💬 NEED HELP?</h4>
+                <p style="color: #1e40af; margin-bottom: 10px;">
+                    If you have any questions or need assistance:
+                </p>
+                <p style="color: #1e40af;">
+                    📧 Contact your instructor: <a href="mailto:{{ instructor_email }}" style="color: #3b82f6;">{{ instructor_email }}</a><br>
+                    📧 Technical support: <a href="mailto:support@hosiacademy.co.za" style="color: #3b82f6;">support@hosiacademy.co.za</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Hosi Academy</strong><br>
+            The Future of Learning</p>
+            <p style="margin-top: 10px;">
+                📧 <a href="mailto:admissions@hosiacademy.co.za">admissions@hosiacademy.co.za</a><br>
+                🌐 <a href="http://154.66.211.3:7000">http://154.66.211.3:7000</a>
+            </p>
+            <div class="social-links">
+                <a href="#">LinkedIn</a> • 
+                <a href="#">Facebook</a> • 
+                <a href="#">Twitter</a>
+            </div>
+            <p style="margin-top: 15px; font-size: 12px; color: #94a3b8;">
+                © 2026 Hosi Academy. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

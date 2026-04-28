@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ masterclass.title }} | Hosi Academy{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="row mb-5">
+        <div class="col-lg-8">
+            <h1 class="display-4 fw-bold mb-3">{{ masterclass.title }}</h1>
+
+            <!-- Badges & Quick Info -->
+            <div class="d-flex flex-wrap gap-3 mb-4">
+                {% if masterclass.is_featured %}
+                <span class="badge bg-warning text-dark fs-5 px-4 py-2">Featured</span>
+                {% endif %}
+                <span
+                    class="badge fs-5 px-4 py-2 {% if masterclass.status == 'scheduled' %}bg-primary{% elif masterclass.status == 'ongoing' %}bg-success{% elif masterclass.status == 'completed' %}bg-secondary{% else %}bg-danger{% endif %}">
+                    {{ masterclass.get_status_display }}
+                </span>
+                <span class="badge bg-info fs-5 px-4 py-2">{{ masterclass.formatted_price }}</span>
+            </div>
+
+            <!-- Dates & Location -->
+            <p class="lead text-muted mb-4">
+                <strong>Dates:</strong> {{ masterclass.start_date|date:"d F Y" }} – {{ masterclass.end_date|date:"d F Y"
+                }}<br>
+                <strong>Location:</strong> {{ masterclass.location_display|default:"TBA" }}<br>
+                <strong>Duration:</strong> {{ masterclass.duration_days }} day{% if masterclass.duration_days != 1 %}s{%
+                endif %}
+            </p>
+
+            <!-- Description -->
+            <div class="mb-5">
+                <h3 class="h4 mb-3">About this Masterclass</h3>
+                <div class="lead lh-lg">{{ masterclass.description|safe }}</div>
+            </div>
+
+            <!-- Linked AICERTS Courses - YOUR REQUESTED SECTION -->
+            <h3 class="mb-4">Included AICERTS Certifications</h3>
+            {% if linked_courses %}
+            <div class="row g-4">
+                {% for course in linked_courses %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm border-0 hover-shadow">
+                        <div class="card-img-top bg-light text-center p-4">
+                            <img src="{{ course.certificate_badge_url }}" alt="{{ course.title }} Badge"
+                                class="img-fluid" style="max-height: 140px; object-fit: contain;">
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ course.title }}</h5>
+                            <p class="card-text text-muted flex-grow-1">
+                                {{ course.description|truncatewords:35|safe }}
+                            </p>
+                            <div class="mt-auto d-flex justify-content-between align-items-center">
+                                <span class="badge bg-primary">{{ course.category_name|default:"AI Certification"
+                                    }}</span>
+                                <a href="https://www.aicerts.ai/course/{{ course.external_id }}" target="_blank"
+                                    rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
+                                    View on AICERTS →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center py-4">
+                <i class="bi bi-info-circle fs-4 me-2"></i>
+                No AICERTS certifications are linked to this masterclass yet.
+            </div>
+            {% endif %}
+
+            <!-- Additional Notes -->
+            {% if masterclass.notes %}
+            <div class="mt-5 pt-5 border-top">
+                <h4>Important Notes</h4>
+                <div class="alert alert-light border p-4">
+                    {{ masterclass.notes|safe }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Quick Overview</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Status:</span>
+                            <strong>{{ masterclass.get_status_display }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Participants:</span>
+                            <strong>{{ masterclass.current_participants }} / {{ masterclass.max_participants }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Price:</span>
+                            <strong class="text-success">{{ masterclass.formatted_price }}</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Call to Action -->
+            <div class="d-grid gap-3">
+                <a href="#" class="btn btn-primary btn-lg">Register Now</a>
+                <a href="#" class="btn btn-outline-secondary">Contact Organizer</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

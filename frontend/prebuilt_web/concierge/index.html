@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hosi AI Widget Host</title>
+    <link rel="stylesheet" href="/concierge/tailwind.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+      /* Ensure the iframe background is completely transparent */
+      html, body {
+        background: transparent !important;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      #hosi-ai-pathfinder-widget {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+    <script>
+      // Notify the Flutter parent frame when the concierge expands or collapses,
+      // so the iframe can be resized to only occupy the space it actually needs.
+      (function () {
+        var lastExpanded = false;
+        function checkState() {
+          var expanded = !!document.querySelector('.backdrop-blur-3xl');
+          if (expanded !== lastExpanded) {
+            lastExpanded = expanded;
+            try {
+              window.parent.postMessage(
+                { type: expanded ? 'concierge-expand' : 'concierge-collapse' },
+                '*'
+              );
+            } catch (_) {}
+          }
+        }
+        var observer = new MutationObserver(checkState);
+        document.addEventListener('DOMContentLoaded', function () {
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class'],
+          });
+        });
+      })();
+    </script>
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+        "react": "https://esm.sh/react@^19.2.3",
+        "react-dom": "https://esm.sh/react-dom@^19.2.3",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "react-markdown": "https://esm.sh/react-markdown@9?bundle"
+      }
+    }
+    </script>
+  <script type="module" crossorigin src="/concierge/assets/index-BeqOkQhX.js"></script>
+<script src="/concierge/_websocket-interceptor.js" defer></script></head>
+  <body>
+    <!-- The React App will mount here and handle its own floating positioning -->
+    <div id="hosi-ai-pathfinder-widget"></div>
+  </body>
+</html>

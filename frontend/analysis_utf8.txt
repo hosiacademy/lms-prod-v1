@@ -1,0 +1,45 @@
+﻿Analyzing payment_provider_selection_page.dart...               
+
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:5:8 - unnecessary_import
+warning - The value of the field '_paymentUrl' isn't used - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:97:11 - unused_field
+warning - The value of the local variable 'detectedCountry' isn't used - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:167:13 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:250:28 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:301:20 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:302:25 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:303:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:524:17 - prefer_const_constructors
+warning - The value of the local variable 'detectedCountry' isn't used - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:616:11 - unused_local_variable
+warning - A value for optional parameter 'disabledTooltip' isn't ever given - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:693:13 - unused_element_parameter
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:713:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:720:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:733:45 - deprecated_member_use
+warning - The declaration '_buildOrganizedPaymentSections' isn't referenced - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:968:10 - unused_element
+warning - The value of the local variable 'cardProviders' isn't used - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1001:11 - unused_local_variable
+   info - The 'if' statement could be replaced by a null-aware assignment - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1006:5 - prefer_conditional_assignment
+warning - The declaration '_buildBankSelectionDropdown' isn't referenced - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1168:10 - unused_element
+   info - Use 'const' with the constructor to improve performance - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1177:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1179:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1179:36 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1210:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1232:52 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1247:19 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1264:29 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1297:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1300:54 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1363:7 - avoid_print
+warning - The declaration '_buildGenericCardOption' isn't referenced - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1391:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1596:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1661:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1663:58 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1844:9 - avoid_print
+   info - Statements in an if should be enclosed in a block - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1930:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1940:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\src\presentation\pages\payment\payment_provider_selection_page.dart:1942:7 - curly_braces_in_flow_control_structures
+
+flutter : 35 issues found. (ran in 1.9s)
+At line:1 char:1
++ flutter analyze lib/src/presentation/pages/payment/payment_provider_s ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (35 issues found. (ran in 1.9s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

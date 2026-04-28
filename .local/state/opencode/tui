@@ -1,0 +1,10 @@
+theme = "opencode"
+provider = "openrouter"
+model = "anthropic/claude-sonnet-4.5"
+messages_right = false
+split_diff = false
+
+[[recently_used_models]]
+  provider_id = "openrouter"
+  model_id = "anthropic/claude-sonnet-4.5"
+  last_used = 2026-01-22T08:56:49.3178454Z

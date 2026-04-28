@@ -1,0 +1,277 @@
+﻿{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | Hosi Academy LMS{% endblock %}
+
+{% block branding %}
+<div id="branding-container">
+    <h1 id="site-name">
+        <a href="{% url 'admin:index' %}">
+            <span class="logo-icon">🏫</span>
+            <span class="logo-text">HOSI ACADEMY</span>
+            <span class="logo-subtitle">Management Console</span>
+        </a>
+    </h1>
+    <div id="admin-status">
+        <span class="status-indicator active"></span>
+        <span class="status-text">System Online</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block userlinks %}
+<a href="/" target="_blank" class="view-site-link">Explore Academy</a>
+{{ block.super }}
+{% endblock %}
+
+{% block extrastyle %}
+<style>
+    /* 
+    Hosi Academy Premium Admin Theme 
+    Aesthetics: Deep Navy, Metallic Gold, Glassmorphism, Fluid Layout
+    */
+    :root {
+        --hosi-primary: #0f172a;
+        /* Rich Night Blue */
+        --hosi-secondary: #1e293b;
+        /* Deep Slate */
+        --hosi-accent: #d4af37;
+        /* African Gold */
+        --hosi-accent-bright: #fbbf24;
+        /* Vivid Amber */
+        --hosi-success: #10b981;
+        /* Emerald */
+        --hosi-warning: #f59e0b;
+        /* Amber */
+        --hosi-danger: #ef4444;
+        /* Rose */
+        --hosi-light: #f8fafc;
+        /* Off White */
+        --hosi-dark: #334155;
+        /* Dark Gray Blue */
+        --hosi-border: #e2e8f0;
+        /* Soft Border */
+        --hosi-glass: rgba(255, 255, 255, 0.7);
+        --hosi-glass-dark: rgba(15, 23, 42, 0.85);
+        --hosi-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        --hosi-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+        background-color: #f1f5f9;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Header Styling */
+    #header {
+        background: var(--hosi-gradient) !important;
+        color: white;
+        border-bottom: 4px solid var(--hosi-accent);
+        padding: 0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    #branding-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 30px;
+        max-width: 1600px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    #site-name a {
+        color: white !important;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .logo-icon {
+        font-size: 2rem;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 10px;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .logo-text {
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 1.5rem;
+        background: linear-gradient(to right, #fff, var(--hosi-accent));
+        -webkit-background-clip: text;
+        background-clip: text;
+        /* Standard property */
+        -webkit-text-fill-color: transparent;
+    }
+
+    .logo-subtitle {
+        font-size: 0.8rem;
+        font-weight: 500;
+        opacity: 0.7;
+        margin-left: 10px;
+        color: var(--hosi-accent);
+    }
+
+    #admin-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 6px 15px;
+        border-radius: 20px;
+    }
+
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        background: var(--hosi-success);
+        border-radius: 50%;
+        box-shadow: 0 0 10px var(--hosi-success);
+    }
+
+    /* Nav Sidebar */
+    #nav-sidebar {
+        background: white;
+        border-right: 1px solid var(--hosi-border);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.02);
+    }
+
+    #nav-sidebar th {
+        background: #f8fafc !important;
+        color: var(--hosi-primary) !important;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.75rem;
+        padding: 15px 20px !important;
+        border-bottom: 2px solid var(--hosi-accent) !important;
+    }
+
+    #nav-sidebar tr:hover {
+        background-color: #f1f5f9;
+    }
+
+    #nav-sidebar a {
+        padding: 10px 20px;
+        border-radius: 8px;
+        margin: 2px 10px;
+        color: var(--hosi-dark);
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    #nav-sidebar a:hover {
+        background: rgba(15, 23, 42, 0.05);
+        color: var(--hosi-primary);
+        transform: translateX(5px);
+    }
+
+    /* Content Area */
+    #content {
+        padding: 30px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .module {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--hosi-shadow);
+        border: 1px solid var(--hosi-border);
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+
+    .module h2,
+    .module caption {
+        background: var(--hosi-gradient) !important;
+        color: white !important;
+        padding: 15px 20px !important;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* List Display */
+    #changelisttable thead th {
+        background: #f8fafc !important;
+        color: var(--hosi-dark) !important;
+        font-weight: 700 !important;
+        padding: 15px !important;
+    }
+
+    /* Buttons */
+    .button,
+    input[type=submit],
+    input[type=button],
+    .submit-row input,
+    a.button {
+        background: var(--hosi-primary) !important;
+        color: white !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        font-weight: 600 !important;
+        border: none !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s !important;
+    }
+
+    .button:hover,
+    input[type=submit]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        background: var(--hosi-secondary) !important;
+    }
+
+    .button.default,
+    input[type=submit].default {
+        background: var(--hosi-accent) !important;
+        color: var(--hosi-primary) !important;
+    }
+
+    /* Breadcrumbs */
+    .breadcrumbs {
+        padding: 15px 30px !important;
+        background: white !important;
+        border-bottom: 1px solid var(--hosi-border);
+        margin-bottom: 0 !important;
+        font-weight: 500;
+        color: #64748b;
+    }
+
+    .breadcrumbs a {
+        color: var(--hosi-primary) !important;
+        font-weight: 600;
+    }
+
+    /* Forms */
+    .form-row {
+        border-bottom: 1px solid #f1f5f9 !important;
+        padding: 20px !important;
+    }
+
+    input[type=text],
+    input[type=password],
+    input[type=email],
+    textarea,
+    select {
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        padding: 10px 15px !important;
+        width: 100%;
+        max-width: 600px;
+    }
+
+    input:focus {
+        border-color: var(--hosi-accent) !important;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1) !important;
+    }
+</style>
+{% endblock %}

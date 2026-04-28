@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Hosi Academy</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+            border-top: none;
+        }
+        .success-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .details-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎉 Congratulations!</h1>
+        <p>Your Instructor Application Has Been Approved</p>
+    </div>
+    
+    <div class="content">
+        <div class="success-badge">✓ APPROVED</div>
+        
+        <p>Dear <strong>{{ applicant_name }}</strong>,</p>
+        
+        <p>We are thrilled to inform you that your application to become an instructor at <strong>Hosi Academy</strong> has been approved!</p>
+        
+        <p>Our HR team has reviewed your qualifications, experience, and motivation letter, and we are impressed with your profile. We believe you will be a valuable addition to our elite global faculty.</p>
+        
+        <div class="details-box">
+            <h3>Application Details</h3>
+            <p><strong>Application ID:</strong> {{ application_id }}</p>
+            <p><strong>Status:</strong> Approved</p>
+            {% if approval_notes %}
+            <p><strong>HR Admin Notes:</strong></p>
+            <p>{{ approval_notes }}</p>
+            {% endif %}
+        </div>
+        
+        <h3>Next Steps:</h3>
+        <ol>
+            <li><strong>Account Activation:</strong> Your instructor account has been created. You can now log in using your email address.</li>
+            <li><strong>Complete Your Profile:</strong> Upload your profile photo, update your bio, and add your areas of expertise.</li>
+            <li><strong>Orientation:</strong> You will receive a separate email with details about our instructor orientation program.</li>
+            <li><strong>Course Creation:</strong> Once onboarded, you can start creating courses and engaging with students.</li>
+        </ol>
+        
+        <p style="text-align: center;">
+            <a href="https://hosiacademy.co.za/login" class="cta-button">Access Your Instructor Dashboard</a>
+        </p>
+        
+        <p>If you have any questions or need assistance, please don't hesitate to contact our HR team at <a href="mailto:hr.admin@hosi.academy">hr.admin@hosi.academy</a>.</p>
+        
+        <p>Welcome to the Hosi Academy family! We look forward to working with you to shape the next generation of technologists.</p>
+        
+        <p>Best regards,<br>
+        <strong>The Hosi Academy HR Team</strong></p>
+    </div>
+    
+    <div class="footer">
+        <p>Hosi Academy | Empowering Africa Through Technology Education</p>
+        <p>This is an automated message. Please do not reply directly to this email.</p>
+    </div>
+</body>
+</html>

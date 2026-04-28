@@ -1,0 +1,17 @@
+﻿{% extends 'base.html' %}
+
+{% block content %}
+<h1>{{ industry.name }} Courses</h1>
+<ul>
+{% for course in courses %}
+  <li>
+    <h2>{{ course.title }}</h2>
+    <p>{{ course.description }}</p>
+    <p>Categories: {{ course.categories }}</p>
+    <img src="{{ course.feature_image_url }}" alt="{{ course.title }}" style="max-width:200px;">
+  </li>
+{% empty %}
+  <p>No courses for this industry yet.</p>
+{% endfor %}
+</ul>
+{% endblock %}

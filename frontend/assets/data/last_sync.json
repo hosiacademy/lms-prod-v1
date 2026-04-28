@@ -1,0 +1,81 @@
+{
+  "last_sync": "2026-01-24T00:32:51.486400",
+  "summary": {
+    "added": 9,
+    "updated": 1,
+    "unchanged": 0,
+    "total": 10
+  },
+  "changes": [
+    {
+      "title": "AI+ Context Engineering™",
+      "slug": "ai-context-engineering",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/11/AIC_AI-Context-Engineering.svg",
+      "status": "updated",
+      "timestamp": "2026-01-24T00:32:43.406382"
+    },
+    {
+      "title": "AI+ Pharma™",
+      "slug": "ai-pharma",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/11/AIC_AI-Pharma-1.svg",
+      "status": "added",
+      "timestamp": "2026-01-24T00:32:44.314229"
+    },
+    {
+      "title": "Practitioner’s Playbook for RSAIF ",
+      "slug": "practitioners-playbook-for-rsaif-",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/10/AIC_Practitioners-Playbook-for-RSAIF.svg",
+      "status": "added",
+      "timestamp": "2026-01-24T00:32:45.234145"
+    },
+    {
+      "title": "AI+ Real Estate™",
+      "slug": "ai-real-estate",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Real-Estate.svg",
+      "status": "added",
+      "timestamp": "2026-01-24T00:32:45.996390"
+    },
+    {
+      "title": "AI+ Project Management Practitioner™",
+      "slug": "ai-project-management-practitioner",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Project-Management-Practitioner.svg",
+      "status": "added",
+      "timestamp": "2026-01-24T00:32:46.871809"
+    },
+    {
+      "title": "AI+ Program Director &#8211; Practitioner™",
+      "slug": "ai-program-director-8211-practitioner",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Program-Director-Practitioner.svg",
+      "status": "added",
+      "timestamp": "2026-01-24T00:32:47.791928"
+    },
+    {
+      "title": "AI+ Agent™",
+      "slug": "ai-agent",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Agents.svg",
+      "status": "added",
+      "timestamp": "2026-01-24T00:32:48.713895"
+    },
+    {
+      "title": "AI+ Sustainability™",
+      "slug": "ai-sustainability",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Sustainability-1.svg",
+      "status": "added",
+      "timestamp": "2026-01-24T00:32:49.635192"
+    },
+    {
+      "title": "AI+ Vibe Coder™",
+      "slug": "ai-vibe-coder",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/09/AIC_AI-Vibe-Coder.svg",
+      "status": "added",
+      "timestamp": "2026-01-24T00:32:50.557250"
+    },
+    {
+      "title": "AI+ Healthcare Administrator™",
+      "slug": "ai-healthcare-administrator",
+      "source_url": "https://www.aicerts.ai/wp-content/uploads/2025/06/AIC_AI-Healthcare-Administrator.svg",
+      "status": "added",
+      "timestamp": "2026-01-24T00:32:51.470332"
+    }
+  ]
+}

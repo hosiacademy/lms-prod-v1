@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Hosi Academy</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>frontend</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+
+	<!-- Microphone access (required for voice input in Hosi AI Pathfinder) -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Hosi Academy requires microphone access to enable voice-to-text input for AI career guidance, search, and interactive learning features.</string>
+
+	<!-- Speech recognition (required for transcribing spoken queries to AI) -->
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Hosi Academy uses speech recognition to convert your voice into text for AI-powered career pathfinding, course recommendations, and learning assistance.</string>
+
+	<!-- Camera access (optional – add if you plan photo upload for profile/avatar or document verification) -->
+	<key>NSCameraUsageDescription</key>
+	<string>Hosi Academy may request camera access to allow profile photo capture or document scanning for verification during enrollment or profile setup.</string>
+
+	<!-- Photo library access (optional – add if users can upload images from gallery) -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Hosi Academy may request access to your photo library to upload profile pictures, certificates, or other documents during registration or learning activities.</string>
+
+	<!-- Optional: if you use location-based features in future (e.g. nearby learnerships) -->
+	<!-- <key>NSLocationWhenInUseUsageDescription</key> -->
+	<!-- <string>Hosi Academy may use your location to show nearby learnership opportunities or campus events.</string> -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

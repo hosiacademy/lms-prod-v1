@@ -1,0 +1,61 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 40px auto; padding: 20px;">
+    <h1>Reject and Refund Enrollments</h1>
+
+    <p>You are about to reject and refund the following enrollments:</p>
+
+    <ul>
+        {% for enrollment in enrollments %}
+        <li>
+            <strong>{{ enrollment.user.email }}</strong> -
+            {{ enrollment.get_enrollment_type_display }} -
+            Reference: {{ enrollment.reference_code }}
+            {% if enrollment.payment_transaction %}
+            - Amount: {{ enrollment.payment_transaction.amount }} {{ enrollment.payment_transaction.currency }}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="margin: 20px 0;">
+            <label for="rejection_reason" style="display: block; font-weight: bold; margin-bottom: 10px;">
+                Rejection Reason (required):
+            </label>
+            <textarea
+                id="rejection_reason"
+                name="rejection_reason"
+                rows="5"
+                required
+                style="width: 100%; padding: 10px; font-family: inherit; font-size: 14px;"
+                placeholder="e.g., Prerequisites not met: Missing required certification in..."
+            ></textarea>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <input type="hidden" name="action" value="reject_and_refund">
+            {% for enrollment in enrollments %}
+            <input type="hidden" name="_selected_action" value="{{ enrollment.pk }}">
+            {% endfor %}
+            <button
+                type="submit"
+                name="apply"
+                style="background-color: #F44336; color: white; padding: 10px 20px; border: none; cursor: pointer; font-size: 14px; border-radius: 3px;"
+            >
+                Confirm Rejection and Refund
+            </button>
+            <a
+                href="{% url 'admin:enrollments_provisionalenrollment_changelist' %}"
+                style="margin-left: 10px; padding: 10px 20px; background-color: #9E9E9E; color: white; text-decoration: none; border-radius: 3px; display: inline-block;"
+            >
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

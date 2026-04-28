@@ -1,0 +1,280 @@
+class _LearnershipCardState extends State<_LearnershipCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final learnership = widget.learnership;
+
+    final courseIcon = CourseIcons.getIconForCourse(learnership.specialization);
+    final cardColor = CourseIcons.getColorForSpecialization(
+        learnership.specialization, colors);
+
+    return Draggable<Learnership>(
+      data: learnership,
+      feedback: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 380,
+          child: Opacity(
+            opacity: 0.8,
+            child: widget,
+          ),
+        ),
+      ),
+      childWhenDragging: Opacity(
+        opacity: 0.3,
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: _buildCard(theme, colors, learnership, courseIcon, cardColor),
+        ),
+      ),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: _buildCard(theme, colors, learnership, courseIcon, cardColor),
+      ),
+    );
+  }
+
+  Widget _buildCard(ThemeData theme, ColorScheme colors, Learnership learnership,
+      IconData courseIcon, Color cardColor) {
+    return Card(
+      elevation: _isHovered ? 6 : 1,
+      shadowColor: cardColor.withValues(alpha: 0.2),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+            color: _isHovered
+                ? cardColor.withValues(alpha: 0.4)
+                : colors.outline.withValues(alpha: 0.08),
+            width: 1),
+      ),
+      child: InkWell(
+        onTap: widget.onCardTap, // Card body → descriptive modal
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [colors.surface, cardColor.withValues(alpha: 0.02)],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                          color: cardColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Icon(courseIcon, color: cardColor, size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: widget.onTitleTap, // Title click → AI prompt
+                        child: Text(
+                          learnership.specialization,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: colors.onSurface,
+                            fontSize: 13,
+                            height: 1.2,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    _buildBadge(
+                        Icons.verified,
+                        learnership.nqfLevel ?? 'NQF 6',
+                        colors.primary,
+                        colors),
+                    _buildBadge(
+                        CourseIcons.getDeliveryModeIcon(
+                            learnership.deliveryMode),
+                        learnership.deliveryModeDisplay,
+                        colors.tertiary,
+                        colors),
+                    if (learnership.isFeatured)
+                      _buildBadge(
+                          Icons.star, 'Featured', colors.secondary, colors,
+                          gradient: true),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Flexible(
+                  child: Text(
+                    learnership.description ??
+                        learnership.focus ??
+                        'Work-integrated learning program',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurface, height: 1.4, fontSize: 11),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (learnership.modules != null &&
+                    learnership.modules!.isNotEmpty)
+                  Flexible(
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: learnership.modules!
+                          .take(3)
+                          .map((module) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                    color: cardColor.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(4)),
+                                child: Text(module,
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        color: colors.onSurface,
+                                        fontWeight: FontWeight.w500)),
+                              ))
+                          .toList(),
+                    ),
+                  )
+                else if (learnership.skills != null &&
+                    learnership.skills!.isNotEmpty)
+                  Flexible(
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: learnership.skills!
+                          .take(3)
+                          .map((skill) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                    color: cardColor.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(4)),
+                                child: Text(skill,
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        color: colors.onSurface,
+                                        fontWeight: FontWeight.w500)),
+                              ))
+                          .toList(),
+                    ),
+                  ),
+                const Spacer(),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: learnership.isEnrollmentOpen
+                            ? colors.primary.withValues(alpha: 0.12)
+                            : colors.error.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            learnership.isEnrollmentOpen
+                                ? Icons.check_circle
+                                : Icons.cancel,
+                            size: 10,
+                            color: learnership.isEnrollmentOpen
+                                ? colors.primary
+                                : colors.error,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            learnership.statusDisplay,
+                            style: TextStyle(
+                              color: learnership.isEnrollmentOpen
+                                  ? colors.primary
+                                  : colors.error,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    ElevatedButton(
+                      onPressed:
+                          learnership.isEnrollmentOpen ? widget.onEnroll : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: cardColor,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor:
+                            colors.onSurface.withValues(alpha: 0.08),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6)),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('ENROLL NOW',
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(
+      IconData icon, String label, Color color, ColorScheme colors,
+      {bool gradient = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: gradient ? null : color.withValues(alpha: 0.15),
+        gradient: gradient
+            ? LinearGradient(colors: [colors.secondary, colors.tertiary])
+            : null,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+            color:
+                gradient ? Colors.transparent : color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: gradient ? colors.onSecondary : color),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(
+                  color: gradient ? colors.onSecondary : color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}

@@ -1,0 +1,367 @@
+﻿<!-- apps/facilitators/templates/admin/facilitators/assignment_tool.html -->
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .assignment-tool-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin: 20px 0;
+    }
+
+    .tool-section {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .tool-section h3 {
+        margin-top: 0;
+        color: #333;
+        border-bottom: 2px solid #2196F3;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .course-list,
+    .facilitator-list {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        padding: 10px;
+    }
+
+    .course-item,
+    .facilitator-item {
+        padding: 15px;
+        margin: 8px 0;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .course-item:hover,
+    .facilitator-item:hover {
+        background: #f5f5f5;
+        border-color: #2196F3;
+    }
+
+    .course-item.selected,
+    .facilitator-item.selected {
+        background: #E3F2FD;
+        border-color: #2196F3;
+        box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+    }
+
+    .course-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .course-category {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+
+    .facilitator-name {
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .facilitator-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .suitability-score {
+        background: #4CAF50;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .assignment-form {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        border: 1px solid #dee2e6;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #495057;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .assign-button {
+        background: #2196F3;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        width: 100%;
+        transition: background 0.2s;
+    }
+
+    .assign-button:hover {
+        background: #1976D2;
+    }
+
+    .assign-button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+
+    .recent-assignments {
+        margin-top: 30px;
+    }
+
+    .assignment-item {
+        padding: 15px;
+        margin: 10px 0;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+    }
+
+    .assignment-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .assignment-id {
+        font-weight: bold;
+        color: #2196F3;
+    }
+
+    .assignment-status {
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .status-assigned {
+        background: #E3F2FD;
+        color: #1976D2;
+    }
+
+    .status-ongoing {
+        background: #E8F5E9;
+        color: #388E3C;
+    }
+
+    .status-completed {
+        background: #F5F5F5;
+        color: #616161;
+    }
+
+    .status-pending {
+        background: #FFF3E0;
+        color: #F57C00;
+    }
+
+    .no-selection {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="assignment-tool-container">
+    <!-- Available Courses -->
+    <div class="tool-section">
+        <h3>📚 Available Courses</h3>
+        <div class="course-list">
+            {% for course in available_courses %}
+            <div class="course-item" onclick="selectCourse({{ course.id }}, '{{ course.title|escapejs }}')"
+                id="course-{{ course.id }}">
+                <div class="course-title">{{ course.title }}</div>
+                <div class="course-category">{{ course.category_name }}</div>
+                {% if course.raw_data.certificate_badge_url %}
+                <small style="color: #4CAF50;">✓ Certificate Available</small>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="no-selection">No available courses found</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Available Facilitators -->
+    <div class="tool-section">
+        <h3>👥 Available Facilitators</h3>
+        <div class="facilitator-list">
+            {% for facilitator in available_facilitators %}
+            <div class="facilitator-item"
+                onclick="selectFacilitator({{ facilitator.id }}, '{{ facilitator.user.name|default:facilitator.user.username|escapejs }}')"
+                id="facilitator-{{ facilitator.id }}">
+                <div class="facilitator-name">
+                    {{ facilitator.user.name|default:facilitator.user.username }}
+                    <span class="suitability-score" id="score-{{ facilitator.id }}">0%</span>
+                </div>
+                <div class="facilitator-stats">
+                    <span>ID: {{ facilitator.facilitator_id }}</span>
+                    <span>Rating: {{ facilitator.overall_rating|floatformat:1 }}%</span>
+                    <span>Load: {{ facilitator.current_count }}/{{ facilitator.max_courses }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="no-selection">No available facilitators found</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Assignment Form -->
+<div class="assignment-form" id="assignmentForm" style="display: none;">
+    <h3 style="margin-top: 0;">➕ Create Assignment</h3>
+    <form id="createAssignmentForm" method="post" action="{% url 'facilitators_admin:assignment_tool' %}">
+        {% csrf_token %}
+        <input type="hidden" id="selectedCourseId" name="course_id">
+        <input type="hidden" id="selectedFacilitatorId" name="facilitator_id">
+
+        <div class="form-group">
+            <label for="assignmentStatus">Status</label>
+            <select id="assignmentStatus" name="status">
+                <option value="assigned">Assigned</option>
+                <option value="pending">Pending</option>
+            </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+                <label for="startDate">Start Date</label>
+                <input type="date" id="startDate" name="start_date" required value="{{ today|date:'Y-m-d' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="expectedEndDate">Expected End Date</label>
+                <input type="date" id="expectedEndDate" name="expected_end_date" required
+                    value="{{ next_month|date:'Y-m-d' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="assignmentNotes">Notes (Optional)</label>
+            <textarea id="assignmentNotes" name="assignment_notes" rows="3"
+                placeholder="Add any specific instructions or notes for this assignment..."></textarea>
+        </div>
+
+        <button type="submit" class="assign-button" id="assignButton">
+            ✅ Assign Course
+        </button>
+    </form>
+</div>
+
+<!-- Recent Assignments -->
+<div class="recent-assignments">
+    <h3>📋 Recent Assignments (Last 30 Days)</h3>
+    {% for assignment in recent_assignments %}
+    <div class="assignment-item">
+        <div class="assignment-header">
+            <span class="assignment-id">{{ assignment.assignment_id }}</span>
+            <span class="assignment-status status-{{ assignment.status }}">
+                {{ assignment.get_status_display }}
+            </span>
+        </div>
+        <div><strong>Course: </strong>{{ assignment.course.title|truncatechars:40 }}</div>
+        <div><strong>Facilitator: </strong>{{
+            assignment.facilitator.user.name|default:assignment.facilitator.user.username }}</div>
+        <div><strong>Start Date: </strong>{{ assignment.start_date|date:"M d, Y" }}</div>
+        <div><strong>Expected End: </strong>{{ assignment.expected_end_date|date:"M d, Y" }}</div>
+    </div>
+    {% empty %}
+    <p style="text-align: center; color: #666; padding: 40px;">No recent assignments</p>
+    {% endfor %}
+</div>
+
+<script>
+    let selectedCourseId = null;
+    let selectedFacilitatorId = null;
+
+    function selectCourse(id, name) {
+        document.querySelectorAll('.course-item.selected').forEach(el => el.classList.remove('selected'));
+        document.getElementById(`course-${id}`).classList.add('selected');
+        selectedCourseId = id;
+        checkSelection();
+    }
+
+    function selectFacilitator(id, name) {
+        document.querySelectorAll('.facilitator-item.selected').forEach(el => el.classList.remove('selected'));
+        document.getElementById(`facilitator-${id}`).classList.add('selected');
+        selectedFacilitatorId = id;
+        checkSelection();
+    }
+
+    function checkSelection() {
+        if (selectedCourseId && selectedFacilitatorId) {
+            document.getElementById('assignmentForm').style.display = 'block';
+            document.getElementById('selectedCourseId').value = selectedCourseId;
+            document.getElementById('selectedFacilitatorId').value = selectedFacilitatorId;
+        } else {
+            document.getElementById('assignmentForm').style.display = 'none';
+        }
+    }
+
+    document.getElementById('createAssignmentForm').addEventListener('submit', function (e) {
+        const button = document.getElementById('assignButton');
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner"></span> Assigning...';
+    });
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+    .spinner {
+        border: 2px solid white;
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+`;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

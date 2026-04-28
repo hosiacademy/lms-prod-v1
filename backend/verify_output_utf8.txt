@@ -1,0 +1,20 @@
+﻿
+============================================================
+Environment: development
+Debug: True
+Facilitators Module: ENABLED
+Auto Assignment: True
+AICerts Sync: True
+Socket.io Enabled: True
+Socket.io Port: 8001
+============================================================
+
+Loading payments admin...
+Γ£ô All models registered with correct fields
+Γ£ô Payments admin loaded successfully
+User found: Richard Masukume (richard.masukume@hosiacademy.co.za)
+Role ID: 3
+Enrollments: 1
+- Course: AI+ ExecutiveΓäó, Status: enrolled
+Payments: 1
+- Ref: MOCK-MPESA-312C7217CA3A, Status: successful, Amount: 46494.50

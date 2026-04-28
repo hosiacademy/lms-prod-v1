@@ -1,0 +1,14 @@
+[Unit]
+Description=LMS Monorepo Bidirectional Sync Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/takawira/lms-sync.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/takawira/lms-sync.log
+StandardError=append:/home/takawira/lms-sync.log
+
+[Install]
+WantedBy=default.target

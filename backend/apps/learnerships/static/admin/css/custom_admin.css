@@ -1,0 +1,33 @@
+/* apps/learnerships/static/admin/css/custom_admin.css */
+
+/* Auto-size textarea based on content */
+textarea {
+    min-height: 80px;
+    width: 100%;
+    box-sizing: border-box;
+    /* Removed !important height to allow expansion */
+}
+
+/* Fit inline phases table */
+.inline-related {
+    width: 100%;
+    overflow-x: auto;
+    /* Removed table-layout: fixed to allow columns to size to content */
+}
+
+.inline-related td, .inline-related th {
+    /* Removed overflow: hidden causing cut-off content */
+    word-wrap: break-word;
+    white-space: normal;
+    vertical-align: top; /* Align content to top for better readability */
+}
+
+/* Multi-select fit */
+.form-row .related-widget-wrapper {
+    max-width: 100%;
+}
+
+/* Prevent overlap on small screens */
+.field-box {
+    max-width: 100%;
+}

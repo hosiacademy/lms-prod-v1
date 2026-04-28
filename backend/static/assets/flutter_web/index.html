@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+  -->
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Hosi Academy - Learn anytime, anywhere">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Hosi Academy">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Hosi Academy</title>
+  <link rel="manifest" href="manifest.json">
+
+  <meta name="theme-color" content="#0D1B2A">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* hosiMidnight background simulating the onboarding dark bg */
+    body {
+      background: #0D1B2A;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Modal overlay */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: #0D1B2A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      opacity: 1;
+      transition: opacity 0.5s ease-out;
+    }
+
+    #loading-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Clean dark screen shown immediately while Flutter engine initializes -->
+  <div id="loading-screen">
+  </div>
+
+  <script src="main.dart.js" async></script>
+
+  <script>
+    // Hide loading screen once Flutter renders its first frame
+    window.addEventListener('flutter-first-frame', function() {
+      var screen = document.getElementById('loading-screen');
+      if (screen) {
+        screen.classList.add('fade-out');
+        setTimeout(function() {
+          if (screen.parentNode) {
+            screen.parentNode.removeChild(screen);
+          }
+        }, 650);
+      }
+    });
+
+    // Fallback: hide after 12 seconds if flutter-first-frame never fires
+    setTimeout(function() {
+      var screen = document.getElementById('loading-screen');
+      if (screen) {
+        screen.classList.add('fade-out');
+        setTimeout(function() {
+          if (screen && screen.parentNode) {
+            screen.parentNode.removeChild(screen);
+          }
+        }, 650);
+      }
+    }, 12000);
+  </script>
+</body>
+</html>

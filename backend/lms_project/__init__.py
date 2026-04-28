@@ -1,0 +1,1 @@
+# Temporarily disabled until Celery is set up

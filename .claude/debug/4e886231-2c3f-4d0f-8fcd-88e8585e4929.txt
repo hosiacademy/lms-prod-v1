@@ -1,0 +1,170 @@
+2026-01-22T07:33:27.067Z [ERROR] Failed to save config with lock: Error: ENOENT: no such file or directory, lstat '/home/takawira/.claude.json'
+2026-01-22T07:33:27.068Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067207068
+2026-01-22T07:33:27.068Z [DEBUG] Setting permissions for new file: 600
+2026-01-22T07:33:27.068Z [DEBUG] Temp file written successfully, size: 82 bytes
+2026-01-22T07:33:27.068Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067207068 to /home/takawira/.claude.json
+2026-01-22T07:33:27.069Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:27.079Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067207079
+2026-01-22T07:33:27.079Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:27.080Z [DEBUG] Temp file written successfully, size: 130 bytes
+2026-01-22T07:33:27.080Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:27.080Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067207079 to /home/takawira/.claude.json
+2026-01-22T07:33:27.080Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:27.081Z [DEBUG] [init] configureGlobalMTLS starting
+2026-01-22T07:33:27.081Z [DEBUG] [init] configureGlobalMTLS complete
+2026-01-22T07:33:27.081Z [DEBUG] [init] configureGlobalAgents starting
+2026-01-22T07:33:27.081Z [DEBUG] [init] configureGlobalAgents complete
+2026-01-22T07:33:27.085Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067207085
+2026-01-22T07:33:27.085Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:27.085Z [DEBUG] Temp file written successfully, size: 167 bytes
+2026-01-22T07:33:27.085Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:27.085Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067207085 to /home/takawira/.claude.json
+2026-01-22T07:33:27.085Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:27.087Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067207087
+2026-01-22T07:33:27.087Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:27.087Z [DEBUG] Temp file written successfully, size: 202 bytes
+2026-01-22T07:33:27.087Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:27.087Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067207087 to /home/takawira/.claude.json
+2026-01-22T07:33:27.087Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:27.088Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067207088
+2026-01-22T07:33:27.088Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:27.088Z [DEBUG] Temp file written successfully, size: 238 bytes
+2026-01-22T07:33:27.088Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:27.088Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067207088 to /home/takawira/.claude.json
+2026-01-22T07:33:27.088Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:27.091Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067207091
+2026-01-22T07:33:27.091Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:27.091Z [DEBUG] Temp file written successfully, size: 275 bytes
+2026-01-22T07:33:27.091Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:27.091Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067207091 to /home/takawira/.claude.json
+2026-01-22T07:33:27.091Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:27.102Z [DEBUG] [STARTUP] Loading MCP configs...
+2026-01-22T07:33:27.118Z [DEBUG] Found 0 plugins (0 enabled, 0 disabled)
+2026-01-22T07:33:27.118Z [DEBUG] [STARTUP] MCP configs loaded in 16ms
+2026-01-22T07:33:27.118Z [DEBUG] [ToolSearch:optimistic] mode=tst-auto, ENABLE_TOOL_SEARCH=undefined, result=true
+2026-01-22T07:33:27.119Z [DEBUG] [ToolSearch:optimistic] mode=tst-auto, ENABLE_TOOL_SEARCH=undefined, result=true
+2026-01-22T07:33:27.119Z [DEBUG] [STARTUP] Running setup()...
+2026-01-22T07:33:27.159Z [DEBUG] Loading skills from: managed=/etc/claude-code/.claude/skills, user=/home/takawira/.claude/skills, project=[]
+2026-01-22T07:33:27.991Z [DEBUG] installed_plugins.json doesn't exist, returning empty V2 object
+2026-01-22T07:33:27.994Z [ERROR] Error: Error: ENOENT: no such file or directory, scandir '/etc/claude-code/.claude/skills'
+    at Module.readdirSync (node:fs:1583:26)
+    at file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:9:1766
+    at UX (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:8:34567)
+    at Object.readdirSync (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:9:1736)
+    at fw1 (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:1540:369)
+    at file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:1540:4279
+    at q (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:8:6808)
+    at DT2 (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:4183:4362)
+    at file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:4183:6961
+    at q (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:8:6808)
+2026-01-22T07:33:27.994Z [ERROR] Error: Error: ENOENT: no such file or directory, scandir '/home/takawira/.claude/skills'
+    at Module.readdirSync (node:fs:1583:26)
+    at file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:9:1766
+    at UX (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:8:34567)
+    at Object.readdirSync (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:9:1736)
+    at fw1 (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:1540:369)
+    at file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:1540:4322
+    at q (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:8:6808)
+    at DT2 (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:4183:4362)
+    at file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:4183:6961
+    at q (file:///home/takawira/.nvm/versions/node/v24.13.0/lib/node_modules/@anthropic-ai/claude-code/cli.js:8:6808)
+2026-01-22T07:33:27.994Z [DEBUG] Error log sink initialized
+2026-01-22T07:33:28.004Z [DEBUG] Writing to temp file: /home/takawira/.claude/todos/4e886231-2c3f-4d0f-8fcd-88e8585e4929-agent-4e886231-2c3f-4d0f-8fcd-88e8585e4929.json.tmp.4733.1769067208004
+2026-01-22T07:33:28.004Z [DEBUG] Temp file written successfully, size: 2 bytes
+2026-01-22T07:33:28.004Z [DEBUG] Renaming /home/takawira/.claude/todos/4e886231-2c3f-4d0f-8fcd-88e8585e4929-agent-4e886231-2c3f-4d0f-8fcd-88e8585e4929.json.tmp.4733.1769067208004 to /home/takawira/.claude/todos/4e886231-2c3f-4d0f-8fcd-88e8585e4929-agent-4e886231-2c3f-4d0f-8fcd-88e8585e4929.json
+2026-01-22T07:33:28.004Z [DEBUG] File /home/takawira/.claude/todos/4e886231-2c3f-4d0f-8fcd-88e8585e4929-agent-4e886231-2c3f-4d0f-8fcd-88e8585e4929.json written atomically
+2026-01-22T07:33:28.017Z [DEBUG] getPluginSkills: Processing 0 enabled plugins
+2026-01-22T07:33:28.017Z [DEBUG] Total plugin skills loaded: 0
+2026-01-22T07:33:28.017Z [DEBUG] Total plugin commands loaded: 0
+2026-01-22T07:33:28.018Z [DEBUG] Registered 0 hooks from 0 plugins
+2026-01-22T07:33:28.035Z [DEBUG] [STARTUP] setup() completed in 916ms
+2026-01-22T07:33:28.035Z [DEBUG] [STARTUP] Loading commands and agents...
+2026-01-22T07:33:28.040Z [DEBUG] Total plugin agents loaded: 0
+2026-01-22T07:33:28.040Z [DEBUG] Loaded 0 unique skills (managed: 0, user: 0, project: 0, legacy commands: 0)
+2026-01-22T07:33:28.041Z [DEBUG] getSkills returning: 0 skill dir commands, 0 plugin skills, 0 bundled skills
+2026-01-22T07:33:28.042Z [DEBUG] [STARTUP] Commands and agents loaded in 7ms
+2026-01-22T07:33:28.042Z [DEBUG] [STARTUP] Running showSetupScreens()...
+2026-01-22T07:33:28.044Z [DEBUG] [render] initYoga starting
+2026-01-22T07:33:28.108Z [DEBUG] [render] initYoga complete
+2026-01-22T07:33:28.143Z [DEBUG] [keybindings] KeybindingSetup initialized with 46 bindings, 0 warnings
+2026-01-22T07:33:28.233Z [DEBUG] [keybindings] Skipping file watcher - user customization disabled
+2026-01-22T07:33:28.248Z [DEBUG] [Claude in Chrome] Extension not found in any browser
+2026-01-22T07:33:28.252Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208252
+2026-01-22T07:33:28.252Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.253Z [DEBUG] Temp file written successfully, size: 318 bytes
+2026-01-22T07:33:28.253Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.253Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208252 to /home/takawira/.claude.json
+2026-01-22T07:33:28.253Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.362Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208362
+2026-01-22T07:33:28.362Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.362Z [DEBUG] Temp file written successfully, size: 359 bytes
+2026-01-22T07:33:28.362Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.362Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208362 to /home/takawira/.claude.json
+2026-01-22T07:33:28.362Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.528Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208528
+2026-01-22T07:33:28.528Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.528Z [DEBUG] Temp file written successfully, size: 535 bytes
+2026-01-22T07:33:28.528Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.528Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208528 to /home/takawira/.claude.json
+2026-01-22T07:33:28.528Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.531Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208531
+2026-01-22T07:33:28.531Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.531Z [DEBUG] Temp file written successfully, size: 571 bytes
+2026-01-22T07:33:28.531Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.531Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208531 to /home/takawira/.claude.json
+2026-01-22T07:33:28.532Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.534Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208534
+2026-01-22T07:33:28.535Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.535Z [DEBUG] Temp file written successfully, size: 599 bytes
+2026-01-22T07:33:28.535Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.535Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208534 to /home/takawira/.claude.json
+2026-01-22T07:33:28.535Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.537Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208537
+2026-01-22T07:33:28.538Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.538Z [DEBUG] Temp file written successfully, size: 651 bytes
+2026-01-22T07:33:28.538Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.538Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208537 to /home/takawira/.claude.json
+2026-01-22T07:33:28.538Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.540Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208540
+2026-01-22T07:33:28.540Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.540Z [DEBUG] Temp file written successfully, size: 690 bytes
+2026-01-22T07:33:28.540Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.540Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208540 to /home/takawira/.claude.json
+2026-01-22T07:33:28.540Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.542Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208542
+2026-01-22T07:33:28.542Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.542Z [DEBUG] Temp file written successfully, size: 728 bytes
+2026-01-22T07:33:28.542Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.542Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208542 to /home/takawira/.claude.json
+2026-01-22T07:33:28.542Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.545Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208545
+2026-01-22T07:33:28.545Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.545Z [DEBUG] Temp file written successfully, size: 773 bytes
+2026-01-22T07:33:28.545Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.545Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208545 to /home/takawira/.claude.json
+2026-01-22T07:33:28.545Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.546Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208546
+2026-01-22T07:33:28.547Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.547Z [DEBUG] Temp file written successfully, size: 812 bytes
+2026-01-22T07:33:28.547Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.547Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208546 to /home/takawira/.claude.json
+2026-01-22T07:33:28.547Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.550Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208550
+2026-01-22T07:33:28.550Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.550Z [DEBUG] Temp file written successfully, size: 842 bytes
+2026-01-22T07:33:28.550Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.550Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208550 to /home/takawira/.claude.json
+2026-01-22T07:33:28.550Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.552Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208552
+2026-01-22T07:33:28.552Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.553Z [DEBUG] Temp file written successfully, size: 887 bytes
+2026-01-22T07:33:28.553Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.553Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208552 to /home/takawira/.claude.json
+2026-01-22T07:33:28.553Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.555Z [DEBUG] Writing to temp file: /home/takawira/.claude.json.tmp.4733.1769067208555
+2026-01-22T07:33:28.555Z [DEBUG] Preserving file permissions: 100600
+2026-01-22T07:33:28.555Z [DEBUG] Temp file written successfully, size: 917 bytes
+2026-01-22T07:33:28.555Z [DEBUG] Applied original permissions to temp file
+2026-01-22T07:33:28.555Z [DEBUG] Renaming /home/takawira/.claude.json.tmp.4733.1769067208555 to /home/takawira/.claude.json
+2026-01-22T07:33:28.556Z [DEBUG] File /home/takawira/.claude.json written atomically
+2026-01-22T07:33:28.826Z [DEBUG] High write ratio: blit=928, write=1257 (57.5% writes), screen=36x156

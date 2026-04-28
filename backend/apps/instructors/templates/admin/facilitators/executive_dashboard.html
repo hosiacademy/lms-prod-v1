@@ -1,0 +1,342 @@
+﻿<!-- apps/facilitators/templates/admin/facilitators/executive_dashboard.html -->
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+    }
+
+    .dashboard-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .dashboard-card h3 {
+        margin-top: 0;
+        color: #333;
+        border-bottom: 2px solid #4CAF50;
+        padding-bottom: 10px;
+    }
+
+    .stat-card {
+        text-align: center;
+        padding: 30px 20px;
+    }
+
+    .stat-number {
+        font-size: 48px;
+        font-weight: bold;
+        color: #4CAF50;
+        margin: 10px 0;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .chart-container {
+        height: 300px;
+        margin: 20px 0;
+    }
+
+    .performance-band {
+        display: flex;
+        align-items: center;
+        margin: 8px 0;
+        padding: 8px;
+        background: #f5f5f5;
+        border-radius: 4px;
+    }
+
+    .band-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+
+    .band-info {
+        flex-grow: 1;
+    }
+
+    .band-name {
+        font-weight: bold;
+    }
+
+    .band-count {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .band-percentage {
+        font-weight: bold;
+        color: #4CAF50;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .activity-item {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        font-size: 20px;
+        margin-right: 10px;
+    }
+
+    .facilitator-card {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        margin: 5px 0;
+        background: #f9f9f9;
+        border-radius: 4px;
+    }
+
+    .facilitator-avatar {
+        width: 40px;
+        height: 40px;
+        background: #4CAF50;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-weight: bold;
+    }
+
+    .facilitator-info {
+        flex-grow: 1;
+    }
+
+    .facilitator-name {
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+
+    .facilitator-rating {
+        color: #FF9800;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Statistics Cards -->
+    <div class="dashboard-card stat-card">
+        <h3>📊 Overview</h3>
+        <div class="stat-number">{{ total_facilitators }}</div>
+        <div class="stat-label">Total Facilitators</div>
+        <div style="margin-top: 20px;">
+            <div class="stat-number" style="font-size: 36px; color: #2196F3;">{{ active_facilitators }}</div>
+            <div class="stat-label">Active & Available</div>
+        </div>
+    </div>
+
+    <div class="dashboard-card stat-card">
+        <h3>📚 Assignments</h3>
+        <div class="stat-number">{{ active_assignments }}</div>
+        <div class="stat-label">Active Assignments</div>
+        <div style="margin-top: 20px;">
+            <div class="stat-number" style="font-size: 36px; color: #4CAF50;">{{ completed_assignments }}</div>
+            <div class="stat-label">Completed (30 days)</div>
+        </div>
+    </div>
+
+    <!-- Performance Distribution -->
+    <div class="dashboard-card">
+        <h3>🏆 Performance Distribution</h3>
+        <div class="chart-container">
+            {% for item in performance_data %}
+            <div class="performance-band">
+                <div class="band-color"
+                    style="background-color: {% if item.band == 'Excellent' %}#10B981{% elif item.band == 'Good' %}#3B82F6{% elif item.band == 'Satisfactory' %}#F59E0B{% elif item.band == 'Needs Improvement' %}#EF4444{% else %}#DC2626{% endif %}">
+                </div>
+                <div class="band-info">
+                    <div class="band-name">{{ item.band }}</div>
+                    <div class="band-count">{{ item.count }} facilitators</div>
+                </div>
+                <div class="band-percentage">{{ item.percentage|floatformat:1 }}%</div>
+            </div>
+            {% empty %}
+            <p style="text-align: center; color: #666; padding: 40px;">No performance data available</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Top Performers -->
+    <div class="dashboard-card">
+        <h3>⭐ Top Performers</h3>
+        <div class="chart-container">
+            {% for facilitator in top_performers %}
+            <div class="facilitator-card">
+                <div class="facilitator-avatar">
+                    {{ facilitator.user.name|first|default:facilitator.user.username|first|upper }}
+                </div>
+                <div class="facilitator-info">
+                    <div class="facilitator-name">{{ facilitator.user.name|default:facilitator.user.username }}</div>
+                    <div>ID: {{ facilitator.facilitator_id }}</div>
+                </div>
+                <div class="facilitator-rating">{{ facilitator.overall_rating|floatformat:1 }}%</div>
+            </div>
+            {% empty %}
+            <p style="text-align: center; color: #666; padding: 40px;">No performance ratings yet</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="dashboard-card" style="grid-column: span 2;">
+        <h3>📝 Recent Activities (Last 30 Days)</h3>
+        <div class="table-responsive">
+            <table style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding: 10px;">Facilitator</th>
+                        <th style="text-align: left; padding: 10px;">Activity</th>
+                        <th style="text-align: left; padding: 10px;">Course</th>
+                        <th style="text-align: left; padding: 10px;">Date</th>
+                        <th style="text-align: left; padding: 10px;">Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in recent_activities %}
+                    <tr>
+                        <td style="padding: 10px;">
+                            {{ activity.facilitator.user.name|default:activity.facilitator.user.username }}
+                        </td>
+                        <td style="padding: 10px;">
+                            <span class="activity-icon">
+                                {% if activity.activity_type == 'course_creation' %}📚
+                                {% elif activity.activity_type == 'content_upload' %}📄
+                                {% elif activity.activity_type == 'assessment_created' %}📝
+                                {% elif activity.activity_type == 'live_session' %}🎥
+                                {% elif activity.activity_type == 'student_feedback' %}💬
+                                {% elif activity.activity_type == 'grading' %}✏️
+                                {% elif activity.activity_type == 'forum_participation' %}💭
+                                {% elif activity.activity_type == 'announcement' %}📢
+                                {% elif activity.activity_type == 'resource_shared' %}📎
+                                {% elif activity.activity_type == 'meeting_attended' %}👥
+                                {% elif activity.activity_type == 'training_completed' %}🎓
+                                {% else %}📊{% endif %}
+                            </span>
+                            {{ activity.get_activity_type_display }}
+                        </td>
+                        <td style="padding: 10px;">
+                            {% if activity.course %}
+                            {{ activity.course.title|truncatechars:30 }}
+                            {% else %}
+                            <em style="color: #999;">N/A</em>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 10px;">
+                            {{ activity.activity_date|date:"M d, Y H:i" }}
+                        </td>
+                        <td style="padding: 10px;">
+                            {% if activity.duration_minutes < 60 %} {{ activity.duration_minutes }}m {% else %} {{
+                                activity.duration_minutes|divisibleby:60|floatformat:1 }}h {% endif %} </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: #666;">
+                            No recent activities
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Charts (using Chart.js) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Create performance chart
+        const performanceCtx = document.createElement('canvas');
+        performanceCtx.style.width = '100%';
+        performanceCtx.style.height = '300px';
+
+        const performanceSection = document.querySelector('.dashboard-card:nth-child(3) .chart-container');
+        if (performanceSection) {
+            performanceSection.innerHTML = '';
+            performanceSection.appendChild(performanceCtx);
+
+            const performanceData = {
+                labels: [{% for item in performance_data %}'{{ item.band }}', {% endfor %}],
+        datasets: [{
+            data: [{% for item in performance_data %}{{ item.count }}, {% endfor %}],
+        backgroundColor: [
+            '#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#DC2626'
+        ].slice(0, {{ performance_data| length }})
+            }]
+        };
+
+    new Chart(performanceCtx, {
+        type: 'doughnut',
+        data: performanceData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' },
+                title: { display: true, text: 'Performance Distribution' }
+            }
+        }
+    });
+    }
+
+    // Create assignments chart
+    const assignmentsCtx = document.createElement('canvas');
+    assignmentsCtx.style.width = '100%';
+    assignmentsCtx.style.height = '250px';
+
+    const assignmentsCard = document.querySelector('.dashboard-card:nth-child(2)');
+    if (assignmentsCard) {
+        assignmentsCard.querySelector('.chart-container').innerHTML = '';
+        assignmentsCard.querySelector('.chart-container').appendChild(assignmentsCtx);
+
+        new Chart(assignmentsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Active', 'Completed'],
+                datasets: [{
+                    label: 'Assignments',
+                    data: [{{ active_assignments }}, {{ completed_assignments }}],
+            backgroundColor: ['#2196F3', '#4CAF50']
+        }]
+            },
+    options: {
+        responsive: true,
+            maintainAspectRatio: false,
+                scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        },
+        plugins: { legend: { display: false } }
+    }
+        });
+    }
+});
+</script>
+{% endblock %}

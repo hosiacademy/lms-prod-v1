@@ -1,0 +1,35 @@
+# Flutter analysis options for Hosi Academy LMS
+# Disable problematic lints for web build
+
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Disable invalid_runtime_check_with_js_interop_types lint
+    # This is caused by third-party packages like flutter_tts
+    invalid_runtime_check_with_js_interop_types: false
+    
+    # Disable unnecessary_cast for web compatibility
+    unnecessary_cast: false
+    
+    # Disable cast_nullable_to_non_nullable for web compatibility  
+    cast_nullable_to_non_nullable: false
+
+analyzer:
+  errors:
+    # Treat these as warnings, not errors
+    invalid_runtime_check_with_js_interop_types: ignore
+    unnecessary_cast: ignore
+    cast_nullable_to_non_nullable: ignore
+    
+  exclude:
+    # Exclude generated files
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "build/**"
+    
+  language:
+    # Allow strict cast but be more lenient for web
+    strict-casts: false
+    strict-inference: false
+    strict-raw-types: false

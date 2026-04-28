@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #F79150; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f9f9f9; }
+        .button { display: inline-block; padding: 12px 24px; background: #F79150; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+        .details { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ site_name }}</h1>
+            <p>You're Invited to a Live Session</p>
+        </div>
+        
+        <div class="content">
+            <p>Dear {{ student_name }},</p>
+            
+            <p>You have been invited to attend a live session:</p>
+            
+            <div class="details">
+                <h2>{{ session_title }}</h2>
+                <p><strong>Instructor:</strong> {{ instructor_name }}</p>
+                <p><strong>Date & Time:</strong> {{ scheduled_start|date:"F d, Y" }} at {{ scheduled_start|time:"H:i" }} UTC</p>
+                <p><strong>Duration:</strong> {{ session_duration_minutes }} minutes</p>
+                {% if session_description %}
+                <p><strong>Description:</strong></p>
+                <p>{{ session_description }}</p>
+                {% endif %}
+            </div>
+            
+            <p>To join the session, click the button below:</p>
+            <p style="text-align: center;">
+                <a href="{{ join_url }}" class="button">Join Session</a>
+            </p>
+            
+            <p><strong>Important:</strong> Please join 5 minutes before the session starts to ensure your audio and video are working properly.</p>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact your instructor.</p>
+            
+            <p>Best regards,<br>
+            The {{ site_name }} Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {{ site_name }}. All rights reserved.</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

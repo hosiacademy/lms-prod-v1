@@ -1,0 +1,13 @@
+* text=auto eol=lf
+venv_new/** binary
+*.pyc binary
+# Don't convert build artifacts
+frontend/web/** binary
+frontend/prebuilt_web/** binary
+frontend/prebuilt_web_backup/** binary
+frontend/build/** binary
+frontend/.dart_tool/** binary
+venv_new/** binary
+*.png binary
+*.jpg binary
+*.woff2 binary

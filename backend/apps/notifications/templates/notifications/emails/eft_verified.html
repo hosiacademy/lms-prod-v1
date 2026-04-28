@@ -1,0 +1,156 @@
+<!-- templates/notifications/emails/eft_verified.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Verified</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+            margin: -30px -30px 30px -30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 10px;
+        }
+        .reference-box {
+            background-color: #f0fff4;
+            border: 2px solid #38ef7d;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .reference-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #11998e;
+            font-family: 'Courier New', monospace;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .details-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .details-table td:first-child {
+            font-weight: 600;
+            color: #666;
+            width: 40%;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 40px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="success-icon">✅</div>
+            <h1>Payment Verified!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your enrollment is now confirmed</p>
+        </div>
+
+        <p>Dear <strong>{{ user_name }}</strong>,</p>
+
+        <p>Great news! Your EFT payment has been successfully verified. Your enrollment in <strong>{{ program_title }}</strong> is now confirmed.</p>
+
+        <div class="reference-box">
+            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">PAYMENT REFERENCE</p>
+            <div class="reference-number">{{ reference }}</div>
+        </div>
+
+        <table class="details-table">
+            <tr>
+                <td>Amount Paid:</td>
+                <td><strong>{{ currency }} {{ amount|floatformat:2 }}</strong></td>
+            </tr>
+            <tr>
+                <td>Program:</td>
+                <td>{{ program_title }}</td>
+            </tr>
+            <tr>
+                <td>Program Type:</td>
+                <td>{{ program_type|title }}</td>
+            </tr>
+            <tr>
+                <td>Verified At:</td>
+                <td>{{ verified_at|date:"d M Y, H:i" }}</td>
+            </tr>
+        </table>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="https://portal.hosiacademy.africa/dashboard/" class="cta-button">
+                🚀 Access Your Course Now
+            </a>
+        </div>
+
+        <h2 style="color: #11998e;">📚 What's Next?</h2>
+
+        <ul style="line-height: 2;">
+            <li>✅ <strong>Log in to your dashboard</strong> at portal.hosiacademy.africa</li>
+            <li>✅ <strong>Access your course materials</strong> - They're ready for you!</li>
+            <li>✅ <strong>Join the community</strong> - Connect with fellow learners</li>
+            <li>✅ <strong>Start learning</strong> - Begin your journey today!</li>
+        </ul>
+
+        <div style="background-color: #f0fff4; border-left: 4px solid #38ef7d; padding: 15px; margin: 20px 0;">
+            <strong>🎉 Congratulations!</strong> You're now part of the Hosi Academy community. We're excited to support you on your learning journey.
+        </div>
+
+        <h2 style="color: #11998e;">📧 Confirmation Email</h2>
+        <p>You will receive a separate email with your detailed enrollment information and course access instructions.</p>
+
+        <div class="footer">
+            <p><strong>Need Help?</strong></p>
+            <p>📧 Email: <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+            <p style="margin-top: 20px; font-size: 12px; color: #999;">
+                © 2026 Hosi Academy. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

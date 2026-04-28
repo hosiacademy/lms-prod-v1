@@ -1,0 +1,134 @@
+﻿// Add these methods to your existing payment_service.dart
+// Add them to the PaymentService class
+
+Future<PaymentTransaction> verifyPayment({
+  required String transactionId,
+  required String reference,
+}) async {
+  try {
+    final response = await client.post(
+      Uri.parse('$_baseUrl/payments/verify'),
+      headers: _headers,
+      body: jsonEncode({
+        'transaction_id': transactionId,
+        'reference': reference,
+      }),
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return PaymentTransaction.fromJson(data['transaction']);
+    } else {
+      throw Exception('Failed to verify payment: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Verify payment error: $e');
+    rethrow;
+  }
+}
+
+Future<List<Order>> getUserOrders(String userId) async {
+  try {
+    final response = await client.get(
+      Uri.parse('$_baseUrl/orders/user/$userId'),
+      headers: _headers,
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List<dynamic> ordersJson = data['orders'];
+      return ordersJson.map((json) => Order.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to get user orders: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Get user orders error: $e');
+    rethrow;
+  }
+}
+
+Future<List<PaymentTransaction>> getUserTransactions(String userId) async {
+  try {
+    final response = await client.get(
+      Uri.parse('$_baseUrl/payments/user/$userId'),
+      headers: _headers,
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List<dynamic> transactionsJson = data['transactions'];
+      return transactionsJson.map((json) => PaymentTransaction.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to get user transactions: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Get user transactions error: $e');
+    rethrow;
+  }
+}
+
+// Also update the createOrder method to accept PaymentMethod enum
+Future<Order> createOrder({
+  required String userId,
+  required String userEmail,
+  required String userName,
+  required String userCountry,
+  required List<Map<String, dynamic>> courseItems,
+  required PaymentMethod paymentMethod, // Changed from String to PaymentMethod
+  String? userPhone,
+}) async {
+  try {
+    final userCurrency = AfricanCurrencies.getCurrencyCode(userCountry);
+    
+    // Get exchange rate from USD to user's currency
+    final exchangeRate = await getExchangeRate('USD', userCurrency);
+    
+    // Calculate prices in user's currency
+    final itemsWithCurrency = courseItems.map((item) {
+      final usdPrice = (item['price'] ?? 0.0).toDouble();
+      final localPrice = usdPrice * exchangeRate;
+      
+      return {
+        ...item,
+        'price': usdPrice,
+        'final_price': localPrice,
+        'currency_code': userCurrency,
+      };
+    }).toList();
+    
+    // Calculate totals
+    final subtotal = itemsWithCurrency.fold(0.0, (sum, item) => sum + (item['final_price'] as double));
+    final taxRate = PaymentConstants.getTaxRateForCountry(userCountry);
+    final tax = subtotal * taxRate;
+    final total = subtotal + tax;
+    
+    final response = await client.post(
+      Uri.parse('$_baseUrl/orders/create'),
+      headers: _headers,
+      body: jsonEncode({
+        'user_id': userId,
+        'user_email': userEmail,
+        'user_name': userName,
+        'user_country': userCountry,
+        'user_phone': userPhone,
+        'items': itemsWithCurrency,
+        'payment_method': paymentMethod.toString().split('.').last,
+        'currency_code': userCurrency,
+        'subtotal': subtotal,
+        'tax': tax,
+        'total': total,
+        'exchange_rate': exchangeRate,
+      }),
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      return Order.fromJson(data['order']);
+    } else {
+      throw Exception('Failed to create order: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Create order error: $e');
+    rethrow;
+  }
+}

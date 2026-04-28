@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment Confirmation - {{ company_name }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .success-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .enrollment-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .enrollment-card h3 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 20px;
+        }
+        .enrollment-code {
+            background-color: #667eea;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin: 20px 0;
+        }
+        .details-table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+        }
+        .details-table tr {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .details-table td {
+            padding: 12px 0;
+        }
+        .details-table td:first-child {
+            font-weight: 600;
+            color: #666;
+            width: 40%;
+        }
+        .credentials-box {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .credentials-box h4 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .credentials-box p {
+            margin: 8px 0;
+        }
+        .platform-section {
+            margin: 30px 0;
+        }
+        .platform-section h3 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .platform-button {
+            display: block;
+            padding: 15px 20px;
+            background-color: #667eea;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        .platform-button:hover {
+            background-color: #5568d3;
+        }
+        .platform-button.secondary {
+            background-color: #6c757d;
+        }
+        .platform-button.secondary:hover {
+            background-color: #5a6268;
+        }
+        .platform-icon {
+            font-size: 24px;
+            margin-right: 8px;
+        }
+        .next-steps {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .next-steps h4 {
+            margin-top: 0;
+            color: #1976D2;
+        }
+        .next-steps ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin: 8px 0;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .platform-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="success-icon">🎉</div>
+            <h1>Enrollment Confirmed!</h1>
+            <p>Welcome to {{ company_name }}</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p class="greeting">Hi <strong>{{ user_name }}</strong>,</p>
+
+            <p>Congratulations! You have successfully enrolled in:</p>
+
+            <!-- Enrollment Card -->
+            <div class="enrollment-card">
+                <h3>{{ program_name }}</h3>
+                <p><strong>Program Type:</strong> {{ program_type }}</p>
+            </div>
+
+            <!-- Enrollment Code -->
+            <p><strong>Your Enrollment Code:</strong></p>
+            <div class="enrollment-code">{{ enrollment_code }}</div>
+            <p style="text-align: center; font-size: 12px; color: #666;">Keep this code safe - you'll need it to access your program</p>
+
+            <!-- Program Details -->
+            {% if enrollment_details %}
+            <table class="details-table">
+                {% if enrollment_details.start_date %}
+                <tr>
+                    <td>Start Date:</td>
+                    <td>{{ enrollment_details.start_date|date:"F d, Y" }}</td>
+                </tr>
+                {% endif %}
+                {% if enrollment_details.duration %}
+                <tr>
+                    <td>Duration:</td>
+                    <td>{{ enrollment_details.duration }}</td>
+                </tr>
+                {% endif %}
+                {% if enrollment_details.location %}
+                <tr>
+                    <td>Location:</td>
+                    <td>{{ enrollment_details.location }}</td>
+                </tr>
+                {% endif %}
+                {% if enrollment_details.delivery_mode %}
+                <tr>
+                    <td>Delivery Mode:</td>
+                    <td>{{ enrollment_details.delivery_mode }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td>Enrolled On:</td>
+                    <td>{{ enrollment_details.enrolled_at|date:"F d, Y h:i A" }}</td>
+                </tr>
+            </table>
+            {% endif %}
+
+            <!-- Access Credentials (if new account) -->
+            {% if access_credentials %}
+            <div class="credentials-box">
+                <h4>🔑 Your Access Credentials</h4>
+                <p><strong>Username/Email:</strong> {{ access_credentials.username }}</p>
+                <p><strong>Password:</strong> {{ access_credentials.password }}</p>
+                <p style="font-size: 13px; margin-top: 10px;"><em>Please change your password after your first login for security.</em></p>
+            </div>
+            {% endif %}
+
+            <!-- Access Platform Section -->
+            <div class="platform-section">
+                <h3>📱 Access Your Learning Platform</h3>
+                <p>You can access Hosi Academy LMS from any of these platforms:</p>
+
+                <div class="platform-grid">
+                    <!-- Web -->
+                    <a href="{{ platform_links.web }}" class="platform-button">
+                        <span class="platform-icon">🌐</span> Web App
+                    </a>
+
+                    <!-- Android -->
+                    <a href="{{ platform_links.android }}" class="platform-button">
+                        <span class="platform-icon">📱</span> Android
+                    </a>
+
+                    <!-- iOS -->
+                    <a href="{{ platform_links.ios }}" class="platform-button">
+                        <span class="platform-icon">🍎</span> iOS
+                    </a>
+
+                    <!-- Windows -->
+                    <a href="{{ platform_links.desktop_windows }}" class="platform-button secondary">
+                        <span class="platform-icon">💻</span> Windows
+                    </a>
+
+                    <!-- Mac -->
+                    <a href="{{ platform_links.desktop_mac }}" class="platform-button secondary">
+                        <span class="platform-icon">🖥️</span> macOS
+                    </a>
+
+                    <!-- Linux -->
+                    <a href="{{ platform_links.desktop_linux }}" class="platform-button secondary">
+                        <span class="platform-icon">🐧</span> Linux
+                    </a>
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="next-steps">
+                <h4>📝 Next Steps</h4>
+                <ol>
+                    <li>Click on your preferred platform link above to access the LMS</li>
+                    <li>Log in using your credentials {% if not access_credentials %}(same as your enrollment email){% endif %}</li>
+                    <li>Complete your profile setup</li>
+                    <li>Start exploring your course materials</li>
+                    <li>Join the community forums and connect with peers</li>
+                </ol>
+            </div>
+
+            <p style="margin-top: 30px;">If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+
+            <p><strong>Support Email:</strong> <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+
+            <p style="margin-top: 30px;">Happy learning!</p>
+            <p><strong>The {{ company_name }} Team</strong></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>&copy; 2024 {{ company_name }}. All rights reserved.</p>
+            <p>
+                <a href="{{ platform_links.web }}">Visit Website</a> |
+                <a href="mailto:{{ support_email }}">Contact Support</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

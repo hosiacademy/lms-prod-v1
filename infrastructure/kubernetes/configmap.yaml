@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lms-config
+  namespace: lms-production
+data:
+  ENVIRONMENT: "production"
+  DEBUG: "False"
+  DB_ENGINE: "django.db.backends.postgresql"
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "hosiacademylms"
+  CELERY_BROKER_URL: "redis://redis-service:6379/0"
+  CELERY_RESULT_BACKEND: "redis://redis-service:6379/0"
+  SOCKETIO_REDIS_URL: "redis://redis-service:6379/1"
+  SOCKETIO_ENABLED: "True"
+  USE_S3_STORAGE: "True"
+  PAYMENT_SANDBOX_MODE: "False"
+  SENTRY_ENVIRONMENT: "production"

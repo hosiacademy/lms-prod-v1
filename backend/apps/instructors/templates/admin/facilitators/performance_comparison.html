@@ -1,0 +1,235 @@
+﻿<!-- apps/facilitators/templates/admin/facilitators/performance_comparison.html -->
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+    }
+    
+    .comparison-table th {
+        background: #f5f5f5;
+        padding: 15px;
+        text-align: left;
+        border-bottom: 2px solid #ddd;
+        cursor: pointer;
+        user-select: none;
+    }
+    
+    .comparison-table th:hover {
+        background: #e9e9e9;
+    }
+    
+    .comparison-table td {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .comparison-table tr:hover {
+        background: #f9f9f9;
+    }
+    
+    .rating-stars {
+        color: #FF9800;
+        font-size: 18px;
+    }
+    
+    .performance-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 5px;
+    }
+    
+    .sort-indicator {
+        margin-left: 5px;
+        font-size: 12px;
+    }
+    
+    .filter-controls {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .filter-group {
+        display: inline-block;
+        margin-right: 20px;
+    }
+    
+    .filter-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #666;
+    }
+    
+    .filter-group select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        min-width: 150px;
+    }
+    
+    .utilization-bar {
+        height: 10px;
+        background: #e0e0e0;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+    
+    .utilization-fill {
+        height: 100%;
+        background: #4CAF50;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="filter-controls">
+    <h2 style="margin-top: 0;">📈 Performance Comparison</h2>
+    <div class="filter-group">
+        <label>Sort By:</label>
+        <select id="sortSelect" onchange="updateSort()">
+            <option value="avg_rating" {% if sort_by == 'avg_rating' %}selected{% endif %}>Average Rating</option>
+            <option value="total_courses" {% if sort_by == 'total_courses' %}selected{% endif %}>Total Courses</option>
+            <option value="utilization" {% if sort_by == 'utilization' %}selected{% endif %}>Utilization Rate</option>
+        </select>
+    </div>
+    
+    <div class="filter-group">
+        <label>Order:</label>
+        <select id="orderSelect" onchange="updateSort()">
+            <option value="desc" {% if order == 'desc' %}selected{% endif %}>Descending</option>
+            <option value="asc" {% if order == 'asc' %}selected{% endif %}>Ascending</option>
+        </select>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th onclick="sortTable('facilitator')">
+                    Facilitator
+                    {% if sort_by == 'facilitator' %}
+                    <span class="sort-indicator">{% if order == 'desc' %}▼{% else %}▲{% endif %}</span>
+                    {% endif %}
+                </th>
+                <th onclick="sortTable('total_courses')">
+                    Courses
+                    {% if sort_by == 'total_courses' %}
+                    <span class="sort-indicator">{% if order == 'desc' %}▼{% else %}▲{% endif %}</span>
+                    {% endif %}
+                </th>
+                <th onclick="sortTable('avg_rating')">
+                    Rating
+                    {% if sort_by == 'avg_rating' %}
+                    <span class="sort-indicator">{% if order == 'desc' %}▼{% else %}▲{% endif %}</span>
+                    {% endif %}
+                </th>
+                <th onclick="sortTable('utilization')">
+                    Utilization
+                    {% if sort_by == 'utilization' %}
+                    <span class="sort-indicator">{% if order == 'desc' %}▼{% else %}▲{% endif %}</span>
+                    {% endif %}
+                </th>
+                <th>Performance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in comparison_data %}
+            <tr>
+                <td>
+                    <strong>{{ item.facilitator.user.name|default:item.facilitator.user.username }}</strong><br>
+                    <small style="color: #666;">{{ item.facilitator.facilitator_id }}</small>
+                </td>
+                <td>
+                    <strong style="font-size: 24px; color: #2196F3;">{{ item.total_courses }}</strong><br>
+                    <small style="color: #666;">courses taught</small>
+                </td>
+                <td>
+                    <div class="rating-stars">
+                        {% with rating=item.avg_rating|floatformat:1 %}
+                        {% for i in "12345"|make_list %}
+                            {% if forloop.counter <= rating|add:"0" %}
+                                ★
+                            {% else %}
+                                ☆
+                            {% endif %}
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
+                    <div style="font-size: 18px; font-weight: bold; color: #333;">
+                        {{ item.avg_rating|floatformat:1 }}/5.0
+                    </div>
+                </td>
+                <td>
+                    <div style="font-size: 18px; font-weight: bold; color: #333;">
+                        {{ item.utilization_rate|floatformat:1 }}%
+                    </div>
+                    <div class="utilization-bar">
+                        <div class="utilization-fill" style="width: {% if item.utilization_rate > 100 %}100{% else %}{{ item.utilization_rate }}{% endif %}%"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="performance-indicator" style="background-color: 
+                        {% if item.performance_band == 'excellent' %}#10B981
+                        {% elif item.performance_band == 'good' %}#3B82F6
+                        {% elif item.performance_band == 'satisfactory' %}#F59E0B
+                        {% elif item.performance_band == 'needs_improvement' %}#EF4444
+                        {% else %}#DC2626{% endif %}">
+                    </div>
+                    <span style="font-weight: bold;">
+                        {% if item.performance_band == 'excellent' %}Excellent
+                        {% elif item.performance_band == 'good' %}Good
+                        {% elif item.performance_band == 'satisfactory' %}Satisfactory
+                        {% elif item.performance_band == 'needs_improvement' %}Needs Improvement
+                        {% else %}Poor{% endif %}
+                    </span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 40px; color: #666;">
+                    No comparison data available
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function sortTable(sortBy) {
+    const currentSort = '{{ sort_by }}';
+    const currentOrder = '{{ order }}';
+    
+    let newOrder = 'desc';
+    if (sortBy === currentSort) {
+        newOrder = currentOrder === 'desc' ? 'asc' : 'desc';
+    }
+    
+    window.location.href = `?sort=${sortBy}&order=${newOrder}`;
+}
+
+function updateSort() {
+    const sortBy = document.getElementById('sortSelect').value;
+    const order = document.getElementById('orderSelect').value;
+    window.location.href = `?sort=${sortBy}&order=${order}`;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialization code can be added here if needed
+});
+</script>
+{% endblock %}

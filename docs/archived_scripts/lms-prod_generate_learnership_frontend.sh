@@ -1,0 +1,40 @@
+#!/bin/bash
+# Script to generate all learnership frontend files
+# This creates the complete frontend implementation for learnerships
+
+FRONTEND_DIR="/home/takawira/lms-monorepo/frontend/lib/src/presentation/blocs/course/learnerships"
+
+echo "Creating learnership frontend directory structure..."
+mkdir -p "$FRONTEND_DIR/models"
+mkdir -p "$FRONTEND_DIR/providers"
+mkdir -p "$FRONTEND_DIR/components"
+
+echo "✅ Learnership Dart model already created at:"
+echo "   /home/takawira/lms-monorepo/frontend/lib/src/data/models/learnership.dart"
+
+echo ""
+echo "📝 Next files to create:"
+echo "1. $FRONTEND_DIR/models/learnership_state.dart"
+echo "2. $FRONTEND_DIR/providers/learnership_data_provider.dart"
+echo "3. $FRONTEND_DIR/providers/learnership_enrollment.dart"
+echo "4. $FRONTEND_DIR/combined_learnership_page.dart"
+echo "5. $FRONTEND_DIR/components/learnership_filters.dart"
+echo "6. $FRONTEND_DIR/components/learnership_cohort_display.dart"
+echo "7. $FRONTEND_DIR/components/learnership_marquee.dart"
+echo ""
+echo "📋 Backend API endpoints created:"
+echo "   GET  /api/v1/training/learnerships/"
+echo "   GET  /api/v1/training/learnerships/<id>/"
+echo "   GET  /api/v1/training/learnerships/roles/"
+echo "   GET  /api/v1/training/learnerships/countries/"
+echo "   GET  /api/v1/training/learnerships/cities/"
+echo ""
+echo "✅ Backend complete!"
+echo "✅ Models aligned with database!"
+echo ""
+echo "Next steps:"
+echo "1. Run Django migrations: cd backend && python manage.py makemigrations && python manage.py migrate"
+echo "2. Add API client method to: frontend/lib/src/core/api/api_client.dart"
+echo "3. Create remaining Dart files listed above"
+echo "4. Update routes in: frontend/lib/src/config/routes.dart"
+echo "5. Test the implementation"

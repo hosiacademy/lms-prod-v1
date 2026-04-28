@@ -1,0 +1,138 @@
+================================================================================
+BIG BLUE BUTTON (BBB) - QUICK REFERENCE
+================================================================================
+
+ISSUE FIXED:
+✓ RenderFlex overflow (9.4 pixels) in bbb_session_viewer.dart line 372
+  - Wrapped Column in SingleChildScrollView
+  - Made content scrollable to prevent overflow
+
+================================================================================
+INSTRUCTOR DASHBOARD - BBB ACCESS
+================================================================================
+
+Menu: "BigBlueButton" (sidebar)
+  |
+  v
+Info Card: "BigBlueButton Integration"
+  - Features list
+  - [Open BBB Instructor Portal] button
+  |
+  v
+BBB Portal (Inline) - NO EXTERNAL NAVIGATION
+  - Full screen BBB interface
+  - Controls: refresh, fullscreen, settings, help
+  - [Back] button returns to info card
+
+URL: BBBService.generateInstructorPortalUrl(userName: 'Instructor Name')
+
+================================================================================
+LEARNER DASHBOARD - LIVE SESSIONS (NEW!)
+================================================================================
+
+Menu: "Live Sessions" (sidebar) [Badge: # of live sessions]
+  |
+  v
+Live Sessions Page
+  ├─ LIVE NOW Section (if any)
+  │   └─ [Red LIVE indicator] [Join Now] button
+  │
+  └─ Upcoming Sessions Section
+      └─ [Time countdown] [Schedule] button
+
+Click "Join Now" or "Schedule"
+  |
+  v
+BBB Session (Inline) - NO EXTERNAL NAVIGATION
+  - Full screen BBB interface
+  - Video, audio, chat, screen share
+  - [Back] button returns to sessions list
+
+URL: BBBService.generateStudentJoinUrl(sessionId: 'xxx', userName: 'Learner')
+
+================================================================================
+MOCK DATA (Testing)
+================================================================================
+
+Scheduled Sessions (3 total):
+1. AI Strategy Q&A Session       [LIVE NOW] - 28 attendees
+2. AI+ Developer Live Session    [in 2h]    - 45 attendees
+3. Python Advanced Workshop      [in 1d 3h] - 32 attendees
+
+================================================================================
+FILES CHANGED
+================================================================================
+
+1. bbb_session_viewer.dart (instructor/bbb_session_viewer.dart)
+   - Fixed: Overflow issue
+   - Added: SingleChildScrollView
+
+2. learner_dashboard.dart (dashboard/learner_dashboard.dart)
+   - Added: BBB imports (BBBService, BBBSessionViewer)
+   - Added: Live Sessions menu item
+   - Added: _showBBBInline state
+   - Added: _activeSession state
+   - Added: _scheduledSessions mock data
+   - Added: _buildLiveSessions() method
+   - Added: _buildSessionCard() method
+   - Added: Inline BBB viewer handling
+
+3. bbb_service.dart (core/services/bbb_service.dart)
+   - Added: generateStudentJoinUrl() method
+
+================================================================================
+KEY FEATURES
+================================================================================
+
+✓ No external navigation - stays in portal
+✓ Inline BBB viewing for both roles
+✓ Live session indicators (red badge)
+✓ Time countdown for upcoming sessions
+✓ Session details: instructor, course, duration, attendees
+✓ Proper back navigation
+✓ Theme-compliant colors
+
+================================================================================
+NAVIGATION FLOW
+================================================================================
+
+INSTRUCTOR:
+Dashboard → BigBlueButton menu → Info card → [Open Portal] → BBB (inline) → [Back]
+
+LEARNER:
+Dashboard → Live Sessions menu → Sessions list → [Join] → BBB (inline) → [Back]
+
+================================================================================
+BACKEND TODO (Production)
+================================================================================
+
+Required API Endpoints:
+- GET  /api/bbb/sessions/scheduled    (list scheduled sessions)
+- POST /api/bbb/sessions/join         (generate secure join URL)
+- GET  /api/bbb/sessions/live         (list live sessions)
+- WS   /ws/bbb/sessions               (real-time updates)
+
+Replace mock data in learner_dashboard.dart with API calls
+
+================================================================================
+TESTING
+================================================================================
+
+Instructor:
+1. Login as instructor
+2. Click "BigBlueButton" in sidebar
+3. Click "Open BBB Instructor Portal"
+4. Verify BBB loads inline (no new tab/window)
+5. Click back arrow
+6. Verify returns to info card
+
+Learner:
+1. Login as learner/student
+2. Click "Live Sessions" in sidebar (see badge with "1")
+3. See 3 sessions (1 live, 2 upcoming)
+4. Click "Join Now" on live session
+5. Verify BBB loads inline (no new tab/window)
+6. Click back arrow
+7. Verify returns to sessions list
+
+================================================================================

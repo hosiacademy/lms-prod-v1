@@ -1,0 +1,37 @@
+Total users in database: 120
+Users with last name 'Masukume': 0
+Users with first name 'Richard': 0
+Users with name containing 'masukume': 1
+Users with name containing 'richard': 0
+
+All users (up to 30, newest first):
+  ID=122, name='Sam Mokoena', email=sam.mokoena@hosiacademy.co.za, role=Instructor, active=True, joined=2026-02-12 04:06:48.622808+00:00
+  ID=121, name='Rechard Masukume', email=rechard.masukume@hosiacademy.co.za, role=Instructor, active=True, joined=2026-02-12 04:06:48.342201+00:00
+  ID=120, name='Takawira Mazando', email=takawira.mazando@hosiacademy.co.za, role=Instructor, active=True, joined=2026-02-12 04:01:01.717606+00:00
+  ID=119, name='None', email=executive.admin@hosi.academy, role=Student, active=True, joined=2026-02-04 08:50:09.083060+00:00
+  ID=118, name='None', email=hr.admin@hosi.academy, role=Student, active=True, joined=2026-02-04 08:50:08.835965+00:00
+  ID=117, name='None', email=payment.admin@hosi.academy, role=Student, active=True, joined=2026-02-04 08:50:08.564873+00:00
+  ID=115, name='Karabo Mbatha', email=karabo.mbatha.22.10@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:54.818045+00:00
+  ID=114, name='Naledi Mbatha', email=naledi.mbatha.22.9@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:54.406523+00:00
+  ID=113, name='Mandla Ndlovu', email=mandla.ndlovu.22.8@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:54.032817+00:00
+  ID=112, name='Tumi Mokoena', email=tumi.mokoena.22.7@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:53.661937+00:00
+  ID=111, name='Thandiwe Khumalo', email=thandiwe.khumalo.22.6@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:53.309438+00:00
+  ID=110, name='Simphiwe Molefe', email=simphiwe.molefe.22.5@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:52.905133+00:00
+  ID=109, name='Tumi Khumalo', email=tumi.khumalo.22.4@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:52.478609+00:00
+  ID=108, name='Tumi Naidoo', email=tumi.naidoo.22.3@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:52.120100+00:00
+  ID=107, name='Refilwe Nkosi', email=refilwe.nkosi.22.2@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:51.688348+00:00
+  ID=106, name='Ntokozo Radebe', email=ntokozo.radebe.22.1@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:51.277700+00:00
+  ID=105, name='Simphiwe Nkosi', email=simphiwe.nkosi.21.10@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:50.927970+00:00
+  ID=104, name='Simphiwe Dlamini', email=simphiwe.dlamini.21.9@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:50.541678+00:00
+  ID=103, name='Lerato Ndlovu', email=lerato.ndlovu.21.8@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:50.189083+00:00
+  ID=102, name='Simphiwe Pillay', email=simphiwe.pillay.21.7@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:49.825280+00:00
+  ID=101, name='Katlego Reddy', email=katlego.reddy.21.6@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:49.465614+00:00
+  ID=100, name='Ntokozo Naidoo', email=ntokozo.naidoo.21.5@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:49.136643+00:00
+  ID=99, name='Zanele Cele', email=zanele.cele.21.4@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:48.776444+00:00
+  ID=98, name='Lindiwe Mthembu', email=lindiwe.mthembu.21.3@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:48.420792+00:00
+  ID=97, name='Mandla Naidoo', email=mandla.naidoo.21.2@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:48.036271+00:00
+  ID=96, name='Simphiwe Mthembu', email=simphiwe.mthembu.21.1@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:47.629196+00:00
+  ID=95, name='Simphiwe Mthembu', email=simphiwe.mthembu.20.10@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:47.248648+00:00
+  ID=94, name='Sello Radebe', email=sello.radebe.20.9@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:46.895970+00:00
+  ID=93, name='Nomsa Nkosi', email=nomsa.nkosi.20.8@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:46.482940+00:00
+  ID=92, name='Refilwe Dlamini', email=refilwe.dlamini.20.7@learner.hosiacademy.co.za, role=Student, active=True, joined=2026-01-28 10:22:46.037975+00:00

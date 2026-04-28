@@ -1,0 +1,30 @@
+# Stage 1: Build the Flutter application
+FROM debian:bookworm-slim AS build-env
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl git wget unzip gdb libstdc++6 libglu1-mesa \
+    fonts-droid-fallback lib32stdc++6 python3 xz-utils ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+RUN wget -q https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.27.0-stable.tar.xz && \
+    tar xf flutter_linux_3.27.0-stable.tar.xz -C /usr/local/ && \
+    rm flutter_linux_3.27.0-stable.tar.xz && \
+    git config --global --add safe.directory '*'
+
+RUN ls -ld /usr/local/flutter && git config --global --list
+
+ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
+
+RUN flutter --version && yes | flutter doctor --android-licenses || true
+
+WORKDIR /app
+
+COPY pubspec.yaml pubspec.lock* ./
+RUN flutter pub get
+COPY . .
+RUN flutter build web --release --web-renderer html --no-tree-shake-icons --source-maps
+
+FROM nginx:alpine
+COPY --from=build-env /app/build/web /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

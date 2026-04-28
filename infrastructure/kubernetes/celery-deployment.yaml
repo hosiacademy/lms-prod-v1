@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: lms-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      containers:
+      - name: celery-worker
+        image: ghcr.io/YOUR_ORG/lms-backend:latest
+        command: ['celery', '-A', 'lms_project', 'worker', '--loglevel=info', '--concurrency=4']
+        envFrom:
+        - configMapRef:
+            name: lms-config
+        - secretRef:
+            name: lms-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: media-files
+          mountPath: /app/media
+      volumes:
+      - name: media-files
+        persistentVolumeClaim:
+          claimName: media-pvc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  namespace: lms-production
+spec:
+  replicas: 1  # Only one beat scheduler
+  selector:
+    matchLabels:
+      app: celery-beat
+  template:
+    metadata:
+      labels:
+        app: celery-beat
+    spec:
+      containers:
+      - name: celery-beat
+        image: ghcr.io/YOUR_ORG/lms-backend:latest
+        command: ['celery', '-A', 'lms_project', 'beat', '--loglevel=info']
+        envFrom:
+        - configMapRef:
+            name: lms-config
+        - secretRef:
+            name: lms-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: celery-worker-hpa
+  namespace: lms-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: celery-worker
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

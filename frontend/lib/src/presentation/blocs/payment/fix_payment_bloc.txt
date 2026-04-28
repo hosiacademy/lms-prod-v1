@@ -1,0 +1,31 @@
+﻿// Update the _onCreateOrder method in payment_bloc.dart
+// Replace lines around line 241
+
+Future<void> _onCreateOrder(
+  CreateOrder event,
+  Emitter<PaymentState> emit,
+) async {
+  emit(state.copyWith(isLoading: true));
+  
+  try {
+    final order = await paymentService.createOrder(
+      userId: event.userId,
+      userEmail: event.userEmail,
+      userName: event.userName,
+      courseItems: event.courseItems,
+      paymentMethod: event.paymentMethod,
+      userPhone: event.userPhone,
+      userCountry: event.userCountry, // This parameter exists in the service
+    );
+    
+    emit(state.copyWith(
+      isLoading: false,
+      currentOrder: order,
+    ));
+  } catch (e) {
+    emit(state.copyWith(
+      isLoading: false,
+      error: 'Failed to create order: $e',
+    ));
+  }
+}

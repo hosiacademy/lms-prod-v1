@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hosi Academy AI Masterclass Invitation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 650px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .header .subtitle {
+            font-size: 18px;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+        .aicerts-badge {
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin-top: 15px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .welcome-box {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 5px solid #3b82f6;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        .welcome-box h2 {
+            color: #1e3a8a;
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+        .welcome-box p {
+            color: #1e40af;
+            margin: 10px 0;
+        }
+        .details-section {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .details-section h3 {
+            color: #1e3a8a;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .detail-item {
+            display: flex;
+            margin: 15px 0;
+            align-items: flex-start;
+        }
+        .detail-icon {
+            font-size: 20px;
+            margin-right: 15px;
+            min-width: 30px;
+        }
+        .detail-content {
+            flex: 1;
+        }
+        .detail-label {
+            font-weight: 700;
+            color: #64748b;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .detail-value {
+            color: #1e293b;
+            font-size: 16px;
+            font-weight: 500;
+            margin-top: 3px;
+        }
+        .expectations-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .expectations-section h3 {
+            color: #92400e;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .expectation-item {
+            display: flex;
+            margin: 15px 0;
+            align-items: flex-start;
+        }
+        .expectation-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+        .expectation-content h4 {
+            color: #78350f;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .expectation-content p {
+            color: #92400e;
+            font-size: 14px;
+        }
+        .cta-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            text-decoration: none;
+            padding: 18px 50px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 16px;
+            margin: 10px 5px;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+            transition: transform 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+        }
+        .cta-button.secondary {
+            background: #ffffff;
+            color: #3b82f6;
+            border: 2px solid #3b82f6;
+        }
+        .footer {
+            background: #f1f5f9;
+            padding: 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer-logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        .footer-tagline {
+            font-size: 14px;
+            color: #3b82f6;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+        .footer-contact {
+            margin: 20px 0;
+        }
+        .footer-contact a {
+            color: #3b82f6;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .sponsor-note {
+            background: #ecfdf5;
+            border: 1px solid #10b981;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .sponsor-note p {
+            color: #065f46;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎓 Hosi Academy</h1>
+            <p class="subtitle">AI Masterclass Series</p>
+            <div class="aicerts-badge">
+                🏆 Certified by AICerts®
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Welcome Section -->
+            <div class="welcome-box">
+                <h2>Welcome to the Hosi Academy AI Masterclass!</h2>
+                <p><strong>Date:</strong> {{ masterclass_date }}</p>
+                
+                <p>Dear <strong>{{ delegate_name }}</strong>,</p>
+                
+                <p>
+                    Welcome to the <strong>{{ masterclass_title }}</strong> at Hosi Academy! 
+                    We are thrilled to have you join us for this intensive training experience, 
+                    sponsored by your employer, <strong>{{ client_company_name }}</strong>.
+                </p>
+                
+                <p>
+                    Over the next <strong>{{ duration_days }} days</strong>, you will be immersed 
+                    in a curriculum designed to provide you with practical, actionable AI skills 
+                    that you can apply directly to your role. This masterclass is certified by 
+                    our global partner, <strong>AICerts®</strong>, ensuring you receive a 
+                    world-class, industry-recognized credential.
+                </p>
+            </div>
+
+            <!-- Masterclass Details -->
+            <div class="details-section">
+                <h3>📋 Your Masterclass Details</h3>
+                
+                <div class="detail-item">
+                    <span class="detail-icon">📚</span>
+                    <div class="detail-content">
+                        <div class="detail-label">Masterclass</div>
+                        <div class="detail-value">{{ masterclass_title }}</div>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-icon">📅</span>
+                    <div class="detail-content">
+                        <div class="detail-label">Dates</div>
+                        <div class="detail-value">{{ start_date }} to {{ end_date }}</div>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-icon">💻</span>
+                    <div class="detail-content">
+                        <div class="detail-label">Delivery Mode</div>
+                        <div class="detail-value">{{ delivery_mode }}</div>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-icon">📍</span>
+                    <div class="detail-content">
+                        <div class="detail-label">Venue / Platform</div>
+                        <div class="detail-value">{{ venue_platform }}</div>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-icon">👨‍🏫</span>
+                    <div class="detail-content">
+                        <div class="detail-label">Instructor</div>
+                        <div class="detail-value">{{ instructor_name }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- What to Expect -->
+            <div class="expectations-section">
+                <h3>🌟 What to Expect</h3>
+                
+                <div class="expectation-item">
+                    <span class="expectation-icon">🎯</span>
+                    <div class="expectation-content">
+                        <h4>Expert Instruction</h4>
+                        <p>Learn from certified instructors with deep industry experience.</p>
+                    </div>
+                </div>
+                
+                <div class="expectation-item">
+                    <span class="expectation-icon">🔧</span>
+                    <div class="expectation-content">
+                        <h4>Hands-On Learning</h4>
+                        <p>Engage in practical exercises, case studies, and real-world simulations.</p>
+                    </div>
+                </div>
+                
+                <div class="expectation-item">
+                    <span class="expectation-icon">🤝</span>
+                    <div class="expectation-content">
+                        <h4>Networking</h4>
+                        <p>Connect with peers from across your industry and expand your professional network.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sponsor Note -->
+            <div class="sponsor-note">
+                <p>
+                    💼 <strong>Sponsored by {{ client_company_name }}</strong><br>
+                    This masterclass has been fully sponsored by your employer as part of 
+                    your professional development journey.
+                </p>
+            </div>
+
+            <!-- Call to Action -->
+            <div class="cta-section">
+                <a href="{{ portal_url }}" class="cta-button">
+                    🚀 Access Your Learning Portal
+                </a>
+                <br>
+                <a href="{{ schedule_url }}" class="cta-button secondary">
+                    📅 View Detailed Schedule
+                </a>
+            </div>
+
+            <!-- Additional Info -->
+            <div style="background: #eff6ff; border: 1px solid #3b82f6; border-radius: 6px; padding: 20px; margin-top: 20px;">
+                <p style="color: #1e40af; margin-bottom: 10px;">
+                    📎 <strong>Enclosed Documents:</strong>
+                </p>
+                <p style="color: #1e40af;">
+                    You will find the detailed schedule and the official curriculum for your 
+                    masterclass attached. Please review them before the start date.
+                </p>
+            </div>
+
+            <!-- Closing -->
+            <div style="margin-top: 30px; text-align: center;">
+                <p style="color: #1e3a8a; font-size: 16px; margin-bottom: 10px;">
+                    We look forward to hosting you and helping you on your AI learning journey.
+                </p>
+                <p style="color: #64748b; font-size: 16px;">
+                    Sincerely,<br>
+                    <strong style="color: #1e3a8a;">The Hosi Academy Team</strong>
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-logo">Hosi Academy</div>
+            <div class="footer-tagline">The Future of Learning</div>
+            
+            <div class="footer-contact">
+                📧 <a href="mailto:admissions@hosiacademy.co.za">admissions@hosiacademy.co.za</a><br>
+                🌐 <a href="http://154.66.211.3:7000">http://154.66.211.3:7000</a>
+            </div>
+            
+            <p style="margin-top: 20px; font-size: 12px; color: #94a3b8;">
+                © 2026 Hosi Academy. All rights reserved.<br>
+                AICerts® is a registered trademark of AI Certification Institute.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

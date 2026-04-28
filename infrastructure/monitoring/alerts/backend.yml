@@ -1,0 +1,140 @@
+# Prometheus Alert Rules for LMS Backend
+
+groups:
+  - name: backend_alerts
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(django_http_responses_total_by_status_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # Slow response time
+      - alert: SlowResponseTime
+        expr: histogram_quantile(0.95, django_http_request_duration_seconds_bucket) > 1
+        for: 10m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "Slow response time (p95)"
+          description: "95th percentile response time is {{ $value }}s (threshold: 1s)"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / (1024*1024*1024) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}GB"
+
+      # Database connection pool exhaustion
+      - alert: DatabaseConnectionPoolExhaustion
+        expr: django_db_connections_total >= 80
+        for: 5m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection pool near exhaustion"
+          description: "Active connections: {{ $value }}"
+
+      # Celery queue buildup
+      - alert: CeleryQueueBuildup
+        expr: celery_queue_length > 1000
+        for: 15m
+        labels:
+          severity: warning
+          component: celery
+        annotations:
+          summary: "Celery queue building up"
+          description: "Queue length: {{ $value }} tasks"
+
+      # Payment processing failures
+      - alert: PaymentProcessingFailures
+        expr: rate(payment_transactions_total{status="failed"}[10m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: payments
+        annotations:
+          summary: "High payment failure rate"
+          description: "Payment failure rate: {{ $value | humanizePercentage }}"
+
+      # Backend pods down
+      - alert: BackendPodsDown
+        expr: kube_deployment_status_replicas_available{deployment="backend"} < 2
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Backend pods below minimum"
+          description: "Available replicas: {{ $value }} (minimum: 2)"
+
+      # Database down
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "Database has been down for more than 1 minute"
+
+      # Redis down
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis has been down for more than 1 minute"
+
+  - name: business_alerts
+    interval: 60s
+    rules:
+      # Low enrollment rate
+      - alert: LowEnrollmentRate
+        expr: rate(enrollment_total[1h]) < 1
+        for: 2h
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "Low enrollment rate"
+          description: "Enrollment rate: {{ $value }}/hour (threshold: 1/hour)"
+
+      # Payment provider issues
+      - alert: PaymentProviderDown
+        expr: rate(payment_provider_errors_total[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: critical
+          component: payments
+        annotations:
+          summary: "Payment provider experiencing issues"
+          description: "Error rate: {{ $value | humanizePercentage }}"

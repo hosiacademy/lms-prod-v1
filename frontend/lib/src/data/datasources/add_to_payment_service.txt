@@ -1,0 +1,34 @@
+﻿// Add this method to the PaymentService class in payment_service.dart
+
+// Get available payment methods for a country
+Future<List<PaymentMethod>> getAvailablePaymentMethods(String countryCode) async {
+  try {
+    // For now, return basic methods based on country
+    // In production, this would call your backend API
+    
+    final basicMethods = [
+      PaymentMethod.card,
+      PaymentMethod.paypal,
+      PaymentMethod.wallet,
+    ];
+    
+    // Add country-specific methods
+    switch (countryCode.toUpperCase()) {
+      case 'KE': // Kenya
+        return [...basicMethods, PaymentMethod.mpesa, PaymentMethod.airtelMoney];
+      case 'NG': // Nigeria
+        return [...basicMethods, PaymentMethod.paystack, PaymentMethod.flutterwave];
+      case 'GH': // Ghana
+        return [...basicMethods, PaymentMethod.mtnMobileMoney, PaymentMethod.airtelMoney];
+      case 'ZA': // South Africa
+        return [...basicMethods, PaymentMethod.snapscan, PaymentMethod.payfast];
+      case 'TZ': // Tanzania
+        return [...basicMethods, PaymentMethod.mpesa, PaymentMethod.tigoPesa];
+      default:
+        return basicMethods;
+    }
+  } catch (e) {
+    debugPrint('Get payment methods error: $e');
+    return [PaymentMethod.card, PaymentMethod.paypal];
+  }
+}

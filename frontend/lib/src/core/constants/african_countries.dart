@@ -1,0 +1,40 @@
+// List of African countries for mobile money support
+const List<Map<String, String>> africanCountries = [
+  {'name': 'South Africa', 'code': 'ZA', 'currency': 'ZAR'},
+  {'name': 'Nigeria', 'code': 'NG', 'currency': 'NGN'},
+  {'name': 'Kenya', 'code': 'KE', 'currency': 'KES'},
+  {'name': 'Ghana', 'code': 'GH', 'currency': 'GHS'},
+  {'name': 'Uganda', 'code': 'UG', 'currency': 'UGX'},
+  {'name': 'Tanzania', 'code': 'TZ', 'currency': 'TZS'},
+  {'name': 'Zambia', 'code': 'ZM', 'currency': 'ZMW'},
+  {'name': 'Zimbabwe', 'code': 'ZW', 'currency': 'ZWL'},
+  {'name': 'Botswana', 'code': 'BW', 'currency': 'BWP'},
+  {'name': 'Namibia', 'code': 'NA', 'currency': 'NAD'},
+  {'name': 'Mozambique', 'code': 'MZ', 'currency': 'MZN'},
+  {'name': 'Ethiopia', 'code': 'ET', 'currency': 'ETB'},
+  {'name': 'Egypt', 'code': 'EG', 'currency': 'EGP'},
+  {'name': 'Morocco', 'code': 'MA', 'currency': 'MAD'},
+  {'name': 'Algeria', 'code': 'DZ', 'currency': 'DZD'},
+  {'name': 'Tunisia', 'code': 'TN', 'currency': 'TND'},
+  {'name': 'Senegal', 'code': 'SN', 'currency': 'XOF'},
+  {'name': 'Côte d\'Ivoire', 'code': 'CI', 'currency': 'XOF'},
+  {'name': 'Cameroon', 'code': 'CM', 'currency': 'XAF'},
+  {'name': 'Democratic Republic of the Congo', 'code': 'CD', 'currency': 'CDF'},
+  {'name': 'Angola', 'code': 'AO', 'currency': 'AOA'},
+  {'name': 'Sudan', 'code': 'SD', 'currency': 'SDG'},
+  {'name': 'South Sudan', 'code': 'SS', 'currency': 'SSP'},
+  {'name': 'Rwanda', 'code': 'RW', 'currency': 'RWF'},
+  {'name': 'Burundi', 'code': 'BI', 'currency': 'BIF'},
+];
+
+// Mobile money providers by country
+const Map<String, List<String>> mobileMoneyProviders = {
+  'KE': ['M-Pesa', 'Airtel Money'],
+  'GH': ['MTN Mobile Money', 'Vodafone Cash', 'AirtelTigo Cash'],
+  'NG': ['Paga', 'Flutterwave', 'Paystack'],
+  'ZA': ['FNB eWallet', 'Standard Bank Instant Money'],
+  'UG': ['MTN Mobile Money', 'Airtel Money'],
+  'TZ': ['M-Pesa', 'Tigo Pesa', 'Airtel Money'],
+  'ZM': ['MTN Mobile Money', 'Airtel Money'],
+  'ZW': ['EcoCash', 'OneMoney'],
+};

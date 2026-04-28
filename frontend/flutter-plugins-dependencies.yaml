@@ -1,0 +1,39 @@
+# .flutter-plugins-dependencies
+flutter:
+  plugins:
+    # Core plugins
+    - package_info_plus
+    - shared_preferences
+    - path_provider
+    - connectivity_plus
+    
+    # Authentication plugins
+    - firebase_core
+    - firebase_auth
+    - google_sign_in
+    
+    # Media plugins
+    - image_picker
+    - video_player
+    
+    # Payment plugins
+    - pay
+    - flutterwave
+    
+    # Notification plugins
+    - firebase_messaging
+    - flutter_local_notifications
+    
+    # Location plugins
+    - geolocator
+    - google_maps_flutter
+    
+    # File plugins
+    - file_picker
+    - open_file
+    
+    # Secure storage
+    - flutter_secure_storage
+    
+    # Biometric storage
+    - biometric_storage
