@@ -4,11 +4,11 @@
 /// AICERTS Moodle REST API, and other environment-specific settings.
 ///
 /// Usage:
-/// `dart
+/// ```dart
 /// final apiUrl = Environment.apiBaseUrl;
 /// final aicertsUrl = Environment.aicertsBaseUrl;
 /// final wsToken = Environment.aicertsWsToken;
-/// `
+/// ```
 ///
 /// Configuration Priority:
 /// 1. Environment variables (via --dart-define)
@@ -16,6 +16,7 @@
 
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html show window;
+
 class Environment {
   // Private constructor to prevent instantiation
   Environment._();
@@ -43,41 +44,53 @@ class Environment {
   /// Base API URL for your own backend (without trailing slash).
   /// Cached after first access so the origin lookup + log runs once only.
   static String? _cachedApiBaseUrl;
+  
   static String get apiBaseUrl {
     if (_cachedApiBaseUrl != null) return _cachedApiBaseUrl!;
 
     const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) {
       _cachedApiBaseUrl = envUrl;
+      print('🌐 API URL (from env): $_cachedApiBaseUrl');
       return _cachedApiBaseUrl!;
     }
 
     // On web, backend is served from the same origin via nginx proxy
     try {
       final origin = html.window.location.origin;
-      if (origin != null && origin.isNotEmpty) {
-        // IMPROVED: Handle local dev ports for API
-        if (origin.contains('localhost:3000') || origin.contains('localhost:5000') || origin.contains('localhost:7005') || origin.contains('127.0.0.1:3000')) {
-          _cachedApiBaseUrl = 'http://127.0.0.1:7001';
-          print('?? API base URL (Dev Override): ');
+      if (origin.isNotEmpty) {
+        // UNIVERSAL FIX: If on port 7000 (frontend), use port 7001 for API
+        if (origin.contains(':7000')) {
+          _cachedApiBaseUrl = origin.replaceFirst(':7000', ':7001');
+          print('🌐 API URL (auto-corrected from port 7000 to 7001): $_cachedApiBaseUrl');
+          return _cachedApiBaseUrl!;
+        }
+        
+        // Handle localhost development
+        if (origin.contains('localhost') || origin.contains('127.0.0.1')) {
+          _cachedApiBaseUrl = 'http://localhost:7001';
+          print('🌐 API URL (localhost): $_cachedApiBaseUrl');
           return _cachedApiBaseUrl!;
         }
 
-        print('?? API base URL: ');
+        // Production: use origin as-is (will work on any domain with proper nginx proxy)
+        print('🌐 API URL (from origin): $origin');
         _cachedApiBaseUrl = origin;
         return _cachedApiBaseUrl!;
       }
     } catch (e) {
-      print('?? Failed to get window.location.origin: ');
+      print('❌ Failed to get window.location.origin: $e');
     }
 
+    // Fallback values
     if (isProduction) {
-      _cachedApiBaseUrl = 'http://154.66.211.3:7001';
+      _cachedApiBaseUrl = 'https://hosiacademy.africa';
     } else if (isStaging) {
       _cachedApiBaseUrl = 'https://staging.hosiacademy.africa';
     } else {
-      _cachedApiBaseUrl = 'http://154.66.211.3:7001';
+      _cachedApiBaseUrl = 'http://localhost:7001';
     }
+    print('🌐 API URL (fallback): $_cachedApiBaseUrl');
     return _cachedApiBaseUrl!;
   }
 
@@ -142,33 +155,39 @@ class Environment {
     // This ensures WebSocket connections use the same protocol as the frontend
     try {
       final origin = html.window.location.origin;
-      if (origin != null && origin.isNotEmpty) {
-        // IMPROVED: Handle local dev ports for Socket.IO
-        if (origin.contains('localhost:3000') || origin.contains('localhost:5000')) {
-          return 'http://localhost:8001';
+      if (origin.isNotEmpty) {
+        // UNIVERSAL FIX: If on port 7000 (frontend), use port 7002 for Socket.IO
+        if (origin.contains(':7000')) {
+          final corrected = origin.replaceFirst(':7000', ':7002');
+          print('🔌 Socket URL (auto-corrected): $corrected');
+          return corrected;
         }
-        if (origin.contains('localhost:7000')) {
-          return 'http://localhost:8001';
+        
+        // Handle localhost
+        if (origin.contains('localhost') || origin.contains('127.0.0.1')) {
+          print('🔌 Socket URL (localhost): http://localhost:7002');
+          return 'http://localhost:7002';
         }
-        print('?? Using origin for Socket URL: ');
-        return origin; // Same origin, nginx proxy handles /socket.io/
+        
+        print('🔌 Socket URL (from origin): $origin');
+        return origin;
       }
     } catch (e) {
-      print('?? Failed to get window.location.origin for Socket: ');
+      print('❌ Failed to get window.location.origin for Socket: $e');
     }
 
-    // Fallback based on environment - use empty string to force visible failure
+    // Fallback based on environment
     if (isProduction) {
-      print('?? Production: No origin detected for Socket, WebSocket may fail');
-      return ''; // Force visible failure rather than wrong IP
+      print('🔌 Socket URL (production fallback): https://hosiacademy.africa');
+      return 'https://hosiacademy.africa';
     } else if (isStaging) {
-      print('?? Staging: No origin detected for Socket, WebSocket may fail');
-      return '';
+      print('🔌 Socket URL (staging fallback): https://staging.hosiacademy.africa');
+      return 'https://staging.hosiacademy.africa';
     }
 
     // Development fallback
-    print('?? Development: Using production fallback for Socket');
-    return 'http://154.66.211.3:8001';
+    print('🔌 Socket URL (development fallback): http://localhost:7002');
+    return 'http://localhost:7002';
   }
 
   static int get socketTimeout {
@@ -195,11 +214,11 @@ class Environment {
     if (envUrl.isNotEmpty) return envUrl;
 
     if (isProduction) {
-      return 'https://hosi.africa';
+      return 'https://hosiacademy.africa';
     } else if (isStaging) {
-      return 'https://staging.hosi.africa';
+      return 'https://staging.hosiacademy.africa';
     } else {
-      return 'http://localhost:5000';
+      return 'http://localhost:7000';
     }
   }
 
@@ -243,7 +262,7 @@ class Environment {
 
   static String getApiUrl(String path) {
     final cleanPath = path.startsWith('/') ? path : '/';
-    return '';
+    return '$apiBaseUrl$cleanPath';
   }
 
   static String getAicertsUrl(String function,
@@ -259,11 +278,10 @@ class Environment {
     }
 
     final query = params.entries
-        .map((e) =>
-            '=')
+        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}')
         .join('&');
 
-    return '/server.php?';
+    return '$aicertsBaseUrl?$query';
   }
 
   static void printConfig() {
@@ -272,18 +290,17 @@ class Environment {
     print('===========================================');
     print('Environment Configuration');
     print('===========================================');
-    print('Environment:          ');
-    print('API Base URL:         ');
-    print('AICERTS Base URL:     ');
-    print(
-        'AICERTS WS Token:     ... (hidden)');
-    print('AICERTS Partner ID:   ');
-    print('Socket URL:           ');
-    print('Frontend URL:         ');
-    print('API Timeout:          s');
-    print('Socket Timeout:       ms');
-    print('Debug Logs:           ');
-    print('App Version:           ()');
+    print('Environment:          $environment');
+    print('API Base URL:         $apiBaseUrl');
+    print('AICERTS Base URL:     $aicertsBaseUrl');
+    print('AICERTS WS Token:     ... (hidden)');
+    print('AICERTS Partner ID:   $aicertsPartnerId');
+    print('Socket URL:           $socketUrl');
+    print('Frontend URL:         $frontendBaseUrl');
+    print('API Timeout:          ${apiTimeout}s');
+    print('Socket Timeout:       ${socketTimeout}ms');
+    print('Debug Logs:           $enableDebugLogs');
+    print('App Version:          $appVersion ($buildNumber)');
     print('===========================================');
   }
 }
