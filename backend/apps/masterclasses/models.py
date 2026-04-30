@@ -1,4 +1,5 @@
-﻿# apps/masterclasses/models.py
+# apps/masterclasses/models.py
+from django.conf import settings
 from decimal import Decimal
 from django.db import models
 from django.utils import timezone
@@ -272,3 +273,70 @@ class Masterclass(models.Model):
         """Check if masterclass is currently ongoing"""
         today = timezone.now().date()
         return self.start_date <= today <= self.end_date
+
+
+class MasterclassEnrollment(models.Model):
+    """Enrollment for Hosi Academy Masterclasses"""
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('enrolled', 'Enrolled'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('refunded', 'Refunded'),
+        ('failed', 'Failed'),
+    ]
+    
+    ATTENDANCE_CHOICES = [
+        ('physical', 'Physical (On-site)'),
+        ('online', 'Online (Virtual)'),
+    ]
+
+    masterclass = models.ForeignKey(
+        Masterclass, 
+        on_delete=models.CASCADE, 
+        related_name='enrollments'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='masterclass_enrollments'
+    )
+    
+    payment_transaction = models.ForeignKey(
+        'payments.PaymentTransaction', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='masterclass_enrollments'
+    )
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    attendance_type = models.CharField(max_length=20, choices=ATTENDANCE_CHOICES, default='online')
+    
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=3, default='USD')
+    
+    metadata = models.JSONField(default=dict, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('masterclass', 'user')
+        verbose_name = "Masterclass Enrollment"
+        verbose_name_plural = "Masterclass Enrollments"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email if self.user else 'Guest'} - {self.masterclass.title}"
+
+    def get_enrolled_item(self):
+        """Mock for compatibility with generic enrollment services"""
+        return self.masterclass

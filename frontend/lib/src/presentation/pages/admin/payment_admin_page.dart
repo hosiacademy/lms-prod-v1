@@ -40,9 +40,14 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
   List<Map<String, dynamic>> _provisionalEnrollments = [];
   List<Map<String, dynamic>> _cashPayments = [];
   List<Map<String, dynamic>> _eftPayments = []; // EFT/Bank Transfer payments
+  List<Map<String, dynamic>> _gatewayTransactions = []; // Card/Digital payments
   List<Map<String, dynamic>> _verifiedEnrollments = [];
   List<Map<String, dynamic>> _rejectedEnrollments = [];
   Map<String, dynamic> _summaryStats = {};
+  
+  // Search
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   
   // Failed Provisioning Data
   List<Map<String, dynamic>> _failedProvisioning = [];
@@ -132,7 +137,7 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
       queryParams['end_date'] = DateFormat('yyyy-MM-dd').format(_endDate);
 
       final operationalData = await ApiClient.getOperationalAdminData(
-        searchQuery: null,
+        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
         queryParams: queryParams,
       );
 
@@ -155,6 +160,9 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
           operationalData['cash_payments'] ?? []
         );
         _eftPayments = eftPayments;
+        _gatewayTransactions = List<Map<String, dynamic>>.from(
+          operationalData['gateway_transactions'] ?? []
+        );
         _verifiedEnrollments = List<Map<String, dynamic>>.from(
           operationalData['verified_enrollments'] ?? []
         );
@@ -215,7 +223,7 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
     final isMobile = screenWidth < 768;
 
     return DefaultTabController(
-      length: 6,
+      length: 7,
       child: Scaffold(
         drawer: isMobile
             ? Drawer(
@@ -269,6 +277,7 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
                       children: [
                         _buildDashboardOverview(theme, colors),
                         _buildCashPaymentsView(theme, colors),
+                        _buildGatewayPaymentsView(theme, colors),
                         _buildVerificationView(theme, colors),
                         _buildEnrollmentsView(theme, colors),
                         _buildFailedProvisioningView(theme, colors),
@@ -294,6 +303,37 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
       ),
       child: Row(
         children: [
+          // Search Bar
+          Expanded(
+            flex: 3,
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search by Name, Email, or Reference...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty 
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                        _loadData();
+                      },
+                    )
+                  : null,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onSubmitted: (value) {
+                setState(() => _searchQuery = value);
+                _loadData();
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          
           // Country Filter
           if (_allowedCountries.length > 1) ...[
             Text(
@@ -455,6 +495,14 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
           ),
           Tab(
             icon: Badge(
+              label: Text('${_gatewayTransactions.length}'),
+              isLabelVisible: _gatewayTransactions.isNotEmpty,
+              child: const Icon(Icons.credit_card_rounded, size: 20),
+            ),
+            text: 'Card Payments',
+          ),
+          Tab(
+            icon: Badge(
               label: pendingCount > 0 ? Text('$pendingCount') : null,
               isLabelVisible: pendingCount > 0,
               child: const Icon(Icons.verified_user_rounded, size: 20),
@@ -582,6 +630,23 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
           // KPI Cards
           _buildKPICardsGrid(theme, colors),
           const SizedBox(height: 32),
+
+          // Charts Section
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: _buildPaymentDistributionChart(theme, colors),
+              ),
+              const SizedBox(width: 24),
+              Expanded(
+                flex: 1,
+                child: _buildOperationalSummary(theme, colors),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
           
           // Recent Activity
           _buildRecentActivitySection(theme, colors),
@@ -697,6 +762,121 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
               fontSize: 12,
               color: colors.onSurfaceVariant,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentDistributionChart(ThemeData theme, ColorScheme colors) {
+    final cashRevenue = _cashPayments.fold<double>(0, (sum, item) => sum + (item['amount'] ?? 0.0));
+    final eftRevenue = _eftPayments.fold<double>(0, (sum, item) => sum + (item['amount'] ?? 0.0));
+    final cardRevenue = _gatewayTransactions.fold<double>(0, (sum, item) => sum + (item['amount'] ?? 0.0));
+    final total = cashRevenue + eftRevenue + cardRevenue;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Revenue Distribution',
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 200,
+              child: total == 0 
+                ? const Center(child: Text('No revenue data for this period'))
+                : PieChart(
+                    PieChartData(
+                      sectionsSpace: 0,
+                      centerSpaceRadius: 40,
+                      sections: [
+                        PieChartSectionData(
+                          color: Colors.orange,
+                          value: cashRevenue,
+                          title: '${(cashRevenue / total * 100).toStringAsFixed(0)}%',
+                          radius: 50,
+                          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        PieChartSectionData(
+                          color: Colors.blue,
+                          value: eftRevenue,
+                          title: '${(eftRevenue / total * 100).toStringAsFixed(0)}%',
+                          radius: 50,
+                          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        PieChartSectionData(
+                          color: Colors.green,
+                          value: cardRevenue,
+                          title: '${(cardRevenue / total * 100).toStringAsFixed(0)}%',
+                          radius: 50,
+                          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildChartLegend('Cash', Colors.orange),
+                _buildChartLegend('EFT', Colors.blue),
+                _buildChartLegend('Card', Colors.green),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChartLegend(String label, Color color) {
+    return Row(
+      children: [
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _buildOperationalSummary(ThemeData theme, ColorScheme colors) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Operational Summary',
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            _buildSummaryRow('Pending Cash', '${_cashPayments.length}', Colors.orange),
+            _buildSummaryRow('Pending EFT', '${_eftPayments.length}', Colors.blue),
+            _buildSummaryRow('Card Payments', '${_gatewayTransactions.length}', Colors.green),
+            _buildSummaryRow('Verified Today', '${_verifiedEnrollments.where((e) => _isToday(e['verified_at'])).length}', Colors.green),
+            _buildSummaryRow('Failed Provisioning', '${_failedProvisioningSummary['pending_review'] ?? 0}', Colors.red),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey.shade600)),
+          Text(
+            value,
+            style: TextStyle(fontWeight: FontWeight.bold, color: color),
           ),
         ],
       ),
@@ -929,9 +1109,19 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
                         ],
                         if (payment['proof_of_payment_uploaded'] == true) ...[
                           const SizedBox(height: 4),
-                          Text(
-                            '✓ Proof of payment uploaded',
-                            style: TextStyle(fontSize: 11, color: colors.secondary),
+                          Row(
+                            children: [
+                              Text(
+                                '✓ Proof of payment uploaded',
+                                style: TextStyle(fontSize: 11, color: colors.secondary),
+                              ),
+                              const Spacer(),
+                              TextButton.icon(
+                                onPressed: () => _viewProofOfPayment(payment['reference'] ?? payment['reference_code']),
+                                icon: const Icon(Icons.image_search_rounded, size: 16),
+                                label: const Text('View Proof', style: TextStyle(fontSize: 11)),
+                              ),
+                            ],
                           ),
                         ],
                         if (payment['time_remaining'] != null) ...[
@@ -1059,8 +1249,178 @@ class _PaymentAdminPageState extends State<PaymentAdminPage> {
     }
   }
 
+  Future<void> _viewProofOfPayment(String reference) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Proof of Payment'),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 600,
+          height: 800,
+          child: Column(
+            children: [
+              Text('Reference: $reference', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      '${ApiClient.baseUrl}/api/v1/payments/eft/admin/pop/$reference/',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                            const SizedBox(height: 16),
+                            const Text('Could not load proof of payment image.'),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: () {
+                                // Fallback: open in browser
+                              },
+                              child: const Text('Try opening in browser'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(child: CircularProgressIndicator());
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.check),
+            label: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ──────────────────────────────────────────────────────────────────────────
-  // TAB 3: VERIFICATION QUEUE
+  // TAB 3: GATEWAY PAYMENTS (SmatPay, Card, etc.)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  Widget _buildGatewayPaymentsView(ThemeData theme, ColorScheme colors) {
+    if (_gatewayTransactions.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.credit_card_off_rounded, size: 80, color: colors.onSurfaceVariant),
+            const SizedBox(height: 16),
+            Text(
+              'No gateway transactions found',
+              style: theme.textTheme.titleLarge,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Gateway Transactions (Digital Payments)',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '${_gatewayTransactions.length} Total',
+                    style: TextStyle(color: colors.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            DataTable(
+              headingRowColor: WidgetStateProperty.all(colors.surfaceContainerHighest.withValues(alpha: 0.3)),
+              columns: const [
+                DataColumn(label: Text('Date')),
+                DataColumn(label: Text('Reference')),
+                DataColumn(label: Text('Learner')),
+                DataColumn(label: Text('Provider')),
+                DataColumn(label: Text('Amount (Local)')),
+                DataColumn(label: Text('Amount (USD)')),
+                DataColumn(label: Text('Status')),
+              ],
+              rows: _gatewayTransactions.map((tx) {
+                final date = DateTime.parse(tx['created_at'] ?? DateTime.now().toIso8601String());
+                final isSuccessful = tx['status'] == 'successful' || tx['status'] == 'completed';
+                
+                return DataRow(
+                  cells: [
+                    DataCell(Text(DateFormat('dd MMM HH:mm').format(date))),
+                    DataCell(Text(tx['reference'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataCell(Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(tx['learner_name'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(tx['email'] ?? '', style: TextStyle(fontSize: 10, color: colors.onSurfaceVariant)),
+                      ],
+                    )),
+                    DataCell(Text(tx['provider']?.toString().toUpperCase() ?? 'N/A')),
+                    DataCell(Text('${tx['currency'] ?? 'USD'} ${tx['amount']}')),
+                    DataCell(Text('USD ${tx['amount_usd']}', style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataCell(Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isSuccessful ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        tx['status']?.toString().toUpperCase() ?? 'UNKNOWN',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isSuccessful ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                    )),
+                  ],
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // TAB 4: VERIFICATION QUEUE
   // ──────────────────────────────────────────────────────────────────────────
 
   Widget _buildVerificationView(ThemeData theme, ColorScheme colors) {
@@ -2439,8 +2799,9 @@ class _CreateQuotationDialogState extends State<_CreateQuotationDialog> {
           const Text('Generate Quotation'),
         ],
       ),
-      content: SizedBox(
-        width: 600,
+      content: Container(
+        constraints: const BoxConstraints(maxWidth: 600),
+        width: MediaQuery.of(context).size.width * 0.9,
         child: _isLoadingTypes 
           ? const Center(child: CircularProgressIndicator())
           : Form(

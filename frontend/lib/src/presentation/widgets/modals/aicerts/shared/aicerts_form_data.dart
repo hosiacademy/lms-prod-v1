@@ -1,5 +1,5 @@
-// lib/src/presentation/widgets/modals/aicerts/shared/aicerts_form_data.dart
-
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import '../../../../../data/models/location.dart' as location_models;
 import '../../../../../core/utils/african_phone_validator.dart';
@@ -14,6 +14,8 @@ class AicertsLearnerFormData {
   String phoneIsoCode = 'ZA';
   String? formattedPhoneNumber;
   bool isPhoneValid = false;
+  bool emailVerified = false;
+  bool phoneVerified = true; // SMS OTP removed, default to true
 
   // Legal & identification
   final idNumberController = TextEditingController();
@@ -91,6 +93,8 @@ class AicertsLearnerFormData {
         return false;
       }
     }
+    
+    if (!emailVerified) return false;
 
     if (idNumberController.text.trim().isEmpty) return false;
     if (dobController.text.trim().isEmpty) return false;
@@ -111,7 +115,6 @@ class AicertsLearnerFormData {
     return {
       'first_name': firstNameController.text.trim(),
       'last_name': lastNameController.text.trim(),
-      'full_name': '${firstNameController.text.trim()} ${lastNameController.text.trim()}',
       'email': emailController.text.trim(),
       'phone': phoneController.text.trim(),
       'phone_iso_code': phoneIsoCode,
@@ -120,10 +123,9 @@ class AicertsLearnerFormData {
       'gender': selectedGender,
       'address': addressController.text.trim(),
       'postal_code': postalCodeController.text.trim(),
-      'city': cityController.text.trim(),
-      'country_id': selectedCountry?.id,
-      'state_id': selectedState?.id,
       'city_id': selectedCity?.id,
+      'state_id': selectedState?.id,
+      'country_id': selectedCountry?.id,
       'occupation': occupationController.text.trim(),
       'education_level': selectedEducationLevel,
       'institution': institutionController.text.trim(),
@@ -139,9 +141,64 @@ class AicertsLearnerFormData {
       'additional_notes': notesController.text.trim(),
       'terms_accepted': termsAccepted,
       'aicerts_platform_agreement': aicertsPlatformAgreement,
+      'email_verified': emailVerified,
     };
   }
+
+  /// Restore state from JSON
+  void fromJson(Map<String, dynamic> json) {
+    firstNameController.text = json['first_name'] ?? '';
+    lastNameController.text = json['last_name'] ?? '';
+    emailController.text = json['email'] ?? '';
+    phoneController.text = json['phone'] ?? '';
+    phoneIsoCode = json['phone_iso_code'] ?? 'ZA';
+    idNumberController.text = json['id_number'] ?? '';
+    dobController.text = json['date_of_birth'] ?? '';
+    selectedGender = json['gender'];
+    addressController.text = json['address'] ?? '';
+    postalCodeController.text = json['postal_code'] ?? '';
+    occupationController.text = json['occupation'] ?? '';
+    selectedEducationLevel = json['education_level'];
+    institutionController.text = json['institution'] ?? '';
+    selectedExperienceLevel = json['experience_level'];
+    selectedAiTools = List<String>.from(json['ai_tools_interested'] ?? []);
+    selectedStreamType = json['stream_type'];
+    selectedSpecialization = json['specialization'];
+    emergencyNameController.text = json['emergency_name'] ?? '';
+    emergencyPhoneController.text = json['emergency_phone'] ?? '';
+    selectedEmergencyRelationship = json['emergency_relationship'];
+    dietaryController.text = json['dietary_requirements'] ?? 'n/a';
+    accessibilityController.text = json['accessibility_requirements'] ?? 'n/a';
+    notesController.text = json['additional_notes'] ?? 'n/a';
+    termsAccepted = json['terms_accepted'] ?? false;
+    aicertsPlatformAgreement = json['aicerts_platform_agreement'] ?? false;
+    emailVerified = json['email_verified'] ?? false;
+  }
+
+  /// Save current form state to local storage
+  Future<void> saveToStorage(String key) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, jsonEncode(toJson()));
+    } catch (e) {
+      debugPrint('Error saving AICERTS learner data: $e');
+    }
+  }
+
+  /// Load form state from local storage
+  Future<void> loadFromStorage(String key) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString(key);
+      if (data != null) {
+        fromJson(jsonDecode(data));
+      }
+    } catch (e) {
+      debugPrint('Error loading AICERTS learner data: $e');
+    }
+  }
 }
+
 
 /// Corporate enrollment data for AICERTS courses
 class AicertsCorporateLearnerData {
@@ -160,6 +217,45 @@ class AicertsCorporateLearnerData {
   bool validate() {
     return firstNameController.text.trim().isNotEmpty && lastNameController.text.trim().isNotEmpty &&
            emailController.text.trim().isNotEmpty;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'first_name': firstNameController.text.trim(),
+      'last_name': lastNameController.text.trim(),
+      'email': emailController.text.trim(),
+      'role': selectedRole,
+      'department': selectedDepartment,
+    };
+  }
+
+  void fromJson(Map<String, dynamic> json) {
+    firstNameController.text = json['first_name'] ?? '';
+    lastNameController.text = json['last_name'] ?? '';
+    emailController.text = json['email'] ?? '';
+    selectedRole = json['role'];
+    selectedDepartment = json['department'];
+  }
+
+  Future<void> saveToStorage(String key) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, jsonEncode(toJson()));
+    } catch (e) {
+      debugPrint('Error saving AICERTS corporate data: $e');
+    }
+  }
+
+  Future<void> loadFromStorage(String key) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString(key);
+      if (data != null) {
+        fromJson(jsonDecode(data));
+      }
+    } catch (e) {
+      debugPrint('Error loading AICERTS corporate data: $e');
+    }
   }
 }
 

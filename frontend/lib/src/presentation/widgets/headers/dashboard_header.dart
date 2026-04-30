@@ -151,13 +151,27 @@ class _DashboardHeaderState extends State<DashboardHeader> {
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: screenWidth * 0.02,
-          vertical: 17, // Increased from 12 to 17 (5px more)
+        padding: EdgeInsets.only(
+          left: 2,
+          right: screenWidth * 0.02,
+          top: 17, // Increased from 12 to 17 (5px more)
+          bottom: 17,
         ),
         child: Row(
           children: [
-            // Hamburger Menu (mobile only)
+            // Logo Section - 2px from left margin (Primary positioning)
+            Padding(
+              padding: const EdgeInsets.only(left: 0), // Already has 2px from parent Padding
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: screenWidth < 768 ? 36 : 46,
+                fit: BoxFit.contain,
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            // Hamburger Menu (mobile only) - Now to the right of logo
             if (widget.showMenuButton) ...[
               Builder(
                 builder: (context) => IconButton(
@@ -175,10 +189,10 @@ class _DashboardHeaderState extends State<DashboardHeader> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
             ],
 
-            // Back Button (now supported)
+            // Back Button (now supported) - Now to the right of logo
             if (widget.showBackButton) ...[
               IconButton(
                 icon: Icon(
@@ -192,20 +206,10 @@ class _DashboardHeaderState extends State<DashboardHeader> {
                       colors.primaryContainer.withValues(alpha: 0.3),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
             ],
 
-            // Logo Section - 2px from left margin
-            Padding(
-              padding: const EdgeInsets.only(left: 2),
-              child: Image.asset(
-                'assets/images/logo.png',
-                height: screenWidth < 768 ? 36 : 46,
-                fit: BoxFit.contain,
-              ),
-            ),
-
-            SizedBox(width: horizontalSpacing), // fixed here
+            SizedBox(width: horizontalSpacing),
 
             // Welcome back message
             if (screenWidth > 600)
@@ -560,6 +564,7 @@ class _DashboardHeaderState extends State<DashboardHeader> {
                       ? Image.network(
                           widget.userImageUrl!,
                           fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
                           errorBuilder: (context, error, stackTrace) =>
                               _buildDefaultAvatar(colors),
                         )

@@ -48,16 +48,24 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
 
       final paymentStatus =
           verification['status']?.toString().toLowerCase() ?? '';
-      if (paymentStatus != 'success' && paymentStatus != 'successful') {
+      
+      // Check if this was a cash/provisional payment
+      _isProvisional = widget.metadata?['method'] == 'cash' ||
+          widget.metadata?['method'] == 'bank_transfer' ||
+          widget.metadata?['method'] == 'manual' ||
+          verification['provider'] == 'cash' ||
+          verification['provider'] == 'bank_transfer';
+
+      // Allow 'cash_pending' or 'pending' for provisional enrollments
+      final isAllowedStatus = paymentStatus == 'success' || 
+                             paymentStatus == 'successful' || 
+                             (_isProvisional && (paymentStatus == 'cash_pending' || paymentStatus == 'pending'));
+
+      if (!isAllowedStatus) {
         throw Exception('Payment not confirmed: $paymentStatus');
       }
 
-      // Step 2: Check if this was a cash/provisional payment
-      _isProvisional = widget.metadata?['method'] == 'cash' ||
-          widget.metadata?['method'] == 'bank_transfer' ||
-          widget.metadata?['method'] == 'manual';
-
-      // Step 3: Finalize enrollment in YOUR database
+      // Step 2: Finalize enrollment in YOUR database
       final result = await ApiClient.finalizeEnrollment(
         reference: widget.reference,
         programId: widget.programId,

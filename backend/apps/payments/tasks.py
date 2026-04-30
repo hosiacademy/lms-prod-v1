@@ -11,7 +11,6 @@ from datetime import timedelta
 import requests
 
 # Import Sentry monitoring
-from apps.payments.services.sentry_service import sentry_monitor
 
 logger = logging.getLogger(__name__)
 
@@ -63,12 +62,12 @@ def provision_enrollment_async(self, transaction_id: str):
                 program_id=program_id,
                 transaction=transaction
             )
-            
+
             # Mark provisioning as completed
             transaction.metadata['provisioning_completed'] = True
             transaction.metadata['provisioning_completed_at'] = timezone.now().isoformat()
             transaction.save(update_fields=['metadata'])
-            
+
             logger.info(
                 f"Enrollment provisioned successfully for transaction {transaction_id}",
                 extra={
@@ -76,31 +75,16 @@ def provision_enrollment_async(self, transaction_id: str):
                     'enrollment_type': enrollment_type,
                 }
             )
-            
-            # Track in Sentry
-            sentry_monitor.track_webhook_processed(
-                transaction_id=str(transaction_id),
-                success=True
-            )
-            
-            return {'success': True, 'enrollment_type': enrollment_type}
-        else:
-            logger.warning(f"No enrollment data for transaction {transaction_id}")
-            return {'success': False, 'error': 'No enrollment data'}
-            
+
+        return {'success': True, 'transaction_id': str(transaction_id)}
+
     except Exception as e:
-        error_msg = f"Provisioning failed for transaction {transaction_id}: {str(e)}"
-        logger.error(error_msg, exc_info=True)
-        
-        # Track failure in Sentry
-        sentry_monitor.track_webhook_processed(
-            transaction_id=str(transaction_id),
-            success=False,
-            error=str(e)
+        logger.error(
+            f"Provisioning failed for transaction {transaction_id}: {str(e)}",
+            exc_info=True
         )
-        
-        # Retry on failure (Celery will handle retries based on decorator)
         raise self.retry(exc=e, countdown=self.request.retries * 300)
+
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
@@ -231,174 +215,150 @@ def fetch_exchange_rates(self):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
-def send_payment_confirmation_email(self, transaction_id: str):
+def send_payment_confirmation_email(self, transaction_id: str, target_user_id: int = None):
     """
-    Send payment confirmation email (async)
-
-    Args:
-        transaction_id: UUID of the payment transaction
-
-    Retries: 3 times with 5-minute delay
+    Send premium payment confirmation email (async)
     """
     try:
-        from apps.payments.models import PaymentTransaction
+        from apps.payments.models import PaymentTransaction, Enrollment
+        from django.core.mail import EmailMultiAlternatives
+        from django.template.loader import render_to_string
+        from django.utils.html import strip_tags
+        from django.contrib.auth import get_user_model
 
         # Get transaction
         transaction = PaymentTransaction.objects.get(id=transaction_id)
+        User = get_user_model()
+        
+        if target_user_id:
+            try:
+                user = User.objects.get(id=target_user_id)
+            except User.DoesNotExist:
+                logger.error(f"Target user {target_user_id} not found")
+                return {'success': False, 'error': 'User not found'}
+        else:
+            user = transaction.user
 
-        # Prepare email
-        subject = "Payment Confirmation - Hosi Academy"
-        message = f"""
-Dear {transaction.user.first_name or transaction.user.username},
+        if not user or not user.email:
+            logger.error(f"No user/email for transaction {transaction_id}")
+            return {'success': False, 'error': 'No email found'}
 
-Your payment of {transaction.amount} {transaction.currency} has been confirmed.
+        # Find linked enrollment for details specific to this user
+        enrollment = Enrollment.objects.filter(order=transaction.order, user=user).first()
+        if not enrollment:
+            # Try by transaction link directly
+            enrollment = Enrollment.objects.filter(payment_transaction=transaction, user=user).first()
+            
+        # Fallback to any enrollment if somehow the above fails (e.g. payer not enrolled but is the sponsor)
+        if not enrollment and not target_user_id:
+             enrollment = Enrollment.objects.filter(order=transaction.order).first()
 
-Transaction Details:
-- Amount: {transaction.amount} {transaction.currency}
-- Reference: {transaction.provider_reference}
-- Date: {transaction.completed_at or timezone.now()}
-- Description: {transaction.description or 'Course Payment'}
+        # Prepare context
+        context = {
+            'user_name': user.get_full_name() or user.username,
+            'reference': transaction.provider_reference,
+            'amount': float(transaction.amount),
+            'currency': transaction.currency,
+            'date': transaction.completed_at or timezone.now(),
+            'payment_method': transaction.provider.title(),
+            'company_name': 'Hosi Academy',
+            'company_tagline': 'The Future of Learning',
+            'logo_url': 'http://154.66.211.3:7000/assets/assets/images/logo.png',
+            'website_url': 'https://www.hosiacademy.africa',
+            'support_email': getattr(settings, 'SUPPORT_EMAIL', 'academy@hosiafrica.com'),
+            'support_phone': getattr(settings, 'SUPPORT_PHONE', '+27 67 231 9200'),
+            'is_corporate_learner': user.id != transaction.user.id,
+        }
 
-Thank you for your purchase!
+        if enrollment:
+            context['enrollment'] = {
+                'program_title': enrollment.content_object.title if hasattr(enrollment.content_object, 'title') else str(enrollment.content_object),
+                'enrollment_code': enrollment.enrollment_code,
+                'learner_name': enrollment.learner_full_name,
+            }
+            
+            from apps.payments.models import EnrollmentType
+            if enrollment.enrollment_type in [EnrollmentType.CUSTOM_SELECTION, EnrollmentType.INDUSTRY_TRAINING]:
+                try:
+                    from apps.aicerts_integration.services import SSOService
+                    course = enrollment.content_object
+                    # Extract lms_course_id, it might be on course.raw_course
+                    if hasattr(course, 'lms_course_id') and course.lms_course_id:
+                        lms_id = course.lms_course_id
+                    elif hasattr(course, 'raw_course') and course.raw_course and hasattr(course.raw_course, 'lms_course_id'):
+                        lms_id = course.raw_course.lms_course_id
+                    else:
+                        lms_id = None
+                        
+                    if lms_id:
+                        sso_url = SSOService.generate_sso_url(user.email, lms_id)
+                        context['aicerts_link'] = sso_url
+                        context['aicerts_email'] = user.email
+                except Exception as e:
+                    logger.error(f"Failed to generate AICerts SSO URL for email context: {e}")
 
-If you have any questions, please contact our support team.
+        # Render email
+        html_content = render_to_string(
+            'notifications/emails/payment_confirmation.html',
+            context
+        )
+        text_content = strip_tags(html_content)
 
-Best regards,
-Hosi Academy Team
-"""
+        # Send email
+        subject = f"Payment Confirmed - {transaction.provider_reference}"
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[user.email],
+        )
+        email.attach_alternative(html_content, "text/html")
+        email.send(fail_silently=False)
 
-
-        # Auto-generate chat messages
-        try:
-            from apps.enrollments.models import Enrollment
-            enrollment = Enrollment.objects.filter(payment_transaction=transaction).first()
-            if enrollment:
+        # Auto-generate chat messages if enrollment exists
+        if enrollment:
+            try:
                 from apps.communication.services import ChatEnforcerService
                 ChatEnforcerService.enforce_enrollment_chats(enrollment)
-        except Exception as e:
-            logger.error(f"Failed to generate chat messages: {e}")
-            
-        # Send email
+            except Exception as e:
+                logger.error(f"Failed to generate chat messages: {e}")
 
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [transaction.user.email],
-            fail_silently=False,
-        )
-
-        logger.info(
-            f"Payment confirmation email sent to {transaction.user.email}",
-            extra={
-                'transaction_id': str(transaction_id),
-                'user_email': transaction.user.email,
-                'amount': float(transaction.amount),
-            }
-        )
-
-        # Track email success in Sentry
-        sentry_monitor.track_email_sent(
-            transaction_id=str(transaction_id),
-            email=transaction.user.email,
-            success=True
-        )
-
-        return {'success': True, 'email': transaction.user.email}
+        logger.info(f"Premium payment confirmation email sent to {user.email}")
+        return {'success': True, 'email': user.email}
 
     except PaymentTransaction.DoesNotExist:
         logger.error(f"Transaction {transaction_id} not found")
         return {'success': False, 'error': 'Transaction not found'}
 
     except Exception as e:
-        logger.error(
-            f"Failed to send payment email for transaction {transaction_id}: {str(e)}",
-            exc_info=True
-        )
-
-        # Track email failure in Sentry
-        try:
-            from apps.payments.models import PaymentTransaction
-            transaction = PaymentTransaction.objects.get(id=transaction_id)
-            sentry_monitor.track_email_sent(
-                transaction_id=str(transaction_id),
-                email=transaction.user.email,
-                success=False,
-                error=str(e)
-            )
-        except Exception:
-            pass  # Don't fail if tracking fails
-
-        # Retry on failure
+        logger.error(f"Failed to send payment email: {str(e)}", exc_info=True)
         try:
             raise self.retry(exc=e)
         except self.MaxRetriesExceededError:
-            logger.error(f"Max retries exceeded for email {transaction_id}")
             return {'success': False, 'error': str(e)}
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
 def send_payment_confirmation_sms(self, transaction_id: str):
     """
-    Send payment confirmation SMS (async)
-
-    Args:
-        transaction_id: UUID of the payment transaction
-
-    Retries: 3 times with 5-minute delay
+    Send payment confirmation SMS notification
     """
-    try:
-        from apps.payments.models import PaymentTransaction
-        from apps.payments.services.sms_service import sms_service, sms_template
+        # SMS disabled globally
+        return {'success': False, 'error': 'SMS disabled'}
 
-        # Get transaction
-        transaction = PaymentTransaction.objects.get(id=transaction_id)
-
-        # Check if user has phone number
-        phone_number = getattr(transaction.user, 'phone_number', None)
-        if not phone_number:
-            logger.warning(
-                f"No phone number for user {transaction.user.id} - skipping SMS"
-            )
-            return {'success': False, 'error': 'No phone number'}
-
-        # Generate SMS message
-        message = sms_template.payment_success(
-            amount=float(transaction.amount),
-            currency=transaction.currency,
-            reference=transaction.provider_reference or str(transaction.id)[:8],
-            description=transaction.description
+        message = (
+            f"Hosi Academy: Payment confirmed! "
+            f"Ref: {transaction.provider_reference}. "
+            f"Amount: {transaction.currency} {float(transaction.amount):.2f}. "
+            f"Your enrollment is now being processed. "
+            f"Check your email for access details."
         )
 
-        # Send SMS
-        result = sms_service.send_sms(
-            to_number=phone_number,
-            message=message
-        )
-
+        result = sms_service.send_sms(to_number=phone_number, message=message)
+        
         if result['success']:
-            logger.info(
-                f"Payment SMS sent to {phone_number}",
-                extra={
-                    'transaction_id': str(transaction_id),
-                    'phone_number': phone_number,
-                    'message_sid': result['message_sid'],
-                }
-            )
-        else:
-            logger.warning(
-                f"Failed to send SMS: {result['error']}",
-                extra={'transaction_id': str(transaction_id)}
-            )
-
-        # Track SMS delivery in Sentry
-        sentry_monitor.track_sms_sent(
-            transaction_id=str(transaction_id),
-            phone_number=phone_number,
-            success=result['success'],
-            error=result.get('error')
-        )
-
+            logger.info(f"Payment confirmation SMS sent to {phone_number}")
+        
         return result
 
     except PaymentTransaction.DoesNotExist:
@@ -406,16 +366,10 @@ def send_payment_confirmation_sms(self, transaction_id: str):
         return {'success': False, 'error': 'Transaction not found'}
 
     except Exception as e:
-        logger.error(
-            f"Failed to send payment SMS for transaction {transaction_id}: {str(e)}",
-            exc_info=True
-        )
-
-        # Retry on failure
+        logger.error(f"Failed to send payment SMS: {str(e)}", exc_info=True)
         try:
             raise self.retry(exc=e)
         except self.MaxRetriesExceededError:
-            logger.error(f"Max retries exceeded for SMS {transaction_id}")
             return {'success': False, 'error': str(e)}
 
 
@@ -428,15 +382,8 @@ def send_payment_failed_sms(self, transaction_id: str, reason: str = None):
         transaction_id: UUID of the payment transaction
         reason: Failure reason
     """
-    try:
-        from apps.payments.models import PaymentTransaction
-        from apps.payments.services.sms_service import sms_service, sms_template
-
-        transaction = PaymentTransaction.objects.get(id=transaction_id)
-        phone_number = getattr(transaction.user, 'phone_number', None)
-
-        if not phone_number:
-            return {'success': False, 'error': 'No phone number'}
+        # SMS disabled globally
+        return {'success': False, 'error': 'SMS disabled'}
 
         message = sms_template.payment_failed(
             amount=float(transaction.amount),
@@ -465,15 +412,8 @@ def send_refund_confirmation_sms(self, transaction_id: str):
     Args:
         transaction_id: UUID of the refund transaction
     """
-    try:
-        from apps.payments.models import PaymentRefund
-        from apps.payments.services.sms_service import sms_service, sms_template
-
-        refund = PaymentRefund.objects.get(id=transaction_id)
-        phone_number = getattr(refund.original_transaction.user, 'phone_number', None)
-
-        if not phone_number:
-            return {'success': False, 'error': 'No phone number'}
+        # SMS disabled globally
+        return {'success': False, 'error': 'SMS disabled'}
 
         message = sms_template.refund_success(
             amount=float(refund.refund_amount),
@@ -495,18 +435,8 @@ def send_refund_confirmation_sms(self, transaction_id: str):
 
 
 @shared_task
-def send_payment_notifications(transaction_id: str, include_sms: bool = True):
-    """
-    Send both email and SMS notifications for payment (parallel execution)
-
-    Args:
-        transaction_id: UUID of the payment transaction
-        include_sms: Whether to send SMS (default: True)
-    """
-    # Trigger both tasks in parallel
-    send_payment_confirmation_email.delay(transaction_id)
-
-    if include_sms:
+    # SMS disabled globally by user request
+    if include_sms and False: # Force disabled
         send_payment_confirmation_sms.delay(transaction_id)
 
     logger.info(
@@ -565,8 +495,12 @@ def send_eft_initiated_email(self, transaction_id: str):
             'program_type': transaction.metadata.get('program_type', 'Program'),
             'program_title': transaction.metadata.get('program_title', 'Selected Program'),
             'expires_at': timezone.now() + timedelta(hours=72),
-            'support_email': settings.DEFAULT_FROM_EMAIL,
-            'support_phone': getattr(settings, 'SUPPORT_PHONE', '+27 11 234 5678'),
+            'support_email': getattr(settings, 'SUPPORT_EMAIL', 'academy@hosiafrica.com'),
+            'support_phone': getattr(settings, 'SUPPORT_PHONE', '+27 67 231 9200'),
+            'company_name': 'Hosi Academy',
+            'company_tagline': 'The Future of Learning',
+            'logo_url': 'http://154.66.211.3:7000/assets/assets/images/logo.png',
+            'website_url': 'https://www.hosiacademy.africa',
         }
 
         # Render email template
@@ -618,19 +552,8 @@ def send_eft_initiated_sms(self, transaction_id: str):
     Args:
         transaction_id: UUID of the payment transaction
     """
-    try:
-        from apps.payments.models import PaymentTransaction
-        from apps.payments.services.sms_service import sms_service
-
-        # Get transaction
-        transaction = PaymentTransaction.objects.get(id=transaction_id)
-
-        # Get phone number
-        phone_number = transaction.individual_phone or (getattr(transaction.user, 'phone_number', None) if transaction.user else None)
-
-        if not phone_number:
-            logger.warning(f"No phone number for transaction {transaction_id} - skipping SMS")
-            return {'success': False, 'error': 'No phone number'}
+        # SMS disabled globally
+        return {'success': False, 'error': 'SMS disabled'}
 
         # Prepare SMS message
         message = (
@@ -701,7 +624,11 @@ def send_eft_verified_email(self, transaction_id: str):
             'verified_at': transaction.completed_at,
             'program_type': transaction.metadata.get('program_type', 'Program'),
             'program_title': transaction.metadata.get('program_title', 'Selected Program'),
-            'support_email': settings.DEFAULT_FROM_EMAIL,
+            'support_email': getattr(settings, 'SUPPORT_EMAIL', 'academy@hosiafrica.com'),
+            'company_name': 'Hosi Academy',
+            'company_tagline': 'The Future of Learning',
+            'logo_url': 'http://154.66.211.3:7000/assets/assets/images/logo.png',
+            'website_url': 'https://www.hosiacademy.africa',
         }
 
         html_content = render_to_string(
@@ -801,8 +728,12 @@ def send_eft_rejected_email(self, transaction_id: str, rejection_reason: str):
             'amount': float(transaction.amount),
             'currency': transaction.currency,
             'rejection_reason': rejection_reason,
-            'support_email': settings.DEFAULT_FROM_EMAIL,
-            'support_phone': getattr(settings, 'SUPPORT_PHONE', '+27 11 234 5678'),
+            'support_email': getattr(settings, 'SUPPORT_EMAIL', 'academy@hosiafrica.com'),
+            'support_phone': getattr(settings, 'SUPPORT_PHONE', '+27 67 231 9200'),
+            'company_name': 'Hosi Academy',
+            'company_tagline': 'The Future of Learning',
+            'logo_url': 'http://154.66.211.3:7000/assets/assets/images/logo.png',
+            'website_url': 'https://www.hosiacademy.africa',
         }
 
         html_content = render_to_string(
@@ -902,4 +833,6 @@ def send_eft_notifications(transaction_id: str, notification_type: str, rejectio
         f"EFT notifications queued for transaction {transaction_id}",
         extra={'notification_type': notification_type}
     )
+
+
 

@@ -17,7 +17,19 @@
 //    - Each learner uploads their own evidence
 //    - Admin reviews each learner separately
 
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/api/api_client.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../data/models/location.dart' as location_models;
+import '../../blocs/student_portal/location_bloc.dart';
+import '../student_portal/cascading_location_dropdowns.dart';
+import '../../../core/utils/african_phone_validator.dart';
+import '../contact_otp_field.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -101,10 +113,60 @@ class _MultiStepLearnershipEnrollmentModalState
     if (widget.allowPrefill) {
       _prefillFromProfile();
     }
+    
+    // Load stored progress from local storage
+    _loadLocalProgress();
+  }
+
+  Future<void> _loadLocalProgress() async {
+    final programId = widget.learnership.id;
+    // Load individual data
+    await _individualLearnerData.loadFromStorage('learnership_progress_${programId}_ind');
+    _setupListeners(_individualLearnerData, 'ind');
+    
+    // Load corporate data if any
+    for (int i = 0; i < _corporateLearners.length; i++) {
+      await _corporateLearners[i].loadFromStorage('learnership_progress_${programId}_corp_$i');
+      _setupListeners(_corporateLearners[i], 'corp_$i');
+    }
+    if (mounted) setState(() {});
+  }
+
+  void _setupListeners(dynamic learner, String suffix) {
+    final programId = widget.learnership.id;
+    final saveKey = 'learnership_progress_${programId}_$suffix';
+    
+    void save() => learner.saveToStorage(saveKey);
+    
+    if (learner is LearnerFormData) {
+      learner.firstNameController.addListener(save);
+      learner.lastNameController.addListener(save);
+      learner.emailController.addListener(save);
+      learner.phoneController.addListener(save);
+      learner.idNumberController.addListener(save);
+      learner.addressController.addListener(save);
+      learner.postalCodeController.addListener(save);
+      learner.occupationController.addListener(save);
+      learner.institutionController.addListener(save);
+    } else if (learner is CorporateLearnerData) {
+      learner.firstNameController.addListener(save);
+      learner.lastNameController.addListener(save);
+      learner.emailController.addListener(save);
+    }
+  }
+
+  Future<void> _clearLocalProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final programId = widget.learnership.id;
+    await prefs.remove('learnership_progress_${programId}_ind');
+    for (int i = 0; i < _corporateLearners.length; i++) {
+      await prefs.remove('learnership_progress_${programId}_corp_$i');
+    }
   }
 
   Future<void> _prefillFromProfile() async {
     try {
+      if (!await AuthService.isAuthenticated()) return;
       final p = await ApiClient.getStudentProfile();
       if (!mounted) return;
       final fullName = (p['user_full_name'] as String? ?? '').trim();
@@ -150,6 +212,7 @@ class _MultiStepLearnershipEnrollmentModalState
   }
 
   Future<void> _cascadeProfileUpdate() async {
+    if (!await AuthService.isAuthenticated()) return;
     final l = _individualLearnerData;
     final data = <String, dynamic>{};
     if (l.phoneController.text.trim().isNotEmpty)
@@ -220,21 +283,25 @@ class _MultiStepLearnershipEnrollmentModalState
         backgroundColor: Colors.transparent,
         // Bottom inset = keyboard height so dialog shifts above keyboard
         insetPadding: EdgeInsets.fromLTRB(hInset, 16, hInset, keyboardH + 8),
+        shape: sw < 480
+            ? const RoundedRectangleBorder()
+            : RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           constraints: BoxConstraints(
             maxWidth: 900,
             // Shrink with keyboard so navigation buttons stay visible
-            maxHeight: sh - keyboardH - 40,
+            maxHeight: sw < 480 ? sh : sh - keyboardH - 40,
           ),
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: sw < 480 ? BorderRadius.zero : BorderRadius.circular(16),
           ),
           child: Column(
             children: [
-              _buildHeader(theme, colors),
+              _buildHeader(theme, colors, sw),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                    horizontal: (sw * 0.05).clamp(12.0, 24.0), vertical: 8),
                 child: _buildLearnershipInfoBanner(),
               ),
               const SizedBox(height: 12),
@@ -261,9 +328,13 @@ class _MultiStepLearnershipEnrollmentModalState
     );
   }
 
-  Widget _buildHeader(ThemeData theme, ColorScheme colors) {
+  Widget _buildHeader(ThemeData theme, ColorScheme colors, double sw) {
     return Padding(
-      padding: const EdgeInsets.only(left: 24, right: 8, top: 20, bottom: 4),
+      padding: EdgeInsets.only(
+          left: (sw * 0.05).clamp(12.0, 24.0),
+          right: 8,
+          top: 20,
+          bottom: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -276,12 +347,14 @@ class _MultiStepLearnershipEnrollmentModalState
                   'Learnership Enrollment',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
+                    fontSize: (sw * 0.05).clamp(16.0, 22.0),
                   ),
                 ),
                 Text(
                   widget.learnership.title,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colors.onSurfaceVariant,
+                    fontSize: (sw * 0.035).clamp(11.0, 13.0),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -944,7 +1017,7 @@ class _MultiStepLearnershipEnrollmentModalState
             children: [
               _buildPaymentRow(
                 'Total Programme Fee',
-                CurrencyService.instance.formatPrice(totalAmount),
+                CurrencyService.instance.formatUSDAmount(totalAmount),
                 colors,
               ),
               const SizedBox(height: 12),
@@ -956,14 +1029,14 @@ class _MultiStepLearnershipEnrollmentModalState
               const SizedBox(height: 12),
               _buildPaymentRow(
                 'Deposit Required (${_getDepositPercentage()}%)',
-                CurrencyService.instance.formatPrice(depositAmount),
+                CurrencyService.instance.formatUSDAmount(depositAmount),
                 colors,
                 isBold: true,
               ),
               const Divider(height: 24),
               _buildPaymentRow(
                 'Monthly Installment (per learner)',
-                CurrencyService.instance.formatPrice(monthlyInstallment),
+                CurrencyService.instance.formatUSDAmount(monthlyInstallment),
                 colors,
               ),
               const SizedBox(height: 8),
@@ -1043,6 +1116,9 @@ class _MultiStepLearnershipEnrollmentModalState
           learnerData: _individualLearnerData,
           companyLocation: _isCorporate ? _companyLocation : null,
           showErrors: _showFormErrors,
+          learnership: widget.learnership,
+          isCorporate: _isCorporate,
+          learnerIndex: 0, // Individual is always index 0
         ),
       ],
     );
@@ -1446,7 +1522,7 @@ class _MultiStepLearnershipEnrollmentModalState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                CurrencyService.instance.formatPrice(totalAmount),
+                CurrencyService.instance.formatUSDAmount(totalAmount),
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colors.primary,
@@ -1490,7 +1566,7 @@ class _MultiStepLearnershipEnrollmentModalState
                         ),
                       ),
                       Text(
-                        CurrencyService.instance.formatPrice(adminFee),
+                        CurrencyService.instance.formatUSDAmount(adminFee),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colors.onSurface,
@@ -1509,7 +1585,7 @@ class _MultiStepLearnershipEnrollmentModalState
                         ),
                       ),
                       Text(
-                        CurrencyService.instance.formatPrice(depositAmount),
+                        CurrencyService.instance.formatUSDAmount(depositAmount),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colors.primary,
@@ -1554,7 +1630,7 @@ class _MultiStepLearnershipEnrollmentModalState
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  'Total: ${CurrencyService.instance.formatPrice(adminFee + depositAmount + (monthlyInstallment * (widget.learnership.durationMonths ?? 12)))}',
+                  'Total: ${CurrencyService.instance.formatUSDAmount(adminFee + depositAmount + (monthlyInstallment * (widget.learnership.durationMonths ?? 12)))}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colors.primary,
                     fontWeight: FontWeight.w600,
@@ -1580,7 +1656,7 @@ class _MultiStepLearnershipEnrollmentModalState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                CurrencyService.instance.formatPrice(totalAmount),
+                CurrencyService.instance.formatUSDAmount(totalAmount),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colors.primary,
@@ -1834,8 +1910,8 @@ class _MultiStepLearnershipEnrollmentModalState
               _buildReviewRow(
                 'Amount Due Now',
                 _paymentOption == 'upfront'
-                    ? CurrencyService.instance.formatPrice(totalAmount)
-                    : CurrencyService.instance.formatPrice(depositAmount),
+                    ? CurrencyService.instance.formatUSDAmount(totalAmount)
+                    : CurrencyService.instance.formatUSDAmount(depositAmount),
               ),
               if (_paymentOption == 'installments') ...[
                 _buildReviewRow(
@@ -2284,7 +2360,7 @@ class _MultiStepLearnershipEnrollmentModalState
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${_activeCoupon!.summaryLabel} applied — saving ${CurrencyService.instance.formatPrice(_couponDiscountAmount)}',
+                    '${_activeCoupon!.summaryLabel} applied — saving ${CurrencyService.instance.formatUSDAmount(_couponDiscountAmount)}',
                     style: TextStyle(
                         color: Colors.green.shade700,
                         fontSize: 13,
@@ -2364,8 +2440,8 @@ class _MultiStepLearnershipEnrollmentModalState
   Widget _buildNavigationButtons(ColorScheme colors) {
     final totalSteps = _isCorporate ? 4 : 5;
     final isLastStep = _currentStep == totalSteps - 1;
-    final sw = MediaQuery.of(context).size.width;
-    final isNarrow = sw < 400;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = screenWidth < 400;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -2481,11 +2557,10 @@ class _MultiStepLearnershipEnrollmentModalState
               'Please complete all required fields (highlighted in red)');
           return;
         }
-        // Check OTP verification for email and phone
-        if (!_individualLearnerData.emailVerified ||
-            !_individualLearnerData.phoneVerified) {
+        // Check OTP verification for email (Phone disabled)
+        if (!_individualLearnerData.emailVerified) {
           _showError(
-              'Please complete both email and phone verification before proceeding.');
+              'Please complete email verification before proceeding.');
           return;
         }
         setState(() {
@@ -2643,7 +2718,13 @@ class _MultiStepLearnershipEnrollmentModalState
         },
       };
 
-      // Build metadata for payment initiation
+      // Get localized amount for payment flow
+      final currencySvc = CurrencyService.instance;
+      final localizedPaymentAmount = currencySvc.convertFromUSD(paymentAmount);
+      final userCurrency = currencySvc.userCurrency;
+      final country = 'ZA'; // Default
+
+      // Build metadata for payment initiation with BOTH amounts
       final metadata = {
         'programme_id': widget.learnership.id.toString(),
         'programme_title': widget.learnership.title,
@@ -2652,14 +2733,16 @@ class _MultiStepLearnershipEnrollmentModalState
         'payment_option': 'installments',
         'is_corporate': true,
         'learner_count': _corporateLearners.length,
-        'currency': widget.learnership.currency ?? 'USD',
+        'currency': userCurrency,
+        'amount': localizedPaymentAmount,
+        'amount_usd': paymentAmount,
       };
 
       // Initiate payment flow
       final response = await ApiClient.initiatePayment(
         programId: widget.learnership.id.toString(),
         type: 'learnership',
-        amount: paymentAmount,
+        amount: localizedPaymentAmount,
         metadata: metadata,
       );
 
@@ -2669,9 +2752,9 @@ class _MultiStepLearnershipEnrollmentModalState
       await PaymentProviderSelectionPage.show(
         context,
         reference: response['reference'] as String,
-        amount: paymentAmount,
-        currency: widget.learnership.currency ?? 'USD',
-        country: 'ZA', // Default, could be from company country
+        amount: localizedPaymentAmount,
+        currency: userCurrency,
+        country: country,
         programId: widget.learnership.id.toString(),
         programType: 'learnership',
         paymentMetadata: {'programme_id': widget.learnership.id.toString()},
@@ -2907,7 +2990,13 @@ class _MultiStepLearnershipEnrollmentModalState
       }
       // Cash: paymentAmount remains 0
 
-      // Build metadata for payment initiation
+      // Get localized amount for payment flow
+      final currencySvc = CurrencyService.instance;
+      final localizedPaymentAmount = currencySvc.convertFromUSD(paymentAmount);
+      final userCurrency = currencySvc.userCurrency;
+      final country = _individualLearnerData.selectedCountry?.code ?? 'ZA';
+
+      // Build metadata for payment initiation with BOTH amounts
       final metadata = {
         'programme_id': widget.learnership.id.toString(),
         'programme_title': widget.learnership.title,
@@ -2915,7 +3004,9 @@ class _MultiStepLearnershipEnrollmentModalState
         'enrollment_data': enrollmentData,
         'payment_option': _paymentOption,
         'is_corporate': false,
-        'currency': widget.learnership.currency ?? 'USD',
+        'currency': userCurrency,
+        'amount': localizedPaymentAmount,
+        'amount_usd': paymentAmount,
       };
 
       // Cascade form data back to student profile (best-effort)
@@ -2925,7 +3016,7 @@ class _MultiStepLearnershipEnrollmentModalState
       final response = await ApiClient.initiatePayment(
         programId: widget.learnership.id.toString(),
         type: 'learnership',
-        amount: paymentAmount,
+        amount: localizedPaymentAmount,
         metadata: metadata,
       );
 
@@ -2935,9 +3026,9 @@ class _MultiStepLearnershipEnrollmentModalState
       await PaymentProviderSelectionPage.show(
         context,
         reference: response['reference'] as String,
-        amount: paymentAmount,
-        currency: widget.learnership.currency ?? 'USD',
-        country: _individualLearnerData.selectedCountry?.code ?? 'ZA',
+        amount: localizedPaymentAmount,
+        currency: userCurrency,
+        country: country,
         programId: widget.learnership.id.toString(),
         programType: 'learnership',
         paymentMetadata: {'programme_id': widget.learnership.id.toString()},
@@ -2984,7 +3075,7 @@ class LearnerFormData {
   location_models.Country? selectedCountry;
   location_models.State? selectedState;
   location_models.City? selectedCity;
-  String phoneIsoCode = 'ZA';
+  String phoneIsoCode = CurrencyService.instance.countryCode ?? 'ZA';
   final postalCodeController = TextEditingController();
   final postalAddressController = TextEditingController();
   final postalSuburbController = TextEditingController();
@@ -3010,7 +3101,7 @@ class LearnerFormData {
   final emergencyNameController = TextEditingController();
   final emergencyPhoneController = TextEditingController();
   String? selectedEmergencyRelationship;
-  String emergencyPhoneIsoCode = 'ZA';
+  String emergencyPhoneIsoCode = CurrencyService.instance.countryCode ?? 'ZA';
   final emergencyAddressController = TextEditingController();
 
   // ===== NEXT OF KIN (Separate from Emergency) =====
@@ -3070,7 +3161,7 @@ class LearnerFormData {
 
   // ===== OTP VERIFICATION =====
   bool emailVerified = false;
-  bool phoneVerified = false;
+  bool phoneVerified = true;
 
   bool validate() {
     // Personal Details (required — rendered in form)
@@ -3107,7 +3198,7 @@ class LearnerFormData {
     }
 
     // Contact verification
-    if (!emailVerified || !phoneVerified) return false;
+    if (!emailVerified) return false;
 
     // Terms (required — rendered in form)
     if (!termsAccepted) {
@@ -3185,6 +3276,76 @@ class LearnerFormData {
     additionalNotesController.dispose();
     referralSourceController.dispose();
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'firstName': firstNameController.text,
+      'lastName': lastNameController.text,
+      'email': emailController.text,
+      'phone': phoneController.text,
+      'idNumber': idNumberController.text,
+      'dob': dobController.text,
+      'gender': selectedGender,
+      'race': selectedRace,
+      'disability': selectedDisability,
+      'nationality': selectedNationality,
+      'address': addressController.text,
+      'postalCode': postalCodeController.text,
+      'occupation': occupationController.text,
+      'education': selectedEducationLevel,
+      'institution': institutionController.text,
+      'country': selectedCountry?.toJson(),
+      'state': selectedState?.toJson(),
+      'city': selectedCity?.toJson(),
+      'emailVerified': emailVerified,
+      'bankName': bankNameController.text,
+      'bankAccount': bankAccountNumberController.text,
+    };
+  }
+
+  void fromJson(Map<String, dynamic> json) {
+    firstNameController.text = json['firstName'] ?? '';
+    lastNameController.text = json['lastName'] ?? '';
+    emailController.text = json['email'] ?? '';
+    phoneController.text = json['phone'] ?? '';
+    idNumberController.text = json['idNumber'] ?? '';
+    dobController.text = json['dob'] ?? '';
+    selectedGender = json['gender'];
+    selectedRace = json['race'];
+    selectedDisability = json['disability'];
+    selectedNationality = json['nationality'];
+    addressController.text = json['address'] ?? '';
+    postalCodeController.text = json['postalCode'] ?? '';
+    occupationController.text = json['occupation'] ?? '';
+    selectedEducationLevel = json['education'];
+    institutionController.text = json['institution'] ?? '';
+    emailVerified = json['emailVerified'] ?? false;
+    bankNameController.text = json['bankName'] ?? '';
+    bankAccountNumberController.text = json['bankAccount'] ?? '';
+
+    if (json['country'] != null) {
+      selectedCountry = location_models.Country.fromJson(json['country']);
+    }
+    if (json['state'] != null) {
+      selectedState = location_models.State.fromJson(json['state']);
+    }
+    if (json['city'] != null) {
+      selectedCity = location_models.City.fromJson(json['city']);
+    }
+  }
+
+  Future<void> saveToStorage(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, jsonEncode(toJson()));
+  }
+
+  Future<void> loadFromStorage(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(key);
+    if (data != null) {
+      fromJson(jsonDecode(data));
+    }
+  }
 }
 
 class CorporateLearnerData {
@@ -3196,6 +3357,33 @@ class CorporateLearnerData {
     firstNameController.dispose();
     lastNameController.dispose();
     emailController.dispose();
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'firstName': firstNameController.text,
+      'lastName': lastNameController.text,
+      'email': emailController.text,
+    };
+  }
+
+  void fromJson(Map<String, dynamic> json) {
+    firstNameController.text = json['firstName'] ?? '';
+    lastNameController.text = json['lastName'] ?? '';
+    emailController.text = json['email'] ?? '';
+  }
+
+  Future<void> saveToStorage(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, jsonEncode(toJson()));
+  }
+
+  Future<void> loadFromStorage(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(key);
+    if (data != null) {
+      fromJson(jsonDecode(data));
+    }
   }
 }
 
@@ -3223,12 +3411,18 @@ class LearnerInformationForm extends StatefulWidget {
   final LearnerFormData learnerData;
   final Map<String, dynamic>? companyLocation; // Company location for auto-fill
   final bool showErrors; // Highlight empty required fields
+  final dynamic learnership; // Added to handle persistence key
+  final bool isCorporate; // Added to handle persistence key
+  final int learnerIndex; // Added to handle persistence key
 
   const LearnerInformationForm({
     super.key,
     required this.learnerData,
     this.companyLocation,
     this.showErrors = false,
+    required this.learnership,
+    this.isCorporate = false,
+    this.learnerIndex = 0,
   });
 
   @override
@@ -3350,16 +3544,7 @@ class _LearnerInformationFormState extends State<LearnerInformationForm> {
           },
           colors: colors,
         ),
-        ContactOtpField(
-          contactController: learnerData.phoneController,
-          contactType: 'phone',
-          phoneDialCode:
-              AfricanPhoneValidator.getInfoForCountry(learnerData.phoneIsoCode)
-                  ?.countryCode,
-          onVerifiedChanged: (verified) =>
-              setState(() => learnerData.phoneVerified = verified),
-        ),
-        if (learnerData.emailVerified && learnerData.phoneVerified) ...[
+        if (learnerData.emailVerified) ...[
           const SizedBox(height: 12),
           _buildTextField(
             controller: learnerData.idNumberController,
@@ -3425,6 +3610,9 @@ class _LearnerInformationFormState extends State<LearnerInformationForm> {
                     learnerData.emergencyPhoneIsoCode = country.code;
                   }
                 });
+                // Persist location change
+                final programId = widget.learnership.id;
+                learnerData.saveToStorage('learnership_progress_${programId}_${widget.isCorporate ? "corp_${widget.learnerIndex}" : "ind"}');
               },
             ),
           ),

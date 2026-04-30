@@ -130,78 +130,79 @@ class LearningPathwaysCompact extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () => onPathSelected(pathway.route),
                       child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      constraints: BoxConstraints(
-                        minWidth: cardMinWidth,
-                        maxWidth: cardWidth ?? cardMinWidth, // Force exactly this width instead of +40 to keep dimensions equal
-                        minHeight: isVeryNarrow ? 100 : (isMobile ? 120 : 150),
-                      ),
-                      padding: EdgeInsets.all(isVeryNarrow ? 10 : 12),
-                      decoration: BoxDecoration(
-                        color: pathway.color.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: pathway.color.withValues(alpha: 0.25),
-                          width: 1.5,
+                        duration: const Duration(milliseconds: 200),
+                        constraints: BoxConstraints(
+                          minWidth: cardMinWidth,
+                          maxWidth: cardWidth ?? cardMinWidth,
+                          minHeight: isVeryNarrow ? 80 : (isMobile ? 100 : 120),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: pathway.color.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                        padding: EdgeInsets.all(isVeryNarrow ? 10 : 12),
+                        decoration: BoxDecoration(
+                          color: pathway.color.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: pathway.color.withValues(alpha: 0.25),
+                            width: 1.5,
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // SVG Image or Icon
-                          if (pathway.showImage && pathway.svgAsset != null) ...[
-                            SizedBox(
-                              width: isVeryNarrow ? 60 : imageSize,
-                              height: isVeryNarrow ? 60 : imageSize,
-                              child: SvgPicture.asset(
-                                pathway.svgAsset!,
-                                fit: BoxFit.contain,
-                              ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: pathway.color.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
-                            SizedBox(height: isVeryNarrow ? 6 : 8),
-                          ] else ...[
-                            Container(
-                              padding: EdgeInsets.all(isVeryNarrow ? 10 : 12),
-                              decoration: BoxDecoration(
-                                color: pathway.color.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                pathway.icon,
-                                color: pathway.color,
-                                size: isVeryNarrow ? 24 : 28,
-                              ),
-                            ),
-                            SizedBox(height: isVeryNarrow ? 6 : 8),
                           ],
-                          // Title - with responsive font size
-                          Text(
-                            pathway.title,
-                            style: TextStyle(
-                              fontSize: isVeryNarrow ? 11 : fontSize,
-                              fontWeight: FontWeight.w700,
-                              color: colorScheme.onSurface,
-                              height: 1.3, // Better line height for multi-line
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // SVG Image or Icon
+                            if (pathway.showImage && pathway.svgAsset != null) ...[
+                              SizedBox(
+                                width: isVeryNarrow ? 60 : imageSize,
+                                height: isVeryNarrow ? 60 : imageSize,
+                                child: SvgPicture.asset(
+                                  pathway.svgAsset!,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              SizedBox(height: isVeryNarrow ? 6 : 8),
+                            ] else ...[
+                              Container(
+                                padding: EdgeInsets.all(isVeryNarrow ? 10 : 12),
+                                decoration: BoxDecoration(
+                                  color: pathway.color.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  pathway.icon,
+                                  color: pathway.color,
+                                  size: isVeryNarrow ? 24 : 28,
+                                ),
+                              ),
+                              SizedBox(height: isVeryNarrow ? 6 : 8),
+                            ],
+                            // Title - with responsive font size
+                            Text(
+                              pathway.title,
+                              style: TextStyle(
+                                fontSize: isVeryNarrow ? 11 : fontSize,
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.onSurface,
+                                height: 1.2,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            textAlign: TextAlign.center,
-                            maxLines: 3, // Allow 3 lines on very small screens
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                  ),
                 ).animate(
-                  delay: Duration(milliseconds: index * 80)
-                ).fadeIn().slideY(begin: 0.15, end: 0);
+                  delay: Duration(milliseconds: index * 40)
+                ).fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0, duration: 300.ms);
               })
               .toList(),
         );

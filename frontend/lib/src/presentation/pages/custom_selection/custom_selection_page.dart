@@ -366,7 +366,7 @@ class _CustomSelectionPageState extends State<CustomSelectionPage> {
       padding: const EdgeInsets.all(24),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 420,
-        childAspectRatio: 0.95,
+        childAspectRatio: 0.72, // Adjusted for taller image and reduced padding
         crossAxisSpacing: 24,
         mainAxisSpacing: 24,
       ),
@@ -502,7 +502,7 @@ class _CustomSelectionPageState extends State<CustomSelectionPage> {
   }
 }
 
-class _CourseCard extends StatelessWidget {
+class _CourseCard extends StatefulWidget {
   final Course course;
   final bool isInCart;
   final VoidCallback onAddToCart;
@@ -518,144 +518,197 @@ class _CourseCard extends StatelessWidget {
   });
 
   @override
+  State<_CourseCard> createState() => _CourseCardState();
+}
+
+class _CourseCardState extends State<_CourseCard> {
+  double _fontSizeFactor = 1.0;
+  final ScrollController _textScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _textScrollController.dispose();
+    super.dispose();
+  }
+
+  void _toggleMagnify() {
+    setState(() {
+      _fontSizeFactor = _fontSizeFactor == 1.0 ? 1.4 : 1.0;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Card(
-      elevation: 4,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
+      elevation: 6,
+      shadowColor: colorScheme.primary.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         side: BorderSide(
-          color: isInCart
+          color: widget.isInCart
               ? AppTheme.hosiPeach
-              : colorScheme.outline.withValues(alpha: 0.1),
-          width: isInCart ? 2 : 1,
+              : colorScheme.primary.withValues(alpha: 0.15),
+          width: widget.isInCart ? 2.5 : 1.5,
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onShowDetails,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Section
-            Stack(
-              children: [
-                _buildCourseImage(theme),
-                if (isInCart)
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: AppTheme.hosiPeach,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.check,
-                          color: Colors.white, size: 20),
-                    ),
-                  ),
-              ],
-            ),
-
-            // Content Section
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      course.displayTitle,
-                      style: TextStyle(fontFamily: 'Poppins', 
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        height: 1.2,
-                        color: colorScheme.onSurface,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      course.description ?? 'No description provided.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.4,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-
-                    // Price and Actions
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Price: USD $100 converted to local currency by backend
-                            ListenableBuilder(
-                              listenable: CurrencyService.instance,
-                              builder: (context, _) => Text(
-                                CurrencyService.instance.formatUSDAmount(
-                                  course.price ?? 100.0,
-                                ),
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: AppTheme.successGreen,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            _ActionButton(
-                              icon: Icons.info_outline,
-                              onTap: onShowDetails,
-                              color: colorScheme.primary,
-                              tooltip: 'Details',
-                            ),
-                            const SizedBox(width: 8),
-                            _ActionButton(
-                              icon: isInCart
-                                  ? Icons.remove_shopping_cart
-                                  : Icons.add_shopping_cart,
-                              onTap: isInCart ? onRemoveFromCart : onAddToCart,
-                              color:
-                                  isInCart ? Colors.red : AppTheme.successGreen,
-                              filled: isInCart,
-                              tooltip: isInCart ? 'Remove' : 'Add to Cart',
-                            ),
-                          ],
-                        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image Section
+          Stack(
+            children: [
+              _buildCourseImage(theme),
+              if (widget.isInCart)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: AppTheme.hosiPeach,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))
                       ],
                     ),
-                  ],
+                    child: const Icon(Icons.check, color: Colors.white, size: 20),
+                  ),
+                ),
+              // Magnifying glass toggle
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _toggleMagnify,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _fontSizeFactor > 1.0 ? Icons.zoom_out : Icons.zoom_in,
+                        size: 18,
+                        color: colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
                 ),
               ),
+            ],
+          ),
+
+          // Content Section
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox.shrink(),
+                  const SizedBox(height: 12),
+                  
+                  // Scrollable Description area
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.05)),
+                      ),
+                      child: RawScrollbar(
+                        controller: _textScrollController,
+                        thumbVisibility: true,
+                        thickness: 4,
+                        radius: const Radius.circular(10),
+                        thumbColor: colorScheme.primary.withValues(alpha: 0.3),
+                        child: SingleChildScrollView(
+                          controller: _textScrollController,
+                          physics: const BouncingScrollPhysics(),
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Text(
+                              widget.course.description ?? 'No description provided.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withValues(alpha: 0.8),
+                                height: 1.6,
+                                fontSize: 12 * _fontSizeFactor,
+                                fontWeight: _fontSizeFactor > 1.0 ? FontWeight.w500 : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+
+                  // Price and Actions
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ListenableBuilder(
+                        listenable: CurrencyService.instance,
+                        builder: (context, _) => Text(
+                          CurrencyService.instance.formatUSDAmount(
+                            widget.course.price ?? 100.0,
+                          ),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: AppTheme.successGreen,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          _ActionButton(
+                            icon: Icons.info_outline,
+                            onTap: widget.onShowDetails,
+                            color: colorScheme.primary,
+                            tooltip: 'Details',
+                          ),
+                          const SizedBox(width: 10),
+                          _ActionButton(
+                            icon: widget.isInCart
+                                ? Icons.remove_shopping_cart
+                                : Icons.add_shopping_cart,
+                            onTap: widget.isInCart ? widget.onRemoveFromCart : widget.onAddToCart,
+                            color: widget.isInCart ? Colors.red : AppTheme.successGreen,
+                            filled: widget.isInCart,
+                            tooltip: widget.isInCart ? 'Remove' : 'Add to Cart',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildCourseImage(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 0),
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
       child: AICERTSCourseCardImage(
-        featureImageUrl: course.featureImageUrl,
-        certificateBadgeUrl: course.certificateBadgeUrl,
-        height: 110, // Reduced further
+        featureImageUrl: widget.course.featureImageUrl,
+        certificateBadgeUrl: widget.course.certificateBadgeUrl,
+        height: 180, // Optimized height
         width: double.infinity,
-        showBadge: false, // Badge removed for cleaner certificate view
+        showBadge: false,
         fit: BoxFit.contain,
       ),
     );

@@ -694,8 +694,9 @@ class _CreateQuotationDialogState extends State<_CreateQuotationDialog> {
           const Text('Generate Quotation'),
         ],
       ),
-      content: SizedBox(
-        width: 600,
+      content: Container(
+        constraints: const BoxConstraints(maxWidth: 600),
+        width: MediaQuery.of(context).size.width * 0.9,
         child: _isLoadingTypes 
           ? const Center(child: CircularProgressIndicator())
           : Form(

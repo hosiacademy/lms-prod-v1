@@ -24,9 +24,12 @@ class LoginSideSheet extends StatefulWidget {
 class _LoginSideSheetState extends State<LoginSideSheet> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _otpController = TextEditingController();
   bool _isLoading = false;
   bool _isOtpSent = false;
+  bool _usePassword = false; // Toggle between OTP and Password login
+  bool _isPasswordVisible = false;
   String? _errorMessage;
 
   Future<void> _handleInitialSubmit() async {
@@ -37,32 +40,95 @@ class _LoginSideSheetState extends State<LoginSideSheet> {
       _errorMessage = null;
     });
 
-    try {
-      final success = await AuthService.sendLoginOTP(_emailController.text.trim());
-      
-      if (success) {
+    if (_usePassword) {
+      // Password Login Flow
+      try {
+        final success = await AuthService.login(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        if (success) {
+          _onLoginSuccess();
+        } else {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = 'Invalid email or password. Please try again.';
+          });
+        }
+      } catch (e) {
         setState(() {
-          _isOtpSent = true;
           _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'No account found with this email. Please check your spelling or enrol now.';
+          _errorMessage = 'Login failed. Please try again later.';
         });
       }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Failed to send verification code. Please try again.';
-      });
+    } else {
+      // OTP Login Flow
+      try {
+        final success =
+            await AuthService.sendLoginOTP(_emailController.text.trim());
+
+        if (success) {
+          setState(() {
+            _isOtpSent = true;
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _isLoading = false;
+            _errorMessage =
+                'No account found with this email. Please check your spelling or enrol now.';
+          });
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to send verification code. Please try again.';
+        });
+      }
+    }
+  }
+
+  void _onLoginSuccess() async {
+    final savedRole = await AuthService.getUserRole();
+    final userName = await AuthService.getUserName();
+    final firstName = userName?.split(' ').first ?? 'User';
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      widget.onClose();
+      widget.onLoginSuccess();
+      AuthService.fetchPostLoginData();
+
+      String normalizedRole = savedRole?.toLowerCase().replaceAll(' ', '_').replaceAll(',', '').replaceAll('&', 'and') ?? '';
+      
+      String welcomePath;
+      if (normalizedRole.contains('system_admin') || normalizedRole == 'admin') {
+        welcomePath = '/welcome/admin'; // Fallback for side sheet without superuser context
+      } else if (normalizedRole.contains('executive')) {
+        welcomePath = '/welcome/executive-admin';
+      } else if (normalizedRole.contains('hr_admin') || normalizedRole == 'hr_admin') {
+        welcomePath = '/welcome/hr-admin';
+      } else if (normalizedRole.contains('sales_and_marketing') || normalizedRole.contains('payment_sales')) {
+        welcomePath = '/welcome/payment-admin';
+      } else if (normalizedRole.contains('marketing')) {
+        welcomePath = '/welcome/marketing-admin';
+      } else if (normalizedRole.contains('payment')) {
+        welcomePath = '/welcome/payment-admin';
+      } else if (normalizedRole.contains('instructor') || normalizedRole.contains('facilitator')) {
+        welcomePath = '/welcome/instructor';
+      } else {
+        welcomePath = '/welcome/student';
+      }
+      context.go(welcomePath, extra: firstName);
     }
   }
 
   Future<void> _handleVerifyOtp() async {
     final otp = _otpController.text.trim();
     if (otp.length != 6) {
-      setState(() => _errorMessage = 'Please enter the 6-digit code sent to your email.');
+      setState(() =>
+          _errorMessage = 'Please enter the 6-digit code sent to your email.');
       return;
     }
 
@@ -85,32 +151,7 @@ class _LoginSideSheetState extends State<LoginSideSheet> {
         return;
       }
 
-      // Success logic
-      final savedRole = await AuthService.getUserRole();
-      final userName = await AuthService.getUserName();
-      final firstName = userName?.split(' ').first ?? 'User';
-
-      setState(() => _isLoading = false);
-      widget.onClose();
-      widget.onLoginSuccess();
-      AuthService.fetchPostLoginData();
-
-      if (context.mounted) {
-        String welcomePath;
-        switch (savedRole) {
-          case 'admin': welcomePath = '/welcome/admin'; break;
-          case 'payment_admin': welcomePath = '/welcome/payment-admin'; break;
-          case 'marketing_admin': welcomePath = '/welcome/marketing-admin'; break;
-          case 'payment_sales_marketing_admin': welcomePath = '/welcome/payment-admin'; break;
-          case 'hr_admin': welcomePath = '/welcome/hr-admin'; break;
-          case 'executive_admin': welcomePath = '/welcome/executive-admin'; break;
-          case 'instructor':
-          case 'facilitator': welcomePath = '/welcome/instructor'; break;
-          case 'learner':
-          default: welcomePath = '/welcome/student'; break;
-        }
-        context.go(welcomePath, extra: firstName);
-      }
+      _onLoginSuccess();
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -258,7 +299,7 @@ class _LoginSideSheetState extends State<LoginSideSheet> {
                         const SizedBox(height: 16),
                       ],
 
-                      if (!_isOtpSent)
+                      if (!_isOtpSent) ...[
                         // Email field
                         TextFormField(
                           controller: _emailController,
@@ -279,8 +320,64 @@ class _LoginSideSheetState extends State<LoginSideSheet> {
                             }
                             return null;
                           },
-                        )
-                      else
+                        ),
+                        if (_usePassword) ...[
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _passwordController,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                icon: Icon(_isPasswordVisible
+                                    ? Icons.visibility_off
+                                    : Icons.visibility),
+                                onPressed: () => setState(() =>
+                                    _isPasswordVisible = !_isPasswordVisible),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            obscureText: !_isPasswordVisible,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your password';
+                              }
+                              return null;
+                            },
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: _handleForgotPassword,
+                              child: const Text('Forgot Password?'),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        // Login Method Toggle
+                        Row(
+                          children: [
+                            Text(
+                              _usePassword
+                                  ? 'Login with code instead'
+                                  : 'Login with password instead',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const Spacer(),
+                            Switch(
+                              value: _usePassword,
+                              onChanged: (val) =>
+                                  setState(() => _usePassword = val),
+                              activeColor: colorScheme.primary,
+                            ),
+                          ],
+                        ),
+                      ] else ...[
                         // OTP field
                         TextFormField(
                           controller: _otpController,
@@ -301,6 +398,7 @@ class _LoginSideSheetState extends State<LoginSideSheet> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                      ],
                       
                       const SizedBox(height: 24),
 
@@ -324,7 +422,9 @@ class _LoginSideSheetState extends State<LoginSideSheet> {
                                 ),
                               )
                             : Text(
-                                _isOtpSent ? 'Verify & Sign In' : 'Send Verification Code',
+                                _isOtpSent 
+                                  ? 'Verify & Sign In' 
+                                  : (_usePassword ? 'Sign In' : 'Send Verification Code'),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -580,6 +680,7 @@ class _LoginSideSheetState extends State<LoginSideSheet> {
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     _otpController.dispose();
     super.dispose();
   }

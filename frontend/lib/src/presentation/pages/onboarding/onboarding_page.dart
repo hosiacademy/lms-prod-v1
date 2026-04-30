@@ -167,19 +167,31 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   void _toggleLoginSheet() {
     if (_isDisposed || !mounted) return;
-    setState(() => _showLoginSheet = !_showLoginSheet);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isDisposed && mounted) {
+        setState(() => _showLoginSheet = !_showLoginSheet);
+      }
+    });
   }
 
   void _toggleCartPanel() {
     if (_isDisposed || !mounted) return;
-    setState(() => _showCartPanel = !_showCartPanel);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isDisposed && mounted) {
+        setState(() => _showCartPanel = !_showCartPanel);
+      }
+    });
   }
 
   void showOverlay(String name) {
     if (_isDisposed || !mounted) return;
     _hideTimer?.cancel();
     ConciergeManager.closeAny();
-    setState(() => _activeOverlay = name);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isDisposed && mounted) {
+        setState(() => _activeOverlay = name);
+      }
+    });
   }
 
   void scheduleHideOverlay() {
@@ -197,12 +209,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void hideOverlayImmediately() {
     if (_isDisposed || !mounted) return;
     _hideTimer?.cancel();
-    setState(() => _activeOverlay = null);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isDisposed && mounted) {
+        setState(() => _activeOverlay = null);
+      }
+    });
   }
 
   void _onHover(String item, bool isHovering) {
     if (_isDisposed || !mounted) return;
-    setState(() => _hoverStates[item] = isHovering);
+    if (_hoverStates[item] == isHovering) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isDisposed && mounted) {
+        setState(() => _hoverStates[item] = isHovering);
+      }
+    });
   }
 
   void _onTrainingMenuVisibilityChanged(bool isVisible) {
@@ -507,6 +528,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       body: Stack(
         children: [
           SafeArea(
+            left: false, // Allow logo to reach 2px from edge
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -536,7 +558,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             _navigateToEnrollment('/enroll/corporate');
                           },
                           onEnrollPressed: (course) {
-                            _showEnrollmentPage(context, const CombinedMasterclassPage());
+                            if (course.courseType == 'custom_selection' ||
+                                course.courseType == 'industry_training' ||
+                                (course.industry?.toLowerCase().contains('aicerts') ??
+                                    false)) {
+                              _showEnrollmentPage(
+                                  context,
+                                  CustomSelectionPage(
+                                      initialCourseId: course.id));
+                            } else {
+                              _showEnrollmentPage(
+                                  context, const CombinedMasterclassPage());
+                            }
                           },
                         ),
                         AICERTSCoursesSection(
@@ -891,64 +924,68 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ],
             ),
           ),
-          if (_activeOverlay != null) ...[
+          if (_activeOverlay != null)
             Positioned.fill(
               child: GestureDetector(
                 onTap: hideOverlayImmediately,
-                child: Container(color: Colors.black.withValues(alpha: 0.5)),
-              ),
-            ),
-            Positioned.fill(
-              child: MouseRegion(
-                onEnter: (_) {
-                  if (mounted) {
-                    WidgetsBinding.instance
-                        .addPostFrameCallback((_) => cancelHideOverlay());
-                  }
-                },
-                onExit: (_) {
-                  if (mounted) {
-                    WidgetsBinding.instance
-                        .addPostFrameCallback((_) => scheduleHideOverlay());
-                  }
-                },
-                hitTestBehavior: HitTestBehavior.opaque,
-                child: Center(
-                  child: SafeArea(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final screenWidth = constraints.maxWidth;
-                        final screenHeight = constraints.maxHeight;
-                        final isMobile = screenWidth < 600;
-                        final overlayWidth =
-                            isMobile ? screenWidth : screenWidth * 0.98;
-                        final overlayMaxHeight =
-                            isMobile ? screenHeight : screenHeight * 0.9;
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  child: MouseRegion(
+                    hitTestBehavior: HitTestBehavior.opaque,
+                    onEnter: (_) {
+                      if (mounted) {
+                        WidgetsBinding.instance
+                            .addPostFrameCallback((_) => cancelHideOverlay());
+                      }
+                    },
+                    onExit: (_) {
+                      if (mounted) {
+                        WidgetsBinding.instance
+                            .addPostFrameCallback((_) => scheduleHideOverlay());
+                      }
+                    },
+                    child: Center(
+                      child: SafeArea(
+                        child: GestureDetector(
+                          onTap:
+                              () {}, // Prevent closure when clicking on content
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final screenWidth = constraints.maxWidth;
+                              final screenHeight = constraints.maxHeight;
+                              final isMobile = screenWidth < 600;
+                              final overlayWidth =
+                                  isMobile ? screenWidth : screenWidth * 0.98;
+                              final overlayMaxHeight =
+                                  isMobile ? screenHeight : screenHeight * 0.9;
 
-                        return ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: overlayWidth,
-                            maxHeight: overlayMaxHeight,
+                              return ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: overlayWidth,
+                                  maxHeight: overlayMaxHeight,
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            Colors.black.withValues(alpha: 0.3),
+                                        blurRadius: 40,
+                                      )
+                                    ],
+                                  ),
+                                  child: _buildOverlay(_activeOverlay!),
+                                ),
+                              );
+                            },
                           ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  blurRadius: 40,
-                                )
-                              ],
-                            ),
-                            child: _buildOverlay(_activeOverlay!),
-                          ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ],
           if (_showSplashModal)
             Positioned.fill(child: SplashModal(onComplete: _onSplashComplete)),
           if (_showLoginSheet)
@@ -963,12 +1000,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         : Alignment.center,
                     child: GestureDetector(
                       onTap: () {}, // Prevent closure when clicking on sheet
-                      child: LoginSideSheet(
-                        onClose: _toggleLoginSheet,
-                        onLoginSuccess: () {
-                          _toggleLoginSheet();
-                          context.go('/');
-                        },
+                      child: SizedBox(
+                        height: double.infinity,
+                        child: LoginSideSheet(
+                          onClose: _toggleLoginSheet,
+                          onLoginSuccess: () {
+                            _toggleLoginSheet();
+                            context.go('/');
+                          },
+                        ),
                       ),
                     ),
                   ),

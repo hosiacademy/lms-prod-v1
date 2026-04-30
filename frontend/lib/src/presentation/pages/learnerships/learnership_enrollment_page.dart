@@ -762,7 +762,7 @@ class _LearnershipEnrollmentPageState extends State<LearnershipEnrollmentPage> {
                       itemCount: state.learnerships.length,
                       itemBuilder: (context, index) => Padding(
                         padding: const EdgeInsets.only(bottom: 16),
-                        child: SizedBox(height: 420, child: buildCard(index)),
+                        child: buildCard(index),
                       ),
                     );
                   }
@@ -773,7 +773,7 @@ class _LearnershipEnrollmentPageState extends State<LearnershipEnrollmentPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: isTablet ? 2 : 3,
-                      childAspectRatio: 0.72,
+                      childAspectRatio: 0.95, // Even more compact to remove blank space
                       crossAxisSpacing: 20,
                       mainAxisSpacing: 20,
                     ),
@@ -1101,12 +1101,13 @@ class _LearnershipCardState extends State<_LearnershipCard> {
           child: InkWell(
             onTap: widget.onCardTap,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
 
-                // ── IMAGE (40% of card) ─────────────────────────────
-                Expanded(
-                  flex: 40, 
+                // ── IMAGE (Fixed height for compactness) ───────────────────
+                SizedBox(
+                  height: 160, 
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -1189,10 +1190,8 @@ class _LearnershipCardState extends State<_LearnershipCard> {
                   ),
                 ),
 
-                // ── BODY (60% of card) ──────────────────────────────
-                Expanded(
-                  flex: 60, 
-                  child: Padding(
+                // ── BODY ──────────────────────────────────────────
+                Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1247,17 +1246,15 @@ class _LearnershipCardState extends State<_LearnershipCard> {
                         const SizedBox(height: 12),
 
                         // Description
-                        Expanded(
-                          child: Text(
-                            desc,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colors.onSurface.withValues(alpha: 0.8),
-                              height: 1.5,
-                            ),
-                            maxLines: 4,
-                            overflow: TextOverflow.ellipsis,
+                        Text(
+                          desc,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colors.onSurface.withValues(alpha: 0.8),
+                            height: 1.4,
                           ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
 
                         // Skill tags
@@ -1325,13 +1322,12 @@ class _LearnershipCardState extends State<_LearnershipCard> {
                       ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+    ); // FIXED
   }
 
   Widget _buildImageFallback(Color cardColor, IconData icon) {

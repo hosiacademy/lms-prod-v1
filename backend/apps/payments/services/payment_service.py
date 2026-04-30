@@ -11,9 +11,6 @@ from ..models import (
     Order
 )
 from ..adapters import get_adapter, ADAPTER_REGISTRY, PaymentError, SignatureVerificationError
-
-# Import Sentry monitoring
-from .sentry_service import sentry_monitor, monitor_payment_performance
 from apps.enrollments.models import ProvisionalEnrollment
 from apps.masterclasses.models import Masterclass
 from apps.learnerships.models import LearnershipProgramme, LearnershipEnrollment, EnrollmentStatus
@@ -112,7 +109,7 @@ class PaymentService:
         providers = []
         # SPECIAL CASE: Zimbabwe - SmatPay is the EXCLUSIVE provider
         if country.upper() == 'ZW':
-            logger.info("Zimbabwe detected - returning SmatPay as exclusive provider")
+            logger.info("Zimbabwe detected - returning SmatPay, EFT, and Cash")
             try:
                 providers.append({
                     'code': 'smatpay',
@@ -123,10 +120,27 @@ class PaymentService:
                     'is_recommended': True,
                     'priority': 1,
                     'description': 'Secure payments via SmatPay (Visa, Mastercard, ZimSwitch, EcoCash)',
-                    'is_exclusive': True,
+                    'is_exclusive': False,
+                })
+                # Add EFT and Cash for Zimbabwe
+                providers.append({
+                    'code': 'bank_transfer',
+                    'name': 'Bank Transfer (EFT)',
+                    'category': 'eft',
+                    'methods': ['bank_transfer'],
+                    'currencies': ['USD'],
+                    'description': 'Direct bank deposit or transfer',
+                })
+                providers.append({
+                    'code': 'on_site_payment',
+                    'name': 'In-Store Cash',
+                    'category': 'cash',
+                    'methods': ['cash'],
+                    'currencies': ['USD'],
+                    'description': 'Pay cash at our Harare office',
                 })
             except Exception as e:
-                logger.error(f"Error getting SmatPay for Zimbabwe: {e}")
+                logger.error(f"Error getting providers for Zimbabwe: {e}")
             return providers
 
         # Get country landscape
@@ -202,8 +216,31 @@ class PaymentService:
             except Exception as e:
                 logger.error(f"Error adding default SmatPay: {e}")
 
+        # 4. Merge static configuration from PaymentRoutingService (EFT and Cash)
+        try:
+            from .payment_routing_service import PaymentRoutingService, PaymentMethod
+            static_methods = PaymentRoutingService.get_available_payment_methods(country)
+            
+            for method_data in static_methods:
+                method_type = method_data['method']
+                if method_type in [PaymentMethod.EFT.value, PaymentMethod.CASH.value]:
+                    # Check if already added from database
+                    if not any(p['category'] == method_data['category'] for p in providers):
+                        providers.append({
+                            'code': method_data['provider'],
+                            'name': method_data['name'],
+                            'category': method_data['category'],
+                            'methods': [method_type],
+                            'currencies': [currency or 'USD'],
+                            'description': method_data['description'],
+                            'is_recommended': False,
+                            'priority': 10,
+                        })
+        except Exception as e:
+            logger.error(f"Error merging static payment methods: {e}")
+
         # Sort by priority and recommendation
-        providers.sort(key=lambda x: (-x['priority'], -x['is_recommended'], x['name']))
+        providers.sort(key=lambda x: (-x.get('priority', 0), -x.get('is_recommended', False), x.get('name', '')))
         
         return providers
     
@@ -342,9 +379,6 @@ class PaymentService:
             enrollment_type=metadata.get('enrollment_type'),
         )
 
-        # Track payment initiation in Sentry
-        sentry_monitor.track_payment_initiation(payment_transaction)
-
         try:
             # Get adapter and initiate payment
             adapter = self.get_adapter_for_provider(provider_code, provider_config)
@@ -403,57 +437,15 @@ class PaymentService:
             }
             
         except Exception as e:
-            payment_transaction.status = PaymentStatus.FAILED
-            payment_transaction.metadata['error'] = str(e)
-            payment_transaction.save()
+            if 'payment_transaction' in locals() and payment_transaction:
+                payment_transaction.status = PaymentStatus.FAILED
+                payment_transaction.metadata['error'] = str(e)
+                payment_transaction.save()
+            logger.error(f"Payment initiation failed: {str(e)}")
+            raise PaymentError(f"Failed to initiate payment: {str(e)}")
 
-            # Track failure in Sentry with full context
-            sentry_monitor.capture_payment_exception(
-                exception=e,
-                transaction=payment_transaction,
-                context={
-                    'operation': 'payment_initiation',
-                    'provider': provider_code,
-                    'error_message': str(e),
-                }
-            )
-
-            logger.error(
-                f"Payment initiation failed: {str(e)}",
-                extra={
-                    'transaction_id': str(payment_transaction.id),
-                    'provider': provider_code,
-                    'error': str(e),
-                }
-            )
-            raise PaymentError(f"Payment initiation failed: {str(e)}")
-    
-    def handle_webhook(self, provider_code: str, payload: Dict[str, Any],
-                      headers: Dict[str, str], raw_body: bytes = None) -> PaymentTransaction:
-        """
-        Handle incoming webhook from payment provider
-        
-        CRITICAL FIXES APPLIED:
-        1. Idempotency: Checks if order already successful before processing
-        2. Row locking: Uses select_for_update() to prevent race conditions
-        3. Raw body: Accepts raw body for proper signature verification
-
-        Args:
-            provider_code: Provider code
-            payload: Webhook payload
-            headers: Webhook headers
-            raw_body: Raw request body (bytes) for signature verification
-
-        Returns:
-            Updated payment transaction
-        """
-        # Track webhook reception in Sentry
-        sentry_monitor.track_webhook_received(
-            provider=provider_code,
-            event_type=payload.get('event', 'unknown'),
-            payload=payload
-        )
-
+    def handle_webhook(self, provider_code: str, payload: Dict, headers: Dict = None, raw_body: bytes = None):
+        """Handle incoming payment webhook from any provider"""
         try:
             # Get adapter without config first for signature verification
             adapter = self.get_adapter_for_provider(provider_code)
@@ -530,18 +522,13 @@ class PaymentService:
                     transaction.status = PaymentStatus.SUCCESSFUL
                     transaction.completed_at = timezone.now()
 
-                    # Track success in Sentry
-                    sentry_monitor.track_payment_success(transaction)
-
                     # Trigger post-payment actions (now async)
                     self._handle_successful_payment(transaction)
 
                 elif 'fail' in event.lower() or 'fail' in status.lower():
                     transaction.status = PaymentStatus.FAILED
+                    # Sentry tracking removed as per mandate
 
-                    # Track failure in Sentry
-                    error_message = webhook_data.get('error_message', status)
-                    sentry_monitor.track_payment_failure(transaction, error_message)
 
                 elif 'cancel' in event.lower():
                     transaction.status = PaymentStatus.CANCELLED
@@ -836,7 +823,64 @@ class PaymentService:
 
     def _provision_enrollment(self, user, enrollment_type, program_id, transaction):
         """
-        Provision enrollment based on type.
+        Provision enrollment(s) based on type.
+        Supports multiple learners in metadata.
+        """
+        from django.contrib.auth import get_user_model
+        import secrets
+        
+        User = get_user_model()
+        learners_data = transaction.metadata.get('learners', []) if transaction.metadata else []
+        
+        target_users = []
+        if learners_data and isinstance(learners_data, list) and len(learners_data) > 0:
+            for learner in learners_data:
+                learner_email = learner.get('email')
+                if not learner_email: continue
+                
+                try:
+                    target_user = User.objects.get(email=learner_email)
+                except User.DoesNotExist:
+                    username = learner_email.split('@')[0]
+                    base_username = username
+                    counter = 1
+                    while User.objects.filter(username=username).exists():
+                        username = f"{base_username}{counter}"
+                        counter += 1
+                        
+                    first_name = ""
+                    last_name = ""
+                    full_name = learner.get('full_name') or learner.get('name') or ""
+                    if full_name:
+                        parts = full_name.split(' ')
+                        first_name = parts[0]
+                        if len(parts) > 1:
+                            last_name = ' '.join(parts[1:])
+                            
+                    target_user = User.objects.create_user(
+                        username=username,
+                        email=learner_email,
+                        first_name=first_name,
+                        last_name=last_name
+                    )
+                    target_user.set_password(secrets.token_urlsafe(12))
+                    target_user.save()
+                    
+                target_users.append(target_user)
+        else:
+            target_users = [user]
+
+        for target_user in target_users:
+            self._provision_single_enrollment(target_user, enrollment_type, program_id, transaction)
+            
+            # Send individual welcome/confirmation email for extra learners
+            if target_user.id != transaction.user.id:
+                from apps.payments.tasks import send_payment_confirmation_email
+                send_payment_confirmation_email.delay(str(transaction.id), target_user.id)
+
+    def _provision_single_enrollment(self, user, enrollment_type, program_id, transaction):
+        """
+        Provision a single enrollment.
         """
         from apps.aicerts_integration.services import EnrollmentSyncService
         from apps.aicerts_courses.models import AiCertsCourse
@@ -1448,3 +1492,4 @@ Hosi Academy Team
 
 # Singleton instance
 payment_service = PaymentService()
+

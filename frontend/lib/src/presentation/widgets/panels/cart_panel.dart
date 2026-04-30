@@ -9,7 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/api/api_client.dart';
 import '../../../data/models/course.dart';
 import '../../../data/models/learnership.dart';
-import 'enhanced_enrollment_panel.dart';
+import '../modals/aicerts/multi_step_aicerts_custom_selection_modal.dart';
 
 /// Course Cart Panel — Displays items added to cart.
 /// Opened as a side drawer from the student portal header.
@@ -701,11 +701,13 @@ class _CartPanelState extends State<CartPanel> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => EnhancedEnrollmentPanel(
+        builder: (context) => MultiStepAICERTSCustomSelectionModal(
           courses: courses,
-          isExistingStudent: isExistingStudent,
-          existingStudentData:
-              isExistingStudent ? existingStudentData : null,
+          onEnrollmentComplete: () {
+            cartService.clearCart();
+            if (mounted) setState(() {});
+          },
+          allowPrefill: true,
         ),
       );
     } catch (e) {

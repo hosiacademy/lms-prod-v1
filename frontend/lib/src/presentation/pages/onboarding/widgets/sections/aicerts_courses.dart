@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../../core/services/aicerts_service.dart';
 import '../../../../../data/models/course.dart';
+import '../../../../../core/services/wishlist_service.dart';
+import '../../../../widgets/modals/marketing/wishlist_lead_modal.dart';
 import '../../../../../core/services/cart_service.dart';
 import '../../../../widgets/aicerts/aicerts_image_widget.dart';
 import '../../../../../core/services/currency_service.dart';
@@ -86,10 +88,13 @@ class _AICERTSCoursesSectionState extends State<AICERTSCoursesSection> {
   Future<void> _loadCourses() async {
     try {
       final courses = await AICertsService.fetchCourses();
+      // Filter out courses without a cost (price_usd <= 0 or null)
+      final paidCourses = courses.where((c) => (c.price ?? 0) > 0).toList();
+      
       if (mounted) {
         setState(() {
-          _allCourses = courses;
-          _filteredCourses = courses;
+          _allCourses = paidCourses;
+          _filteredCourses = paidCourses;
           _isLoading = false;
         });
       }
@@ -272,61 +277,65 @@ class _AICERTSCoursesSectionState extends State<AICERTSCoursesSection> {
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Header: Title + Search bar ──────────────────────────────
+          // Header: Title + Search bar
           Padding(
             padding: EdgeInsets.symmetric(horizontal: hPad),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'AICERTS COURSES OFFERED',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: colors.onSurface,
-                              fontSize: screenWidth < 768 ? 26 : 38,
-                              letterSpacing: -1,
-                            ),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: screenWidth * 0.9),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'AICERTS COURSES OFFERED',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: colors.onSurface,
+                            fontSize: screenWidth < 768 ? 26 : 38,
+                            letterSpacing: -1,
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Globally recognized self-paced professional certifications',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: colors.onSurface.withValues(alpha: 0.6),
-                              fontSize: screenWidth < 768 ? 14 : 16,
-                            ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Globally recognized self-paced professional certifications',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: colors.onSurface.withValues(alpha: 0.6),
+                            fontSize: screenWidth < 768 ? 14 : 16,
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Course count badge
+                if (!_isLoading)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12, bottom: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${coursesToDisplay.length} courses',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: colors.primary,
+                        ),
                       ),
                     ),
-                    // Course count badge
-                    if (!_isLoading)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${coursesToDisplay.length} courses',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
                 const SizedBox(height: 16),
                 // Search bar
                 TextField(
@@ -375,39 +384,42 @@ class _AICERTSCoursesSectionState extends State<AICERTSCoursesSection> {
           ),
           const SizedBox(height: 20),
 
-          // Chips
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: hPad),
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 8,
-              children: [
-                _AdvantageChip(
-                  icon: Icons.verified_rounded,
-                  label: 'Globally Recognised Certs',
-                  color: colors.primary,
-                ),
-                _AdvantageChip(
-                  icon: Icons.bolt_rounded,
-                  label: 'Self-Paced Learning',
-                  color: const Color(0xFF8C4928),
-                ),
-                _AdvantageChip(
-                  icon: Icons.public_rounded,
-                  label: 'Africa-Focused Content',
-                  color: const Color(0xFF2E7D32),
-                ),
-                _AdvantageChip(
-                  icon: Icons.workspace_premium_rounded,
-                  label: 'Industry-Validated Skills',
-                  color: const Color(0xFFF79150),
-                ),
-              ],
+          // Chips - Centralized width-wise via parent column
+          Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: hPad),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 10,
+                alignment: WrapAlignment.center,
+                children: [
+                  _AdvantageChip(
+                    icon: Icons.verified_rounded,
+                    label: 'Globally Recognised Certs',
+                    color: colors.primary,
+                  ),
+                  _AdvantageChip(
+                    icon: Icons.bolt_rounded,
+                    label: 'Self-Paced Learning',
+                    color: const Color(0xFF8C4928),
+                  ),
+                  _AdvantageChip(
+                    icon: Icons.public_rounded,
+                    label: 'Africa-Focused Content',
+                    color: const Color(0xFF2E7D32),
+                  ),
+                  _AdvantageChip(
+                    icon: Icons.workspace_premium_rounded,
+                    label: 'Industry-Validated Skills',
+                    color: const Color(0xFFF79150),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 32),
 
-          // ── TWO ROWS — Top and Bottom — Page-Based for No Cuts ─────────────────────────────
+          // Two ROWS Top and Bottom
           _TwoRowCourseGrid(
             courses: coursesToDisplay,
             onEnroll: _handleEnroll,
@@ -516,13 +528,14 @@ class _TwoRowCourseGridState extends State<_TwoRowCourseGrid> {
     }
 
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final rowHeight =
-        isMobile ? 380.0 : 420.0; // Synchronized with _ModernCourseCard height
+    // Synchronized with _ModernCourseCard height
+    final cardHeight = isMobile ? 420.0 : 460.0;
+    final rowHeight = cardHeight;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
-        final horizontalPadding = screenWidth * 0.005;
+        final horizontalPadding = isMobile ? 16.0 : 40.0;
         final availableWidth = screenWidth - (2 * horizontalPadding);
 
         // Calculate how many cards can fit comfortably (target ~320px)
@@ -596,11 +609,11 @@ class _TwoRowCourseGridState extends State<_TwoRowCourseGrid> {
               ),
             ),
 
-            // ── Left Arrow ──────────────────────────────────
+            // Left Arrow
             Positioned(
-              left: 8,
+              left: 0,
               top: 0,
-              bottom: 40, // Move up slightly to center between two rows
+              bottom: 40,
               child: Center(
                 child: _ArrowButton(
                   icon: Icons.chevron_left_rounded,
@@ -609,9 +622,9 @@ class _TwoRowCourseGridState extends State<_TwoRowCourseGrid> {
               ),
             ),
 
-            // ── Right Arrow ─────────────────────────────────
+            // Right Arrow
             Positioned(
-              right: 8,
+              right: 0,
               top: 0,
               bottom: 40,
               child: Center(
@@ -645,20 +658,11 @@ class _ArrowButton extends StatelessWidget {
         child: Container(
           width: 56,
           height: 56,
-          decoration: BoxDecoration(
-            color: colors.surface.withValues(alpha: 0.9),
+          decoration: const BoxDecoration(
+            color: Colors.transparent,
             shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border.all(
-                color: colors.primary.withValues(alpha: 0.2), width: 2),
           ),
-          child: Icon(icon, size: 38, color: colors.primary),
+          child: Icon(icon, size: 48, color: colors.primary.withValues(alpha: 0.8)),
         ),
       ).animate().scale(duration: 200.ms, curve: Curves.easeOut),
     );
@@ -688,6 +692,41 @@ class _ModernCourseCard extends StatefulWidget {
 
 class _ModernCourseCardState extends State<_ModernCourseCard> {
   bool _isAddingToCart = false;
+  double _fontSizeFactor = 1.0;
+  final ScrollController _textScrollController = ScrollController();
+  bool _isWishlisted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isWishlisted = wishlistService.hasCourse(widget.course.id);
+  }
+
+  Future<void> _handleWishlist() async {
+    if (_isWishlisted) {
+      final success = await wishlistService.removeCourse(widget.course.id);
+      if (success && mounted) {
+        setState(() => _isWishlisted = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Removed from wishlist'))
+        );
+      }
+    } else {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => WishlistLeadModal(
+          course: widget.course,
+          onComplete: (interest, timing, notes) async {
+            final success = await wishlistService.addCourse(widget.course);
+            if (success && mounted) {
+              setState(() => _isWishlisted = true);
+            }
+          },
+        ),
+      );
+    }
+  }
 
   Future<void> _handleAddToCart() async {
     if (_isAddingToCart) return;
@@ -766,202 +805,234 @@ class _ModernCourseCardState extends State<_ModernCourseCard> {
   }
 
   @override
+  void dispose() {
+    _textScrollController.dispose();
+    super.dispose();
+  }
+
+  void _toggleMagnify() {
+    setState(() {
+      if (_fontSizeFactor == 1.0) {
+        _fontSizeFactor = 1.4;
+      } else if (_fontSizeFactor == 1.4) {
+        _fontSizeFactor = 1.8;
+      } else {
+        _fontSizeFactor = 1.0;
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final cardHeight = isMobile ? 380.0 : 420.0; // Reduced from 440/480
-    final imageHeight = (cardHeight * 0.4).clamp(100.0, 150.0);
+    final cardHeight = isMobile ? 420.0 : 460.0;
+    final imageHeight = (cardHeight * 0.5).clamp(130.0, 230.0);
 
     // Strip HTML tags and decode common entities, then remove repeated title
     String description = _stripHtml(
         widget.course.description ?? 'Self-paced industry certification.');
     final titleLower = widget.course.displayTitle.toLowerCase().trim();
     if (description.toLowerCase().trimLeft().startsWith(titleLower)) {
-      description =
-          description.substring(widget.course.displayTitle.length).trimLeft();
+      if (description.length >= widget.course.displayTitle.length) {
+        description =
+            description.substring(widget.course.displayTitle.length).trimLeft();
+      }
     }
     if (description.isEmpty) description = 'Self-paced industry certification.';
 
-    // Price — use localPrice if available, otherwise convert USD (localized conversion)
+    // Price use localPrice if available, otherwise convert USD (localized conversion)
     final priceText = widget.course.localPrice ??
         (widget.course.price != null
             ? CurrencyService.instance.formatUSDAmount(widget.course.price!)
             : 'Contact for pricing');
 
-    return SizedBox(
+    return Container(
       width: widget.cardWidth,
       height: cardHeight,
-      child: Container(
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
-          boxShadow: [
-            BoxShadow(
-              color: colors.shadow.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.15), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withValues(alpha: 0.08),
+            blurRadius: 25,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image Section
+          Container(
+            width: widget.cardWidth,
+            height: imageHeight,
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHighest.withValues(alpha: 0.2),
+              border: Border(bottom: BorderSide(color: colors.outline.withValues(alpha: 0.1))),
             ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Image — 60% of card, price badge floating on it ────
-            SizedBox(
-              width: widget.cardWidth,
-              height: imageHeight,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  GestureDetector(
-                    onTap: widget.onAskAI,
-                    child: AICERTSCourseCardImage(
-                      featureImageUrl: widget.course.featureImageUrl,
-                      certificateBadgeUrl: widget.course.certificateBadgeUrl,
-                      width: widget.cardWidth,
-                      height: imageHeight,
-                      showBadge: false,
-                      fit: BoxFit.contain,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: AICERTSCourseCardImage(
+                    featureImageUrl: widget.course.featureImageUrl,
+                    certificateBadgeUrl: widget.course.certificateBadgeUrl,
+                    width: widget.cardWidth,
+                    height: imageHeight,
+                    showBadge: false,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                // Magnifying Glass Zoom Icon
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: IconButton(
+                    onPressed: _toggleMagnify,
+                    icon: Icon(
+                      _fontSizeFactor > 1.0 ? Icons.zoom_out : Icons.zoom_in,
+                      size: 20,
+                      color: colors.primary.withValues(alpha: 0.7),
+                    ),
+                    style: IconButton.styleFrom(
+                      padding: const EdgeInsets.all(8),
+                      backgroundColor: Colors.transparent,
                     ),
                   ),
-                  // Price floating bottom-left on image
-                  if (priceText != null)
-                    Positioned(
-                      bottom: 10,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.65),
-                          borderRadius: BorderRadius.circular(12),
+                ),
+                // Price Tag (Superimposed, right side, vertically central, no background)
+                if (priceText != null)
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    right: 12,
+                    child: Center(
+                      child: Text(
+                        priceText,
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          shadows: [
+                            Shadow(
+                              color: colors.surface.withValues(alpha: 0.5),
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          priceText,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Content Area
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox.shrink(),
+
+                  // Scrollable Description - No ellipsis
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHighest.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.outline.withValues(alpha: 0.05)),
+                      ),
+                      child: RawScrollbar(
+                        controller: _textScrollController,
+                        thumbVisibility: true,
+                        thickness: 4,
+                        radius: const Radius.circular(10),
+                        thumbColor: colors.primary.withValues(alpha: 0.4),
+                        child: SingleChildScrollView(
+                          controller: _textScrollController,
+                          physics: const BouncingScrollPhysics(),
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Text(
+                              description,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurface.withValues(alpha: 0.9),
+                                height: 1.6,
+                                fontSize: 12 * _fontSizeFactor,
+                                fontWeight: _fontSizeFactor > 1.0 ? FontWeight.w500 : FontWeight.normal,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
+                  ),
 
-            // ── Content — scrollable area ───────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                  const SizedBox(height: 16),
+
+                  // CTA Buttons - Horizontally symmetrically aligned
+                  Row(
                     children: [
-                      // Description — no repeated title
-                      Text(
-                        description,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurface.withValues(alpha: 0.6),
-                          height: 1.4,
-                          fontSize: 11,
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _isAddingToCart ? null : _handleAddToCart,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.primary,
+                            foregroundColor: colors.onPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: _isAddingToCart
+                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
+                            : const Text('Add', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                         ),
                       ),
-                      const SizedBox(height: 6),
-
-                      // Meta chips
-                      Row(
-                        children: [
-                          _MetaChip(
-                            icon: Icons.signal_cellular_alt_rounded,
-                            label: 'Professional',
-                            colors: colors,
-                          ),
-                          const SizedBox(width: 8),
-                          _MetaChip(
-                            icon: Icons.timer_outlined,
-                            label: 'Self-Paced',
-                            colors: colors,
-                          ),
-                        ],
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: _handleWishlist,
+                        icon: Icon(
+                          _isWishlisted ? Icons.bookmark : Icons.bookmark_border,
+                          color: _isWishlisted ? colors.primary : colors.onSurface.withValues(alpha: 0.6),
+                          size: 18,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: colors.surfaceContainerHighest.withValues(alpha: 0.5),
+                          padding: const EdgeInsets.all(12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        tooltip: _isWishlisted ? 'Remove from wishlist' : 'Add to wishlist',
                       ),
-                      const SizedBox(height: 8),
-
-                      // ── CTA — horizontal: Add to Cart | Enroll Now ──
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed:
-                                  _isAddingToCart ? null : _handleAddToCart,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: colors.primary,
-                                foregroundColor: colors.onPrimary,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 9),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                elevation: 0,
-                              ),
-                              child: _isAddingToCart
-                                  ? const SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                Colors.white),
-                                      ),
-                                    )
-                                  : const Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.shopping_cart_rounded,
-                                            size: 13),
-                                        SizedBox(width: 4),
-                                        Text('Add to Cart',
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                            ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: widget.onEnroll,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colors.primary,
+                            side: BorderSide(color: colors.primary, width: 1.5),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          const SizedBox(width: 7),
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: widget.onEnroll,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: colors.primary,
-                                side: BorderSide(color: colors.primary),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 9),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                              ),
-                              child: const Text('Enroll Now',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ],
+                          child: const Text('Enroll', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -253,11 +253,14 @@ class _EnrollmentFormWidgetState extends State<EnrollmentFormWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final mq = MediaQuery.of(context);
+    final sw = mq.size.width;
+    final contentPad = (sw * 0.05).clamp(16.0, 24.0);
 
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(contentPad),
         child: Form(
           key: _formKey,
           child: Column(
@@ -279,12 +282,14 @@ class _EnrollmentFormWidgetState extends State<EnrollmentFormWidget> {
                               'Enrollment Form',
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                fontSize: (sw * 0.05).clamp(18.0, 24.0),
                               ),
                             ),
                             Text(
                               widget.trainingTitle,
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 color: colorScheme.primary,
+                                fontSize: (sw * 0.035).clamp(13.0, 16.0),
                               ),
                             ),
                           ],
@@ -309,7 +314,7 @@ class _EnrollmentFormWidgetState extends State<EnrollmentFormWidget> {
                             'Please fill in all required fields marked with *',
                             style: TextStyle(
                               color: colorScheme.onPrimaryContainer,
-                              fontSize: 13,
+                              fontSize: (sw * 0.03).clamp(11.0, 13.0),
                             ),
                           ),
                         ),

@@ -47,10 +47,7 @@ CACHES = {
     }
 }
 
-# Disable Sentry in tests
-if 'sentry_sdk' in sys.modules:
-    import sentry_sdk
-    sentry_sdk.init(dsn=None)
+
 
 # Simplified logging for tests
 LOGGING = {
@@ -100,3 +97,4 @@ ALLOWED_HOSTS = ['*']
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 SECURE_SSL_REDIRECT = False
+

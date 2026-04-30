@@ -83,12 +83,21 @@ class UniversalAdminWelcomePage extends StatelessWidget {
                     children: [
                       _buildPortalCard(
                         context,
+                        title: 'System Administration',
+                        subtitle: 'Core Settings & Infrastructure',
+                        icon: Icons.settings_applications_outlined,
+                        color: Colors.redAccent,
+                        route: '/admin/dashboard',
+                        delay: 300,
+                      ),
+                      _buildPortalCard(
+                        context,
                         title: 'Payment Operations',
                         subtitle: 'Finance & Global Revenue',
                         icon: Icons.account_balance_wallet_outlined,
                         color: Colors.teal,
                         route: '/admin/payments',
-                        delay: 300,
+                        delay: 400,
                       ),
                       _buildPortalCard(
                         context,
@@ -97,7 +106,7 @@ class UniversalAdminWelcomePage extends StatelessWidget {
                         icon: Icons.people_alt_outlined,
                         color: Colors.blueAccent,
                         route: '/admin/hr',
-                        delay: 400,
+                        delay: 500,
                       ),
                       _buildPortalCard(
                         context,
@@ -106,7 +115,7 @@ class UniversalAdminWelcomePage extends StatelessWidget {
                         icon: Icons.campaign_outlined,
                         color: Colors.orange,
                         route: '/admin/marketing',
-                        delay: 500,
+                        delay: 600,
                       ),
                       _buildPortalCard(
                         context,
@@ -115,7 +124,7 @@ class UniversalAdminWelcomePage extends StatelessWidget {
                         icon: Icons.insights_outlined,
                         color: Colors.indigo,
                         route: '/admin/executive',
-                        delay: 600,
+                        delay: 700,
                       ),
                     ],
                   ),

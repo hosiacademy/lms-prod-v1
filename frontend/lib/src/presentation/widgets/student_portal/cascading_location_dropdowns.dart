@@ -157,46 +157,29 @@ class _CascadingLocationDropdownsState
   }
 
   Widget _buildCountryDropdown(bool isLoading) {
-    final countries = _countries;
-
-    if (_selectedCountry != null && countries.isNotEmpty) {
-      try {
-        _selectedCountry =
-            countries.firstWhere((c) => c.id == _selectedCountry!.id);
-      } catch (_) {}
-    }
-
-    return DropdownButtonFormField<location_models.Country>(
-      key: ValueKey('country_${_selectedCountry?.id}'),
+    return _buildSearchablePicker<location_models.Country>(
+      label: widget.countryLabel ?? 'Country${widget.isRequired ? ' *' : ''}',
       value: _selectedCountry,
-      decoration: InputDecoration(
-        labelText:
-            widget.countryLabel ?? 'Country${widget.isRequired ? ' *' : ''}',
-        border: const OutlineInputBorder(),
-        prefixIcon: const Icon(Icons.public),
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-      ),
-      hint: const Text('Select country'),
-      isExpanded: true,
-      items: countries.map((country) {
-        return DropdownMenuItem<location_models.Country>(
-          value: country,
-          child: Row(
-            children: [
-              Image.network(
-                'https://flagcdn.com/w20/${country.code.toLowerCase()}.png',
-                width: 20,
-                errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.flag, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Text(country.name)),
-            ],
+      items: _countries,
+      isLoading: isLoading,
+      icon: Icons.public,
+      hint: 'Select country',
+      itemBuilder: (country) => Row(
+        children: [
+          Image.network(
+            'https://flagcdn.com/w20/${country.code.toLowerCase()}.png',
+            width: 20,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.flag, size: 20),
           ),
-        );
-      }).toList(),
-      onChanged: (location_models.Country? country) {
+          const SizedBox(width: 12),
+          Expanded(child: Text(country.name)),
+        ],
+      ),
+      searchMatcher: (country, query) =>
+          country.name.toLowerCase().contains(query.toLowerCase()) ||
+          country.code.toLowerCase().contains(query.toLowerCase()),
+      onChanged: (country) {
         setState(() {
           _selectedCountry = country;
           _selectedState = null;
@@ -213,138 +196,308 @@ class _CascadingLocationDropdownsState
 
         _notifyChange();
       },
-      validator: widget.isRequired
-          ? (value) => value == null ? 'Please select a country' : null
-          : null,
     );
   }
 
   Widget _buildStateDropdown(bool isLoading) {
-    final states = _states;
     final bool isEnabled = _selectedCountry != null;
-
-    if (_selectedState != null && states.isNotEmpty) {
-      try {
-        _selectedState = states.firstWhere((s) => s.id == _selectedState!.id);
-      } catch (_) {}
-    }
-
-    return DropdownButtonFormField<location_models.State>(
-      key: ValueKey('state_${_selectedCountry?.id}_${_selectedState?.id}'),
+    return _buildSearchablePicker<location_models.State>(
+      label: widget.stateLabel ?? 'State/Province${widget.isRequired ? ' *' : ''}',
       value: _selectedState,
-      decoration: InputDecoration(
-        labelText: widget.stateLabel ??
-            'State/Province${widget.isRequired ? ' *' : ''}',
-        border: const OutlineInputBorder(),
-        prefixIcon: isLoading && states.isEmpty && isEnabled
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: Padding(
-                  padding: EdgeInsets.all(12.0),
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            : const Icon(Icons.map_outlined),
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-        enabled: isEnabled,
-      ),
-      hint: Text(isEnabled ? 'Select state' : 'Select country first'),
-      isExpanded: true,
-      items: states.map((state) {
-        return DropdownMenuItem<location_models.State>(
-          value: state,
-          child: Text(state.name),
-        );
-      }).toList(),
-      onChanged: isEnabled
-          ? (location_models.State? state) {
-              setState(() {
-                _selectedState = state;
-                _selectedCity = null;
-                _cities = [];
-              });
+      items: _states,
+      isLoading: isLoading && _states.isEmpty && isEnabled,
+      icon: Icons.map_outlined,
+      hint: isEnabled ? 'Select state' : 'Select country first',
+      isEnabled: isEnabled,
+      itemBuilder: (state) => Text(state.name),
+      searchMatcher: (state, query) =>
+          state.name.toLowerCase().contains(query.toLowerCase()),
+      onChanged: (state) {
+        setState(() {
+          _selectedState = state;
+          _selectedCity = null;
+          _cities = [];
+        });
 
-              if (state != null) {
-                context.read<LocationBloc>().add(SelectState(state));
-              }
+        if (state != null) {
+          context.read<LocationBloc>().add(SelectState(state));
+        }
 
-              _notifyChange();
-            }
-          : null,
-      validator: widget.isRequired && isEnabled
-          ? (value) => value == null ? 'Please select a state' : null
-          : null,
+        _notifyChange();
+      },
     );
   }
 
   Widget _buildCityDropdown(bool isLoading) {
-    final cities = _cities;
     final bool isEnabled = _selectedState != null;
-
-    if (_selectedCity != null && cities.isNotEmpty) {
-      try {
-        _selectedCity = cities.firstWhere((c) => c.id == _selectedCity!.id);
-      } catch (_) {}
-    }
-
-    return DropdownButtonFormField<location_models.City>(
-      key: ValueKey('city_${_selectedState?.id}_${_selectedCity?.id}'),
+    return _buildSearchablePicker<location_models.City>(
+      label: widget.cityLabel ?? 'City${widget.isRequired ? ' *' : ''}',
       value: _selectedCity,
-      decoration: InputDecoration(
-        labelText: widget.cityLabel ?? 'City${widget.isRequired ? ' *' : ''}',
-        border: const OutlineInputBorder(),
-        prefixIcon: isLoading && cities.isEmpty && isEnabled
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: Padding(
-                  padding: EdgeInsets.all(12.0),
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            : const Icon(Icons.location_city),
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-        enabled: isEnabled,
-      ),
-      hint: Text(
-        isEnabled
-            ? 'Select city'
-            : (_selectedCountry == null
-                ? 'Select country first'
-                : 'Select state first'),
-      ),
-      isExpanded: true,
-      items: cities.map((city) {
-        return DropdownMenuItem<location_models.City>(
-          value: city,
-          child: Text(city.name),
-        );
-      }).toList(),
-      onChanged: isEnabled
-          ? (location_models.City? city) {
-              setState(() {
-                _selectedCity = city;
-              });
+      items: _cities,
+      isLoading: isLoading && _cities.isEmpty && isEnabled,
+      icon: Icons.location_city,
+      hint: isEnabled ? 'Select city' : 'Select state first',
+      isEnabled: isEnabled,
+      itemBuilder: (city) => Text(city.name),
+      searchMatcher: (city, query) =>
+          city.name.toLowerCase().contains(query.toLowerCase()),
+      onChanged: (city) {
+        setState(() {
+          _selectedCity = city;
+        });
 
-              if (city != null) {
-                context.read<LocationBloc>().add(SelectCity(city));
-              }
+        if (city != null) {
+          context.read<LocationBloc>().add(SelectCity(city));
+        }
 
-              _notifyChange();
-            }
-          : null,
-      validator: widget.isRequired && isEnabled
-          ? (value) => value == null ? 'Please select a city' : null
-          : null,
+        _notifyChange();
+      },
+    );
+  }
+
+  Widget _buildSearchablePicker<T>({
+    required String label,
+    required T? value,
+    required List<T> items,
+    required bool isLoading,
+    required IconData icon,
+    required String hint,
+    required Widget Function(T) itemBuilder,
+    required bool Function(T, String) searchMatcher,
+    required ValueChanged<T?> onChanged,
+    bool isEnabled = true,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return InkWell(
+      onTap: isEnabled ? () => _showSearchableDialog<T>(
+        label: label,
+        items: items,
+        itemBuilder: itemBuilder,
+        searchMatcher: searchMatcher,
+        onSelected: onChanged,
+      ) : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isEnabled ? colors.outline.withValues(alpha: 0.5) : colors.outline.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            isLoading 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : Icon(icon, color: isEnabled ? colors.primary : colors.onSurface.withValues(alpha: 0.38), size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isEnabled ? colors.primary : colors.onSurface.withValues(alpha: 0.38),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value != null ? _getItemText(value) : hint,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: value != null 
+                        ? colors.onSurface 
+                        : colors.onSurface.withValues(alpha: 0.5),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_drop_down,
+              color: isEnabled ? colors.onSurface.withValues(alpha: 0.6) : colors.onSurface.withValues(alpha: 0.2),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getItemText(dynamic item) {
+    if (item is location_models.Country) return item.name;
+    if (item is location_models.State) return item.name;
+    if (item is location_models.City) return item.name;
+    return item.toString();
+  }
+
+  void _showSearchableDialog<T>({
+    required String label,
+    required List<T> items,
+    required Widget Function(T) itemBuilder,
+    required bool Function(T, String) searchMatcher,
+    required ValueChanged<T?> onSelected,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _SearchablePickerSheet<T>(
+        label: label,
+        items: items,
+        itemBuilder: itemBuilder,
+        searchMatcher: searchMatcher,
+        onSelected: (val) {
+          onSelected(val);
+          Navigator.pop(context);
+        },
+      ),
     );
   }
 
   void _notifyChange() {
     widget.onLocationChanged
         ?.call(_selectedCountry, _selectedState, _selectedCity);
+  }
+}
+
+class _SearchablePickerSheet<T> extends StatefulWidget {
+  final String label;
+  final List<T> items;
+  final Widget Function(T) itemBuilder;
+  final bool Function(T, String) searchMatcher;
+  final ValueChanged<T?> onSelected;
+
+  const _SearchablePickerSheet({
+    required this.label,
+    required this.items,
+    required this.itemBuilder,
+    required this.searchMatcher,
+    required this.onSelected,
+  });
+
+  @override
+  State<_SearchablePickerSheet<T>> createState() => _SearchablePickerSheetState<T>();
+}
+
+class _SearchablePickerSheetState<T> extends State<_SearchablePickerSheet<T>> {
+  late List<T> _filteredItems;
+  final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredItems = widget.items;
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text;
+    setState(() {
+      if (query.isEmpty) {
+        _filteredItems = widget.items;
+      } else {
+        _filteredItems = widget.items
+            .where((item) => widget.searchMatcher(item, query))
+            .toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final padding = MediaQuery.of(context).viewInsets;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(bottom: padding.bottom),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: colors.outlineVariant)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Select ${widget.label}',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: colors.surfaceContainerHighest.withValues(alpha: 0.3),
+              ),
+              autofocus: true,
+            ),
+          ),
+          // List
+          Expanded(
+            child: _filteredItems.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search_off, size: 48, color: colors.onSurface.withValues(alpha: 0.3)),
+                        const SizedBox(height: 16),
+                        Text('No results found', style: TextStyle(color: colors.onSurface.withValues(alpha: 0.5))),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: _filteredItems.length,
+                    separatorBuilder: (context, index) => Divider(height: 1, color: colors.outlineVariant),
+                    itemBuilder: (context, index) {
+                      final item = _filteredItems[index];
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                        title: widget.itemBuilder(item),
+                        onTap: () => widget.onSelected(item),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -377,7 +530,7 @@ class CompactCascadingLocationDropdowns extends StatelessWidget {
   }
 }
 
-class HorizontalCascadingLocationDropdowns extends StatefulWidget {
+class HorizontalCascadingLocationDropdowns extends StatelessWidget {
   final Function(location_models.Country? country, location_models.State? state,
       location_models.City? city)? onLocationChanged;
   final location_models.Country? initialCountry;
@@ -395,155 +548,13 @@ class HorizontalCascadingLocationDropdowns extends StatefulWidget {
   });
 
   @override
-  State<HorizontalCascadingLocationDropdowns> createState() =>
-      _HorizontalCascadingLocationDropdownsState();
-}
-
-class _HorizontalCascadingLocationDropdownsState
-    extends State<HorizontalCascadingLocationDropdowns> {
-  location_models.Country? _selectedCountry;
-  location_models.State? _selectedState;
-  location_models.City? _selectedCity;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedCountry = widget.initialCountry;
-    _selectedState = widget.initialState;
-    _selectedCity = widget.initialCity;
-    context.read<LocationBloc>().add(const LoadCountries());
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LocationBloc, LocationState>(
-      builder: (context, state) {
-        if (state is LocationLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        List<location_models.Country> countries = [];
-        List<location_models.State> states = [];
-        List<location_models.City> cities = [];
-
-        if (state is CountriesLoaded) {
-          countries = state.countries;
-        } else if (state is StatesLoaded) {
-          countries = state.countries;
-          states = state.states;
-        } else if (state is CitiesLoaded) {
-          countries = state.countries;
-          states = state.states;
-          cities = state.cities;
-        }
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: _buildCountryDropdown(countries),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildStateDropdown(states),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildCityDropdown(cities),
-            ),
-          ],
-        );
-      },
+    return CascadingLocationDropdowns(
+      onLocationChanged: onLocationChanged,
+      initialCountry: initialCountry,
+      initialState: initialState,
+      initialCity: initialCity,
+      isRequired: isRequired,
     );
-  }
-
-  Widget _buildCountryDropdown(List<location_models.Country> countries) {
-    return DropdownButtonFormField<location_models.Country>(
-      value: _selectedCountry,
-      decoration: const InputDecoration(
-        labelText: 'Country',
-        border: OutlineInputBorder(),
-      ),
-      isExpanded: true,
-      items: countries.map((c) {
-        return DropdownMenuItem(
-          value: c,
-          child: Text(c.name),
-        );
-      }).toList(),
-      onChanged: (country) {
-        setState(() {
-          _selectedCountry = country;
-          _selectedState = null;
-          _selectedCity = null;
-        });
-        if (country != null) {
-          context.read<LocationBloc>().add(SelectCountry(country));
-        }
-        _notifyChange();
-      },
-    );
-  }
-
-  Widget _buildStateDropdown(List<location_models.State> states) {
-    return DropdownButtonFormField<location_models.State>(
-      value: _selectedState,
-      decoration: const InputDecoration(
-        labelText: 'State',
-        border: OutlineInputBorder(),
-      ),
-      isExpanded: true,
-      items: states.map((s) {
-        return DropdownMenuItem(
-          value: s,
-          child: Text(s.name),
-        );
-      }).toList(),
-      onChanged: _selectedCountry != null
-          ? (state) {
-              setState(() {
-                _selectedState = state;
-                _selectedCity = null;
-              });
-              if (state != null) {
-                context.read<LocationBloc>().add(SelectState(state));
-              }
-              _notifyChange();
-            }
-          : null,
-    );
-  }
-
-  Widget _buildCityDropdown(List<location_models.City> cities) {
-    return DropdownButtonFormField<location_models.City>(
-      value: _selectedCity,
-      decoration: const InputDecoration(
-        labelText: 'City',
-        border: OutlineInputBorder(),
-      ),
-      isExpanded: true,
-      items: cities.map((c) {
-        return DropdownMenuItem(
-          value: c,
-          child: Text(c.name),
-        );
-      }).toList(),
-      onChanged: _selectedState != null
-          ? (city) {
-              setState(() => _selectedCity = city);
-              if (city != null) {
-                context.read<LocationBloc>().add(SelectCity(city));
-              }
-              _notifyChange();
-            }
-          : null,
-    );
-  }
-
-  void _notifyChange() {
-    widget.onLocationChanged
-        ?.call(_selectedCountry, _selectedState, _selectedCity);
   }
 }

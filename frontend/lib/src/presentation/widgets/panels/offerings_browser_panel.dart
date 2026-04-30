@@ -7,6 +7,8 @@ import '../../../data/models/learnership.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/services/currency_service.dart';
+import '../modals/marketing/wishlist_lead_modal.dart';
+import '../../blocs/student_portal/wishlist_bloc.dart';
 
 /// A premium browser for the 4 enrollment pathways and their offerings.
 /// Designed for use within SlideInPanels.
@@ -456,10 +458,30 @@ class _OfferingsBrowserPanelState extends State<OfferingsBrowserPanel> {
         IconButton(
           icon: const Icon(Icons.favorite_border),
           onPressed: () {
-            context.read<CartProvider>().toggleWishlist(course);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text('Added ${course.displayTitle} to wishlist')),
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => WishlistLeadModal(
+                course: course,
+                onComplete: (interest, timing, notes) {
+                  // Add to local wishlist state via bloc if available, or just notify provider
+                  try {
+                    context.read<WishlistBloc>().add(
+                          AddToWishlistEvent(
+                            contentTypeId: 1, // Default to course
+                            objectId: int.parse(course.id),
+                            trainingType: course.courseType ?? 'course',
+                            interestLevel: interest,
+                            intendedStart: timing,
+                            notes: notes,
+                          ),
+                        );
+                  } catch (e) {
+                    // Fallback to provider if bloc not in context
+                    context.read<CartProvider>().toggleWishlist(course);
+                  }
+                },
+              ),
             );
           },
           tooltip: 'Wishlist',

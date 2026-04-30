@@ -34,13 +34,7 @@ from .executive_views import (
     executive_financial_insights,
     executive_country_comparison,
 )
-from .sentry_views import (
-    sentry_payment_analytics,
-    sentry_provider_performance,
-    sentry_revenue_analytics,
-    sentry_error_report,
-    sentry_funnel_analytics,
-)
+
 from .views.eft_views import (
     initiate_eft_payment,
     submit_bank_details,
@@ -211,32 +205,7 @@ urlpatterns = [
         name='executive-country-comparison',
     ),
 
-    # Sentry Analytics APIs (for all dashboards)
-    path(
-        'admin/sentry/analytics/',
-        sentry_payment_analytics,
-        name='sentry-payment-analytics',
-    ),
-    path(
-        'admin/sentry/provider-performance/',
-        sentry_provider_performance,
-        name='sentry-provider-performance',
-    ),
-    path(
-        'admin/sentry/revenue-analytics/',
-        sentry_revenue_analytics,
-        name='sentry-revenue-analytics',
-    ),
-    path(
-        'admin/sentry/error-report/',
-        sentry_error_report,
-        name='sentry-error-report',
-    ),
-    path(
-        'admin/sentry/funnel-analytics/',
-        sentry_funnel_analytics,
-        name='sentry-funnel-analytics',
-    ),
+    
 
     # Failed Provisioning Admin APIs
     path(
@@ -378,4 +347,5 @@ urlpatterns = [
     path('coupons/validate/', ValidateCouponView.as_view(), name='coupon-validate'),
     path('coupons/redeem/', RedeemCouponView.as_view(), name='coupon-redeem'),
 ]
+
 

@@ -1,4 +1,4 @@
-// lib/src/core/api/api_client.dart
+﻿// lib/src/core/api/api_client.dart
 
 import 'dart:convert';
 import 'package:dio/dio.dart';
@@ -26,6 +26,8 @@ class ApiClient {
       },
     ),
   );
+  
+  static String get baseUrl => Environment.apiBaseUrl;
 
   static void initialize() {
     // Add Authentication Interceptor with Token Refresh
@@ -52,7 +54,7 @@ class ApiClient {
 
             if (isTokenNotValid) {
               try {
-                print('🔄 Token expired, attempting refresh...');
+                print('ðŸ”„ Token expired, attempting refresh...');
                 final refreshToken = await AuthService.getRefreshToken();
 
                 if (refreshToken != null && refreshToken.isNotEmpty) {
@@ -71,7 +73,7 @@ class ApiClient {
                       
                       // Retry original request with new token
                       error.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
-                      print('✅ Token refreshed successfully, retrying request...');
+                      print('âœ… Token refreshed successfully, retrying request...');
                       
                       final response = await _dio.fetch(error.requestOptions);
                       return handler.resolve(response);
@@ -79,7 +81,7 @@ class ApiClient {
                   }
                 }
               } catch (refreshError) {
-                print('❌ Token refresh failed: $refreshError');
+                print('âŒ Token refresh failed: $refreshError');
                 // Clear auth state and redirect to login
                 await AuthService.logout();
                 // Note: Navigation should be handled by auth provider
@@ -211,21 +213,29 @@ class ApiClient {
     String? phoneNumber,
     String? email,
   }) async {
-    // Backend expects email in metadata.individual_details.email
-    final emailToUse = email ?? 'mazandotakawira@gmail.com';
+    // Email must come from the enrollment form â€” never use a hardcoded fallback
+    final emailToUse = email ??
+        (metadata['individual_details'] as Map<String, dynamic>?)?['email'] as String?;
+
+    if (emailToUse == null || emailToUse.trim().isEmpty) {
+      throw ArgumentError(
+          'initiatePayment: email is required. '
+          'Pass it directly or include it in metadata.individual_details.email.');
+    }
+
     final updatedMetadata = {
       ...metadata,
       'individual_details': {
-        ...metadata['individual_details'] ?? {},
+        ...metadata['individual_details'] as Map<String, dynamic>? ?? {},
         'email': emailToUse,
       },
     };
-    
+
     final payload = {
       'program_id': programId,
       'type': type,
       'amount': amount,
-      'email': emailToUse, // Also send at top level for payment_views.py
+      'email': emailToUse,
       'metadata': updatedMetadata,
       if (orderId != null) 'order_id': orderId,
       if (provider != null) 'provider_code': provider,
@@ -237,6 +247,7 @@ class ApiClient {
     final response = await post('/api/v1/payments/initiate/', data: payload);
     return response.data as Map<String, dynamic>;
   }
+
 
   static Future<Map<String, dynamic>> createEnrollment(
       Map<String, dynamic> data) async {
@@ -307,7 +318,7 @@ class ApiClient {
     required String programTitle,
   }) async {
     final response = await get(
-      '/api/v1/payments/enrollments/cash-payment-instructions/',
+      '/api/v1/cash-payment-instructions/',
       queryParameters: {
         'enrollment_type': enrollmentType,
         'program_id': programId,
@@ -446,7 +457,7 @@ class ApiClient {
   }
 
   // ==============================
-  // NEW METHODS – added to support EnrollmentService
+  // NEW METHODS â€“ added to support EnrollmentService
   // ==============================
 
   /// Creates a new user (via apps.users.urls)
@@ -838,6 +849,30 @@ class ApiClient {
       queryParameters: query,
     );
     return response.data as Map<String, dynamic>;
+  }
+
+  static Future<List<Map<String, dynamic>>> getMarketingLeads() async {
+    final response = await get('/api/v1/marketing/leads/');
+    if (response.data is List) {
+      return List<Map<String, dynamic>>.from(response.data);
+    } else if (response.data is Map && response.data.containsKey('results')) {
+      return List<Map<String, dynamic>>.from(response.data['results']);
+    }
+    return [];
+  }
+
+  static Future<void> updateMarketingLeadStatus(int leadId, String status) async {
+    await post('/api/v1/marketing/leads/$leadId/', data: {'status': status}, options: Options(method: 'PATCH'));
+  }
+
+  static Future<List<Map<String, dynamic>>> getMarketingWishlists({Map<String, dynamic>? queryParams}) async {
+    final response = await get('/api/v1/marketing/wishlist/', queryParameters: queryParams);
+    if (response.data is List) {
+      return List<Map<String, dynamic>>.from(response.data);
+    } else if (response.data is Map && response.data.containsKey('results')) {
+      return List<Map<String, dynamic>>.from(response.data['results']);
+    }
+    return [];
   }
 
   static Future<Map<String, dynamic>> getPaymentAdminSalesAnalytics({
@@ -1373,9 +1408,19 @@ class ApiClient {
   /// Check if the current user is an existing student with prior enrollments
   /// Returns student data to skip personal information collection
   static Future<Map<String, dynamic>> checkExistingStudent() async {
-    final response =
-        await get('/api/v1/student-portal/profile/check_existing_student/');
-    return response.data as Map<String, dynamic>;
+    try {
+      final isAuthenticated = await AuthService.isAuthenticated();
+      if (!isAuthenticated) return {'exists': false};
+      
+      final response =
+          await get('/api/v1/student-portal/profile/check_existing_student/');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        return {'exists': false};
+      }
+      rethrow;
+    }
   }
 
   static Future<void> enrollUserInCourse({
@@ -1612,7 +1657,7 @@ class ApiClient {
     try {
       await post('/api/v1/student-portal/profile/update/', data: data);
     } catch (_) {
-      // Profile update is best-effort — never block enrollment flow
+      // Profile update is best-effort â€” never block enrollment flow
     }
   }
 
@@ -1930,5 +1975,10 @@ class ApiClient {
     return response.data as Map<String, dynamic>;
   }
 
+  /// Fetch exchange rates from backend
+  static Future<Map<String, dynamic>> getExchangeRates() async {
+    final response = await get('/api/v1/payments/exchange-rates/');
+    return response.data as Map<String, dynamic>;
+  }
 }
 

@@ -36,7 +36,7 @@ class _InstructorApplicationModalState
   bool _isSuccess = false;
 
   bool _emailVerified = false;
-  bool _phoneVerified = false;
+  bool _phoneVerified = true;
   String _phoneIsoCode = 'ZA';
 
   @override
@@ -341,12 +341,6 @@ class _InstructorApplicationModalState
           ),
           const SizedBox(height: 16),
           _buildPhoneField(),
-          ContactOtpField(
-            contactController: _phoneController,
-            contactType: 'phone',
-            phoneDialCode: AfricanPhoneValidator.getInfoForCountry(_phoneIsoCode)?.countryCode,
-            onVerifiedChanged: (verified) => setState(() => _phoneVerified = verified),
-          ),
           const SizedBox(height: 24),
           _buildSectionTitle('Professional Details'),
           _buildTextField(
@@ -533,7 +527,6 @@ class _InstructorApplicationModalState
                   return 'Maximum ${phoneInfo.maxDigits} digits exceeded';
                 }
               }
-              if (!_phoneVerified) return 'Please verify your phone first';
               return null;
             },
           ),

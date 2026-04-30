@@ -6,6 +6,7 @@ import 'package:frontend/src/presentation/pages/onboarding/widgets/sections/safe
 import '../providers/masterclass_data_provider.dart';
 import 'package:frontend/src/core/services/currency_service.dart';
 import 'package:frontend/src/core/theme/app_theme.dart';
+import 'package:frontend/src/core/services/wishlist_service.dart';
 
 class MasterclassCalendar extends StatefulWidget {
   final Map<DateTime, List<Masterclass>> events;
@@ -52,6 +53,7 @@ class MasterclassCalendarState extends State<MasterclassCalendar> {
   void initState() {
     super.initState();
     final now = DateTime.now();
+    // Dynamic calendar: starts from current month and projects 12 months ahead
     _baseDate = DateTime(now.year, now.month, 1);
     CurrencyService.instance.initialize();
   }
@@ -61,7 +63,7 @@ class MasterclassCalendarState extends State<MasterclassCalendar> {
     setState(() {
       _highlightedQuarter = null;
       _highlightedMonthIndices = [];
-      _selectedMonthIndex = 1;
+      _selectedMonthIndex = 1; // Default to current month (first tab)
       _isAllMode = true; // Reset to ALL
     });
   }
@@ -180,58 +182,12 @@ class MasterclassCalendarState extends State<MasterclassCalendar> {
 
     return Column(
       children: [
-        // === MONTH TABS ===
         Container(
           width: double.infinity,
           margin: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // FIXED: Added missing 'children: ['
-              // 'ALL' Month Button
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 1),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isAllMode = true;
-                        _selectedMonthIndex = -1; // Deselect specific months
-                        _highlightedQuarter = null;
-                        _highlightedMonthIndices = [];
-                      });
-                    },
-                    child: Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: _isAllMode
-                            ? colorScheme.primary
-                            : colorScheme.surface.withOpacity(
-                                0.7), // FIXED: withValues -> withOpacity
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: _isAllMode
-                              ? colorScheme.primary
-                              : colorScheme.outline.withOpacity(
-                                  0.2), // FIXED: withValues -> withOpacity
-                          width: _isAllMode ? 2 : 1,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'ALL',
-                          style: theme.textTheme.labelMedium!.copyWith(
-                            color: _isAllMode
-                                ? colorScheme.onPrimary
-                                : colorScheme.onSurface,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
               ...List.generate(12, (index) {
                 final monthDate = _availableMonths[index];
                 final actualIndex = index + 1;
@@ -251,7 +207,7 @@ class MasterclassCalendarState extends State<MasterclassCalendar> {
                   colorScheme: colorScheme,
                 );
               }),
-            ], // FIXED: Closing bracket for children array
+            ],
           ),
         ),
         const SizedBox(height: 8),
@@ -290,6 +246,7 @@ class MasterclassCalendarState extends State<MasterclassCalendar> {
       colorScheme.tertiary,
       colorScheme.primaryContainer,
     ];
+    // Modulo 4 ensures quarter colors cycle correctly even when crossing years
     final quarterColor = quarterColors[quarter % 4];
     Color backgroundColor;
     if (isSelected || isHighlighted) {
@@ -583,6 +540,28 @@ class _MasterclassHoverCard extends StatefulWidget {
 
 class _MasterclassHoverCardState extends State<_MasterclassHoverCard> {
   bool _isHovered = false;
+  bool _isWishlisted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isWishlisted = wishlistService.hasMasterclass(widget.masterclass.id.toString());
+  }
+
+  void _handleWishlist() async {
+    final id = widget.masterclass.id.toString();
+    if (_isWishlisted) {
+      final success = await wishlistService.removeMasterclass(id);
+      if (success && mounted) {
+        setState(() => _isWishlisted = false);
+      }
+    } else {
+      final success = await wishlistService.addMasterclass(id, {'title': widget.masterclass.title});
+      if (success && mounted) {
+        setState(() => _isWishlisted = true);
+      }
+    }
+  }
 
   static String _countryFlag(String? countryName) {
     switch (countryName?.toLowerCase()) {
@@ -617,11 +596,18 @@ class _MasterclassHoverCardState extends State<_MasterclassHoverCard> {
     final theme = widget.theme;
     final isTechnical = masterclass.streamType?.toLowerCase() == 'technical';
 
+    final isMobile = MediaQuery.of(context).size.width < 768;
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
+      onEnter: (_) => !isMobile ? setState(() => _isHovered = true) : null,
+      onExit: (_) => !isMobile ? setState(() => _isHovered = false) : null,
       child: GestureDetector(
-        onTap: widget.onTap,
+        onTap: () {
+          if (isMobile) {
+            setState(() => _isHovered = !_isHovered);
+          } else {
+            widget.onTap();
+          }
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
@@ -656,47 +642,71 @@ class _MasterclassHoverCardState extends State<_MasterclassHoverCard> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Stream type badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: isTechnical
-                                  ? const Color(0xFF0D47A1)
-                                      .withValues(alpha: 0.85)
-                                  : const Color(0xFF1B5E20)
-                                      .withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              isTechnical ? 'TECH' : 'PRO',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
+                          // Badges group
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Stream type badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isTechnical
+                                      ? const Color(0xFF0D47A1)
+                                          .withValues(alpha: 0.85)
+                                      : const Color(0xFF1B5E20)
+                                          .withValues(alpha: 0.85),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  isTechnical ? 'TECH' : 'PRO',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ),
+                              // Locations count badge (if multiple) with improved spacing
+                              if (sessions.length > 1) ...[
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppTheme.hosiPeach.withValues(alpha: 0.9),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '${sessions.length} locations',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          // Wishlist button
+                          GestureDetector(
+                            onTap: _handleWishlist,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surface.withValues(alpha: 0.6),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _isWishlisted ? Icons.bookmark : Icons.bookmark_border,
+                                size: 16,
+                                color: _isWishlisted ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.6),
                               ),
                             ),
                           ),
-                          // Locations count badge (if multiple) with improved spacing
-                          if (sessions.length > 1)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color:
-                                    AppTheme.hosiPeach.withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '${sessions.length} locations',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                     ),
@@ -825,9 +835,10 @@ class _MasterclassHoverCardState extends State<_MasterclassHoverCard> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                      child: Wrap(
+                                        spacing: 8,
+                                        runSpacing: 2,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
                                         children: [
                                           // Country + city
                                           Text(
@@ -837,13 +848,11 @@ class _MasterclassHoverCardState extends State<_MasterclassHoverCard> {
                                               fontSize: 10,
                                               fontWeight: FontWeight.w700,
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                           // Date range
                                           if (session.startDate != null)
                                             Text(
-                                              session.formattedDateRange,
+                                              '• ${session.formattedDateRange}',
                                               style: TextStyle(
                                                 color: colorScheme.onSurface
                                                     .withValues(alpha: 0.65),
@@ -853,14 +862,13 @@ class _MasterclassHoverCardState extends State<_MasterclassHoverCard> {
                                           // Venue
                                           if (session.venue != null)
                                             Text(
-                                              session.venue!,
+                                              '• ${session.venue!}',
                                               style: TextStyle(
                                                 color: AppTheme.hosiPeach
                                                     .withValues(alpha: 0.9),
                                                 fontSize: 9,
+                                                fontWeight: FontWeight.w600,
                                               ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
                                             ),
                                         ],
                                       ),
@@ -994,7 +1002,8 @@ class _QuarterTab extends StatelessWidget {
       colorScheme.tertiary,
       colorScheme.primaryContainer,
     ];
-    final quarterColor = quarterColors[quarter];
+    // Ensure modulo 4 to handle cross-year quarter colors safely
+    final quarterColor = quarterColors[quarter % 4];
 
     return GestureDetector(
       onTap: onTap,

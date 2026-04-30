@@ -1324,7 +1324,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         const SizedBox(height: 16),
         Container(
-          height: 800,
+          height: MediaQuery.of(context).size.height * 0.8,
           decoration: BoxDecoration(
               border: Border.all(color: colors.outline.withValues(alpha: 0.2)),
               borderRadius: BorderRadius.circular(12)),

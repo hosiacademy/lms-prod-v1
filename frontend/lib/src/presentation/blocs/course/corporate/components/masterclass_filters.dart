@@ -75,91 +75,54 @@ class MasterclassFilters extends StatelessWidget {
         );
 
         final locationBar = Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildCompactDropdown(
-                  label: 'Country',
-                  icon: Icons.public,
-                  value: selectedCountry,
-                  items: countries,
-                  onChanged: onCountryChanged,
-                  context: context,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildCompactDropdown(
-                  label: 'City',
-                  icon: Icons.location_on,
-                  value: selectedCity,
-                  items: cities,
-                  onChanged: onCityChanged,
-                  enabled: selectedCountry != null,
-                  context: context,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildCompactDropdown(
-                  label: 'Venue',
-                  icon: Icons.apartment,
-                  value: selectedVenue,
-                  items: venues,
-                  onChanged: onVenueChanged,
-                  enabled: selectedCity != null,
-                  context: context,
-                ),
-              ),
-            ],
-          ),
-        );
-
-        // Mobile: dropdowns stacked vertically for usability with improved spacing
-        final mobileLocationBar = Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 12, vertical: 12), // Increased padding
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildCompactDropdown(
-                label: 'Country',
-                icon: Icons.public,
-                value: selectedCountry,
-                items: countries,
-                onChanged: onCountryChanged,
-                context: context,
-              ),
-              const SizedBox(height: 12), // Increased from 8
-              _buildCompactDropdown(
-                label: 'City',
-                icon: Icons.location_on,
-                value: selectedCity,
-                items: cities,
-                onChanged: onCityChanged,
-                enabled: selectedCountry != null,
-                context: context,
-              ),
-              const SizedBox(height: 12),
-              _buildCompactDropdown(
-                label: 'Venue',
-                icon: Icons.apartment,
-                value: selectedVenue,
-                items: venues,
-                onChanged: onVenueChanged,
-                enabled: selectedCity != null,
-                context: context,
-              ),
-            ],
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: (constraints.maxWidth * 0.3).clamp(100.0, 160.0),
+                  child: _buildCompactDropdown(
+                    label: 'Country',
+                    icon: Icons.public,
+                    value: selectedCountry,
+                    items: countries,
+                    onChanged: onCountryChanged,
+                    context: context,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: (constraints.maxWidth * 0.3).clamp(100.0, 160.0),
+                  child: _buildCompactDropdown(
+                    label: 'City',
+                    icon: Icons.location_on,
+                    value: selectedCity,
+                    items: cities,
+                    onChanged: onCityChanged,
+                    enabled: selectedCountry != null,
+                    context: context,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: (constraints.maxWidth * 0.3).clamp(100.0, 160.0),
+                  child: _buildCompactDropdown(
+                    label: 'Venue',
+                    icon: Icons.apartment,
+                    value: selectedVenue,
+                    items: venues,
+                    onChanged: onVenueChanged,
+                    enabled: selectedCity != null,
+                    context: context,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
 
@@ -173,7 +136,7 @@ class MasterclassFilters extends StatelessWidget {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [typeBar, const SizedBox(height: 8), mobileLocationBar],
+              children: [typeBar, const SizedBox(height: 8), locationBar],
             ),
           );
         }

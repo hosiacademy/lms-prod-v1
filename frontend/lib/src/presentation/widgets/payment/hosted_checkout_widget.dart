@@ -133,27 +133,33 @@ class _HostedCheckoutWidgetState extends State<HostedCheckoutWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final w = MediaQuery.of(context).size.width;
+    final pad = (w * 0.1).clamp(20.0, 48.0);
 
     if (_isLoading) {
       return Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
-          padding: const EdgeInsets.all(48.0),
+          padding: EdgeInsets.all(pad),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               CircularProgressIndicator(color: colors.primary),
-              const SizedBox(height: 24),
+              SizedBox(height: (w * 0.05).clamp(12.0, 24.0)),
               Text(
                 'Connecting to ${widget.provider.toUpperCase()}...',
-                style: theme.textTheme.titleMedium,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontSize: (w * 0.04).clamp(13.0, 18.0),
+                ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 'Please wait while we prepare your secure payment page',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
+                  fontSize: (w * 0.033).clamp(11.0, 14.0),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -168,27 +174,32 @@ class _HostedCheckoutWidgetState extends State<HostedCheckoutWidget> {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all((w * 0.06).clamp(16.0, 24.0)),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 64, color: colors.error),
+              Icon(Icons.error_outline, size: (w * 0.14).clamp(40.0, 64.0), color: colors.error),
               const SizedBox(height: 16),
               Text(
                 'Payment Initiation Failed',
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colors.error,
+                  fontSize: (w * 0.045).clamp(14.0, 20.0),
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 _errorMessage!,
-                style: theme.textTheme.bodyMedium,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: (w * 0.033).clamp(11.0, 14.0),
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               ElevatedButton.icon(
-                onPressed: _initiatePayment,
+                onPressed: () => _initiatePayment(),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Try Again'),
               ),
@@ -203,35 +214,51 @@ class _HostedCheckoutWidgetState extends State<HostedCheckoutWidget> {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
-          padding: const EdgeInsets.all(48.0),
+          padding: EdgeInsets.all(pad),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.open_in_new_rounded, size: 64, color: colors.primary),
-              const SizedBox(height: 24),
+              Icon(Icons.open_in_new_rounded, size: (w * 0.14).clamp(40.0, 64.0), color: colors.primary),
+              SizedBox(height: (w * 0.05).clamp(12.0, 24.0)),
               Text(
                 'Payment Ready',
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: (w * 0.042).clamp(14.0, 18.0),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Please complete your payment securely using ${widget.provider.toUpperCase()}.\nReturn here to finalize your enrollment automatically once successful.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+                'Please complete your payment securely using ${widget.provider.toUpperCase()}. Return here to finalize your enrollment once successful.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: (w * 0.033).clamp(11.0, 14.0),
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () {
-                  final uri = Uri.parse(_checkoutUrl!);
-                  launchUrl(uri, webOnlyWindowName: '_blank', mode: LaunchMode.externalApplication);
-                },
-                icon: const Icon(Icons.payment_rounded),
-                label: const Text('Open Payment Page Securely'),
+              SizedBox(height: (w * 0.05).clamp(12.0, 24.0)),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final uri = Uri.parse(_checkoutUrl!);
+                    launchUrl(uri, webOnlyWindowName: '_blank', mode: LaunchMode.externalApplication);
+                  },
+                  icon: const Icon(Icons.payment_rounded),
+                  label: const Text('Open Payment Page Securely'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: (w * 0.033).clamp(12.0, 16.0)),
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               TextButton(
                 onPressed: widget.onPaymentSuccess,
-                child: Text('I have completed the payment', style: TextStyle(color: colors.primary)),
+                child: Text('I have completed the payment',
+                    style: TextStyle(
+                      color: colors.primary,
+                      fontSize: (w * 0.033).clamp(11.0, 14.0),
+                    )),
               ),
             ],
           ),

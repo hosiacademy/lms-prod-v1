@@ -1,4 +1,4 @@
-from rest_framework import generics, serializers, status
+﻿from rest_framework import generics, serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -102,15 +102,15 @@ class DashboardView(generics.GenericAPIView):
 class SetPasswordView(APIView):
     """
     POST /api/v1/auth/set-password/
-    Creates/sets a password for a user after successful EFT payment enrollment.
-    Requires the payment reference to verify the user's identity.
+    Sets password for a user after cash payment enrollment.
+    If no user exists, creates one using metadata from ProvisionalEnrollment.
     Accepts: { new_password, reference }
     """
-    permission_classes = []  # No auth required — user may not have a password yet
+    permission_classes = []  # No auth required
 
     def post(self, request, *args, **kwargs):
         new_password = request.data.get('new_password', '').strip()
-        reference = request.data.get('reference', '').strip()
+        reference = (request.data.get('reference_code') or request.data.get('reference') or '').strip()
 
         if not new_password or len(new_password) < 8:
             return Response({'detail': 'Password must be at least 8 characters.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -118,21 +118,55 @@ class SetPasswordView(APIView):
         if not reference:
             return Response({'detail': 'Payment reference is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Look up the enrollment by reference to find the user
         try:
-            from apps.payments.models import PaymentTransaction
-            transaction = PaymentTransaction.objects.select_related('user').filter(reference=reference).first()
-            if not transaction or not transaction.user:
+            from apps.enrollments.models import ProvisionalEnrollment
+            from apps.users.models import User
+            from django.db import transaction
+
+            prov = ProvisionalEnrollment.objects.filter(reference_code=reference).first()
+            if not prov:
                 return Response({'detail': 'No enrollment found for this reference.'}, status=status.HTTP_404_NOT_FOUND)
-            user = transaction.user
-        except Exception:
-            return Response({'detail': 'Could not verify payment reference.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user.set_password(new_password)
-        user.save(update_fields=['password'])
-        return Response({'detail': 'Password set successfully.'}, status=status.HTTP_200_OK)
+            # Check if user already exists
+            user = prov.user
 
+            if not user:
+                # Create user from metadata
+                metadata = prov.metadata or {}
+                individual_details = metadata.get('individual_details', {})
+                email = individual_details.get('email') or metadata.get('email')
+                
+                if not email:
+                    return Response({'detail': 'Email not found. Please contact support.'}, status=status.HTTP_400_BAD_REQUEST)
 
+                with transaction.atomic():
+                    user = User.objects.create_user(
+                        username=email,
+                        email=email,
+                        password=new_password,
+                        first_name=individual_details.get('first_name', ''),
+                        last_name=individual_details.get('last_name', ''),
+                    )
+                    # Link user to provisional enrollment
+                    prov.user = user
+                    prov.save(update_fields=['user'])
+
+                    # Trigger email notification with payment instructions
+                    from apps.enrollments.tasks import send_provisional_enrollment_email
+                    send_provisional_enrollment_email.delay(prov.id)
+
+                return Response({
+                    'detail': 'Account created successfully. Check your email for payment instructions.',
+                    'user_created': True
+                }, status=status.HTTP_201_CREATED)
+            else:
+                # User exists, just set password
+                user.set_password(new_password)
+                user.save(update_fields=['password'])
+                return Response({'detail': 'Password set successfully.'}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'detail': f'Could not verify reference: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 class ProfileUpdateEmailView(APIView):
     """
     POST /api/v1/auth/profile/update-email/

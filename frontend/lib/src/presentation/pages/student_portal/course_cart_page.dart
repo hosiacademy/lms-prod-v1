@@ -10,7 +10,7 @@ import '../../../data/models/course.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/utils/responsive_utils.dart';
 import '../../../core/utils/content_type_utils.dart';
-import '../../widgets/panels/enhanced_enrollment_panel.dart';
+import '../../widgets/modals/aicerts/multi_step_aicerts_custom_selection_modal.dart';
 import '../../../core/services/currency_service.dart';
 
 class CourseCartPage extends StatefulWidget {
@@ -762,15 +762,17 @@ class _CourseCartPageState extends State<CourseCartPage> {
 
       if (!mounted) return;
 
-      // Show EnhancedEnrollmentPanel for existing students (skips personal info)
-      // or new students (collects personal info)
+      // Show MultiStepAICERTSCustomSelectionModal (Standardized Pathway)
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => EnhancedEnrollmentPanel(
+        builder: (context) => MultiStepAICERTSCustomSelectionModal(
           courses: courses,
-          isExistingStudent: isExistingStudent,
-          existingStudentData: isExistingStudent ? existingStudentData : null,
+          onEnrollmentComplete: () {
+            // Refresh cart after enrollment
+            context.read<CartBloc>().add(LoadActiveCart());
+          },
+          allowPrefill: true,
         ),
       );
     } catch (e) {

@@ -11,6 +11,7 @@ import '../../../core/services/concierge_service.dart';
 import '../../../data/models/course_catalog.dart';
 import '../../widgets/panels/course_details_panel.dart';
 import '../../widgets/common/slide_in_panel.dart';
+import '../../widgets/modals/marketing/wishlist_lead_modal.dart';
 import '../../../core/utils/responsive_utils.dart';
 
 class CourseCatalogPage extends StatefulWidget {
@@ -455,113 +456,26 @@ class _CourseCatalogPageState extends State<CourseCatalogPage> {
   }
 
   void _addToWishlist(CourseCatalogItem item) {
-    // Controllers for inputs
-    final reasonController = TextEditingController();
-    final expectedDateController = TextEditingController();
-    String? selectedObstacle;
-
-    final obstacles = [
-      'Cost / Financial constraints',
-      'Time constraints / Too busy',
-      'Not ready yet',
-      'Need manager approval',
-      'Other'
-    ];
-
     showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Add to Wishlist'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Why do you love this course? (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: reasonController,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. Great for my career advancement...',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('When do you expect to enroll?', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: expectedDateController,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. Next month, Q3 2026...',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Why cannot you enroll now?', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      hint: const Text('Select a reason'),
-                      initialValue: selectedObstacle,
-                      items: obstacles.map((o) {
-                        return DropdownMenuItem(
-                          value: o,
-                          child: Text(o),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() => selectedObstacle = val);
-                      },
-                    ),
-                  ],
+      barrierDismissible: false,
+      builder: (context) => WishlistLeadModal(
+        course: item.toCourse(),
+        trainingType: item.trainingType,
+        onComplete: (interest, timing, notes) {
+          // Add to local wishlist state via bloc after form completion
+          context.read<WishlistBloc>().add(
+                AddToWishlistEvent(
+                  contentTypeId: item.contentTypeId,
+                  objectId: item.objectId,
+                  trainingType: item.trainingType,
+                  interestLevel: interest,
+                  intendedStart: timing,
+                  notes: notes,
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // Package details into the notes or dedicated fields if the backend supported them.
-                    // Currently using notes to store JSON or formatted string so analytics can parse it.
-                    final analyticsData = {
-                      'reason_loved': reasonController.text,
-                      'expected_enrollment': expectedDateController.text,
-                      'obstacle': selectedObstacle ?? 'None',
-                    };
-
-                    context.read<WishlistBloc>().add(
-                          AddToWishlistEvent(
-                            contentTypeId: item.contentTypeId,
-                            objectId: item.objectId,
-                            trainingType: item.trainingType,
-                            interestLevel: 'medium', // Default
-                            intendedStart: expectedDateController.text.isNotEmpty ? expectedDateController.text : 'later',
-                            notes: analyticsData.toString(), // Store as string for analytics
-                          ),
-                        );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Added to wishlist')),
-                    );
-                  },
-                  child: const Text('Add to Wishlist'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+              );
+        },
+      ),
     );
   }
 

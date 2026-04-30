@@ -3,171 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enrollment Confirmation - {{ company_name }}</title>
+    <title>Enrollment Confirmed - {{ company_name }}</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
+            background-color: #f8fafc;
         }
         .container {
-            max-width: 600px;
-            margin: 20px auto;
-            background-color: #ffffff;
-            border-radius: 8px;
+            max-width: 650px;
+            margin: 30px auto;
+            background: #ffffff;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #ffffff;
-            padding: 30px 20px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 40px 30px;
             text-align: center;
         }
-        .header h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 600;
+        .logo {
+            width: 150px;
+            height: auto;
+            margin-bottom: 20px;
         }
-        .success-icon {
-            font-size: 60px;
+        .header h1 {
+            font-size: 28px;
             margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 300;
         }
         .content {
-            padding: 30px 20px;
+            padding: 40px 30px;
         }
         .greeting {
             font-size: 18px;
-            color: #333;
+            color: #1e3a8a;
             margin-bottom: 20px;
+            font-weight: 600;
         }
-        .enrollment-card {
-            background-color: #f8f9fa;
-            border-left: 4px solid #667eea;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-        .enrollment-card h3 {
-            margin-top: 0;
-            color: #667eea;
-            font-size: 20px;
-        }
-        .enrollment-code {
-            background-color: #667eea;
-            color: #ffffff;
-            padding: 12px 20px;
-            border-radius: 6px;
+        .success-banner {
+            background-color: #ecfdf5;
+            border: 1px solid #10b981;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 8px;
             text-align: center;
-            font-size: 22px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin: 20px 0;
+            margin-bottom: 25px;
+            font-weight: 600;
         }
-        .details-table {
+        .program-card {
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 6px solid #3b82f6;
+        }
+        .program-card h2 {
+            color: #1e3a8a;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        .program-card .program-type {
+            color: #64748b;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        .details-grid {
+            display: table;
             width: 100%;
             margin: 20px 0;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0 10px;
         }
-        .details-table tr {
-            border-bottom: 1px solid #e0e0e0;
+        .detail-row {
+            display: table-row;
         }
-        .details-table td {
-            padding: 12px 0;
+        .detail-label {
+            display: table-cell;
+            font-weight: 700;
+            color: #64748b;
+            font-size: 13px;
+            text-transform: uppercase;
+            width: 35%;
+            padding-bottom: 5px;
         }
-        .details-table td:first-child {
-            font-weight: 600;
-            color: #666;
-            width: 40%;
+        .detail-value {
+            display: table-cell;
+            color: #1e293b;
+            font-size: 15px;
+            font-weight: 500;
         }
-        .credentials-box {
-            background-color: #fff3cd;
-            border: 2px solid #ffc107;
-            border-radius: 6px;
+        .code-box {
+            background: #1e3a8a;
+            color: white;
             padding: 20px;
-            margin: 20px 0;
-        }
-        .credentials-box h4 {
-            margin-top: 0;
-            color: #856404;
-        }
-        .credentials-box p {
-            margin: 8px 0;
-        }
-        .platform-section {
+            border-radius: 8px;
+            text-align: center;
             margin: 30px 0;
         }
+        .code-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+        .code-value {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .credentials-section {
+            background: #fffbeb;
+            border: 2px solid #fcd34d;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .credentials-section h3 {
+            color: #92400e;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .cta-button {
+            display: block;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white !important;
+            text-decoration: none;
+            padding: 18px 30px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 16px;
+            margin: 30px 0;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
         .platform-section h3 {
-            color: #333;
+            font-size: 18px;
+            color: #1e3a8a;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .platform-grid {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .platform-link {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 15px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #1e3a8a;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .footer {
+            background: #f1f5f9;
+            padding: 40px 30px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .footer-logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .steps-box {
+            background: #eff6ff;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .steps-box h3 {
+            color: #1e40af;
             font-size: 18px;
             margin-bottom: 15px;
         }
-        .platform-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin: 20px 0;
+        .steps-box ol {
+            margin-left: 20px;
+            color: #1e40af;
         }
-        .platform-button {
-            display: block;
-            padding: 15px 20px;
-            background-color: #667eea;
-            color: #ffffff !important;
-            text-decoration: none;
-            border-radius: 6px;
-            text-align: center;
-            font-weight: 600;
-            transition: background-color 0.3s;
-        }
-        .platform-button:hover {
-            background-color: #5568d3;
-        }
-        .platform-button.secondary {
-            background-color: #6c757d;
-        }
-        .platform-button.secondary:hover {
-            background-color: #5a6268;
-        }
-        .platform-icon {
-            font-size: 24px;
-            margin-right: 8px;
-        }
-        .next-steps {
-            background-color: #e7f3ff;
-            border-left: 4px solid #2196F3;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-        .next-steps h4 {
-            margin-top: 0;
-            color: #1976D2;
-        }
-        .next-steps ol {
-            margin: 10px 0;
-            padding-left: 20px;
-        }
-        .next-steps li {
-            margin: 8px 0;
-        }
-        .footer {
-            background-color: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-        }
-        .footer a {
-            color: #667eea;
-            text-decoration: none;
-        }
-        @media only screen and (max-width: 600px) {
-            .platform-grid {
-                grid-template-columns: 1fr;
-            }
+        .steps-box li {
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -175,137 +220,131 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div class="success-icon">🎉</div>
-            <h1>Enrollment Confirmed!</h1>
-            <p>Welcome to {{ company_name }}</p>
+            <img src="{{ logo_url }}" alt="{{ company_name }}" class="logo">
+            <h1>Enrollment Confirmed</h1>
+            <p>{{ company_tagline }}</p>
         </div>
 
         <!-- Content -->
         <div class="content">
-            <p class="greeting">Hi <strong>{{ user_name }}</strong>,</p>
+            <p class="greeting">Hi {{ user_name }},</p>
 
-            <p>Congratulations! You have successfully enrolled in:</p>
-
-            <!-- Enrollment Card -->
-            <div class="enrollment-card">
-                <h3>{{ program_name }}</h3>
-                <p><strong>Program Type:</strong> {{ program_type }}</p>
+            <div class="success-banner">
+                🚀 Welcome to the Future of Learning at Hosi Academy!
             </div>
 
-            <!-- Enrollment Code -->
-            <p><strong>Your Enrollment Code:</strong></p>
-            <div class="enrollment-code">{{ enrollment_code }}</div>
-            <p style="text-align: center; font-size: 12px; color: #666;">Keep this code safe - you'll need it to access your program</p>
+            <p>Congratulations! You have successfully enrolled in your chosen training pathway. We are excited to support you on this educational journey.</p>
 
-            <!-- Program Details -->
-            {% if enrollment_details %}
-            <table class="details-table">
-                {% if enrollment_details.start_date %}
-                <tr>
-                    <td>Start Date:</td>
-                    <td>{{ enrollment_details.start_date|date:"F d, Y" }}</td>
-                </tr>
-                {% endif %}
-                {% if enrollment_details.duration %}
-                <tr>
-                    <td>Duration:</td>
-                    <td>{{ enrollment_details.duration }}</td>
-                </tr>
-                {% endif %}
-                {% if enrollment_details.location %}
-                <tr>
-                    <td>Location:</td>
-                    <td>{{ enrollment_details.location }}</td>
-                </tr>
-                {% endif %}
-                {% if enrollment_details.delivery_mode %}
-                <tr>
-                    <td>Delivery Mode:</td>
-                    <td>{{ enrollment_details.delivery_mode }}</td>
-                </tr>
-                {% endif %}
-                <tr>
-                    <td>Enrolled On:</td>
-                    <td>{{ enrollment_details.enrolled_at|date:"F d, Y h:i A" }}</td>
-                </tr>
-            </table>
-            {% endif %}
-
-            <!-- Access Credentials (if new account) -->
-            {% if access_credentials %}
-            <div class="credentials-box">
-                <h4>🔑 Your Access Credentials</h4>
-                <p><strong>Username/Email:</strong> {{ access_credentials.username }}</p>
-                <p><strong>Password:</strong> {{ access_credentials.password }}</p>
-                <p style="font-size: 13px; margin-top: 10px;"><em>Please change your password after your first login for security.</em></p>
-            </div>
-            {% endif %}
-
-            <!-- Access Platform Section -->
-            <div class="platform-section">
-                <h3>📱 Access Your Learning Platform</h3>
-                <p>You can access Hosi Academy LMS from any of these platforms:</p>
-
-                <div class="platform-grid">
-                    <!-- Web -->
-                    <a href="{{ platform_links.web }}" class="platform-button">
-                        <span class="platform-icon">🌐</span> Web App
-                    </a>
-
-                    <!-- Android -->
-                    <a href="{{ platform_links.android }}" class="platform-button">
-                        <span class="platform-icon">📱</span> Android
-                    </a>
-
-                    <!-- iOS -->
-                    <a href="{{ platform_links.ios }}" class="platform-button">
-                        <span class="platform-icon">🍎</span> iOS
-                    </a>
-
-                    <!-- Windows -->
-                    <a href="{{ platform_links.desktop_windows }}" class="platform-button secondary">
-                        <span class="platform-icon">💻</span> Windows
-                    </a>
-
-                    <!-- Mac -->
-                    <a href="{{ platform_links.desktop_mac }}" class="platform-button secondary">
-                        <span class="platform-icon">🖥️</span> macOS
-                    </a>
-
-                    <!-- Linux -->
-                    <a href="{{ platform_links.desktop_linux }}" class="platform-button secondary">
-                        <span class="platform-icon">🐧</span> Linux
-                    </a>
+            <!-- Program Card -->
+            <div class="program-card">
+                <div class="program-type">{{ program_type }}</div>
+                <h2>{{ program_name }}</h2>
+                
+                <div class="details-grid">
+                    {% if enrollment_details.start_date %}
+                    <div class="detail-row">
+                        <span class="detail-label">Start Date:</span>
+                        <span class="detail-value">{{ enrollment_details.start_date|date:"F d, Y" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if enrollment_details.duration %}
+                    <div class="detail-row">
+                        <span class="detail-label">Duration:</span>
+                        <span class="detail-value">{{ enrollment_details.duration }}</span>
+                    </div>
+                    {% endif %}
+                    {% if enrollment_details.location %}
+                    <div class="detail-row">
+                        <span class="detail-label">Location:</span>
+                        <span class="detail-value">{{ enrollment_details.location }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="detail-row">
+                        <span class="detail-label">Delivery Mode:</span>
+                        <span class="detail-value">{{ enrollment_details.delivery_mode }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Enrolled On:</span>
+                        <span class="detail-value">{{ enrollment_details.enrolled_at|date:"F d, Y h:i A" }}</span>
+                    </div>
                 </div>
             </div>
 
+            <!-- Enrollment Code -->
+            <div class="code-box">
+                <div class="code-label">Your Unique Enrollment Code</div>
+                <div class="code-value">{{ enrollment_code }}</div>
+                <p style="font-size: 11px; margin-top: 15px; opacity: 0.8;">Keep this code safe - you may need it for certificate verification and support.</p>
+            </div>
+
+            <!-- Access Credentials -->
+            {% if access_credentials %}
+            <div class="credentials-section">
+                <h3>🔐 Your Access Credentials</h3>
+                <p style="margin-bottom: 15px; color: #92400e; font-size: 14px;">We've created your learning account. Please use the following details to sign in:</p>
+                
+                <div class="details-grid" style="margin: 0;">
+                    <div class="detail-row">
+                        <span class="detail-label" style="color: #92400e;">Username/Email:</span>
+                        <span class="detail-value">{{ access_credentials.username }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label" style="color: #92400e;">Initial Password:</span>
+                        <span class="detail-value">{{ access_credentials.password }}</span>
+                    </div>
+                </div>
+
+                {% if access_credentials.aicerts_sso_url %}
+                <a href="{{ access_credentials.aicerts_sso_url }}" style="display: inline-block; margin-top: 15px; color: #b45309; font-weight: 700; text-decoration: underline;">
+                    🔗 Direct Link to AI Certs Portal
+                </a>
+                {% endif %}
+                
+                <p style="font-size: 12px; margin-top: 15px; color: #b45309; font-style: italic;">Important: Please change your password immediately after your first login.</p>
+            </div>
+            {% endif %}
+
             <!-- Next Steps -->
-            <div class="next-steps">
-                <h4>📝 Next Steps</h4>
+            <div class="steps-box">
+                <h3>📝 Your Next Steps</h3>
                 <ol>
-                    <li>Click on your preferred platform link above to access the LMS</li>
-                    <li>Log in using your credentials {% if not access_credentials %}(same as your enrollment email){% endif %}</li>
-                    <li>Complete your profile setup</li>
-                    <li>Start exploring your course materials</li>
-                    <li>Join the community forums and connect with peers</li>
+                    <li>Click the button below to access your learning portal.</li>
+                    <li>Log in using your registered email address.</li>
+                    <li>Complete your student profile setup.</li>
+                    <li>Access your course materials and schedules.</li>
+                    <li>Join the student community and introduce yourself!</li>
                 </ol>
             </div>
 
-            <p style="margin-top: 30px;">If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+            <a href="{{ platform_links.web }}" class="cta-button">
+                🚀 Go to Student Portal
+            </a>
 
-            <p><strong>Support Email:</strong> <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+            <!-- Platform Section -->
+            <div class="platform-section">
+                <h3>📱 Download Our Apps</h3>
+                <div class="platform-grid">
+                    <a href="{{ platform_links.android }}" class="platform-link">Android</a>
+                    <a href="{{ platform_links.ios }}" class="platform-link">iOS</a>
+                    <a href="{{ platform_links.desktop_windows }}" class="platform-link">Windows</a>
+                    <a href="{{ platform_links.desktop_mac }}" class="platform-link">macOS</a>
+                </div>
+            </div>
 
-            <p style="margin-top: 30px;">Happy learning!</p>
-            <p><strong>The {{ company_name }} Team</strong></p>
+            <p style="margin-top: 40px; text-align: center;">Need assistance? Our support team is here for you.</p>
+            <p style="text-align: center; font-weight: 700;"><a href="mailto:{{ support_email }}" style="color: #3b82f6; text-decoration: none;">{{ support_email }}</a></p>
         </div>
 
         <!-- Footer -->
         <div class="footer">
-            <p>&copy; 2024 {{ company_name }}. All rights reserved.</p>
-            <p>
-                <a href="{{ platform_links.web }}">Visit Website</a> |
-                <a href="mailto:{{ support_email }}">Contact Support</a>
+            <div class="footer-logo">{{ company_name }}</div>
+            <p>{{ company_tagline }}</p>
+            <p style="margin: 20px 0;">
+                <a href="{{ website_url }}">Website</a> • 
+                <a href="{{ website_url }}/support">Support</a> • 
+                <a href="{{ website_url }}/privacy">Privacy Policy</a>
             </p>
+            <p style="font-size: 12px; opacity: 0.7;">&copy; 2026 Hosi Academy. All rights reserved.</p>
         </div>
     </div>
 </body>

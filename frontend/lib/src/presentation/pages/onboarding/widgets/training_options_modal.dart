@@ -19,15 +19,17 @@ class TrainingOptionsModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final screenWidth = MediaQuery.of(context).size.width;
+    final mq = MediaQuery.of(context);
+    final sw = mq.size.width;
+    final sh = mq.size.height;
 
     final hosiBrown = AppTheme.hosiBrown;
     final successGreen = AppTheme.successGreen;
     final hosiPeach = AppTheme.hosiPeach;
 
-    final isMobile = screenWidth < 600;
-
-    // For Cybersecurity Training, only Learnerships is available
+    final isNarrow = sw < 480;
+    final hInset = isNarrow ? 8.0 : (sw < 700 ? 16.0 : 24.0);
+    final vInset = isNarrow ? 12.0 : (sh < 700 ? 16.0 : 32.0);
     // Other options show "Coming Soon"
     final options = isCybersecurity
         ? [
@@ -100,14 +102,14 @@ class TrainingOptionsModal extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16 : 24,
-        vertical: isMobile ? 24 : 32,
+        horizontal: hInset,
+        vertical: vInset,
       ),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 600),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(isNarrow ? 16 : 24),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.3),
@@ -138,7 +140,7 @@ class TrainingOptionsModal extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(isNarrow ? 8 : 12),
                     decoration: BoxDecoration(
                       color: colorScheme.onPrimary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
@@ -146,10 +148,10 @@ class TrainingOptionsModal extends StatelessWidget {
                     child: Icon(
                       Icons.menu_book_rounded,
                       color: colorScheme.onPrimary,
-                      size: 32,
+                      size: isNarrow ? 24 : 32,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: isNarrow ? 12 : 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,12 +161,14 @@ class TrainingOptionsModal extends StatelessWidget {
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: colorScheme.onPrimary,
+                            fontSize: (sw * 0.05).clamp(18.0, 24.0),
                           ),
                         ),
                         Text(
                           'Choose your learning journey',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onPrimary.withValues(alpha: 0.8),
+                            fontSize: (sw * 0.035).clamp(12.0, 14.0),
                           ),
                         ),
                       ],
@@ -259,7 +263,7 @@ class TrainingOptionsModal extends StatelessWidget {
                                     Text(
                                       option.title,
                                       style: TextStyle(fontFamily: 'Poppins', 
-                                        fontSize: 16,
+                                        fontSize: (sw * 0.04).clamp(14.0, 16.0),
                                         fontWeight: FontWeight.w700,
                                         color: colorScheme.onSurface,
                                       ),
@@ -268,7 +272,7 @@ class TrainingOptionsModal extends StatelessWidget {
                                     Text(
                                       option.subtitle,
                                       style: TextStyle(fontFamily: 'Poppins', 
-                                        fontSize: 13,
+                                        fontSize: (sw * 0.033).clamp(11.0, 13.0),
                                         color: colorScheme.onSurface.withValues(alpha: 0.7),
                                       ),
                                     ),
@@ -305,9 +309,11 @@ class TrainingOptionsModal extends StatelessWidget {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
+        final sw = MediaQuery.of(context).size.width;
+        final isNarrow = sw < 480;
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          insetPadding: EdgeInsets.symmetric(horizontal: isNarrow ? 12 : 24, vertical: 32),
           child: Container(
             constraints: const BoxConstraints(maxWidth: 500),
             decoration: BoxDecoration(
@@ -364,6 +370,7 @@ class TrainingOptionsModal extends StatelessWidget {
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
+                                fontSize: (sw * 0.05).clamp(18.0, 24.0),
                               ),
                             ),
                             Text(

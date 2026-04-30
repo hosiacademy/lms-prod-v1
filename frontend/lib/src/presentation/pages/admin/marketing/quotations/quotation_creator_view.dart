@@ -250,7 +250,7 @@ class _QuotationCreatorViewState extends State<QuotationCreatorView> {
           child: DropdownButtonFormField<Map<String, dynamic>>(
             value: _selectedCountry,
             decoration: _inputDecoration('Country', Icons.public, colors),
-            items: _countries.map((c) => DropdownMenuItem(
+            items: _countries.map((c) => DropdownMenuItem<Map<String, dynamic>>(
               value: c,
               child: Text(c['name'] ?? ''),
             )).toList(),
@@ -295,8 +295,8 @@ class _QuotationCreatorViewState extends State<QuotationCreatorView> {
               DropdownButtonFormField<String>(
                 value: _selectedStreamId,
                 decoration: _inputDecoration('Training Stream', Icons.stream, colors),
-                items: _trainingStreams.map((s) => DropdownMenuItem(
-                  value: s['id'],
+                items: _trainingStreams.map((s) => DropdownMenuItem<String>(
+                  value: s['id']?.toString(),
                   child: Text(s['name'] ?? ''),
                 )).toList(),
                 onChanged: _onStreamChanged,

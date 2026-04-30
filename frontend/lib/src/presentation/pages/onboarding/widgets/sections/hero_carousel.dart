@@ -93,7 +93,7 @@ class _HeroCarouselSectionState extends State<HeroCarouselSection> {
         widget.courses.isNotEmpty ? widget.courses : _getPlaceholderCourses();
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final carouselHeight = screenWidth < 600 ? 350.0 : 450.0;
+    final carouselHeight = screenWidth < 600 ? 380.0 : 520.0;
 
     return Container(
       margin: EdgeInsets.only(
@@ -131,6 +131,7 @@ class _HeroCarouselSectionState extends State<HeroCarouselSection> {
           Image.asset(
             imagePath,
             fit: BoxFit.cover,
+            alignment: Alignment.center,
             errorBuilder: (_, __, ___) => Container(
               color: theme.colorScheme.surfaceContainerHighest,
               child: Icon(Icons.image, size: 64, color: theme.colorScheme.onSurface),

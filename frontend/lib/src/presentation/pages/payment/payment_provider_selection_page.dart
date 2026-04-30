@@ -1,4 +1,4 @@
-// lib/src/presentation/pages/payment/payment_provider_selection_page.dart
+﻿// lib/src/presentation/pages/payment/payment_provider_selection_page.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -58,12 +58,14 @@ class PaymentProviderSelectionPage extends StatefulWidget {
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding:
-            const EdgeInsets.all(10), // Reduced from 16 for wider modal
+            const EdgeInsets.all(10),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-                maxWidth: 720, maxHeight: 800), // 20% wider: 600 → 720
+            constraints: BoxConstraints(
+              maxWidth: 720,
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
             child: PaymentProviderSelectionPage(
               reference: reference,
               amount: amount,
@@ -98,7 +100,7 @@ class _PaymentProviderSelectionPageState
   bool _showSuccess = false;
   Timer? _statusTimer;
   String?
-      _selectedPaymentCategory; // 'card', 'mobile_money', 'eft', 'qr', 'cash'
+      _selectedPaymentCategory;
 
   // Bank selection for EFT
   String? _selectedBankCode;
@@ -116,7 +118,6 @@ class _PaymentProviderSelectionPageState
     _loadProviders();
   }
 
-  // ✅ Fetch providers for selected payment category
   Future<void> _loadProvidersForCategory(String category) async {
     setState(() {
       _selectedPaymentCategory = category;
@@ -140,6 +141,12 @@ class _PaymentProviderSelectionPageState
       setState(() {
         _providers = providers;
         _isLoading = false;
+        
+        if (category == 'card') {
+          _selectedProviderCode = 'smatpay';
+        } else if (providers.isNotEmpty) {
+          _selectedProviderCode = providers.first['code'];
+        }
       });
     } catch (e) {
       setState(() {
@@ -156,8 +163,6 @@ class _PaymentProviderSelectionPageState
     });
 
     try {
-      // Pass country/currency/amount as hints — the backend auto-detects
-      // country from IP if not provided
       final response = await ApiClient.getAvailablePaymentProviders(
         country: widget.country.isNotEmpty ? widget.country : null,
         amount: widget.amount,
@@ -169,19 +174,21 @@ class _PaymentProviderSelectionPageState
       final providers = List<Map<String, dynamic>>.from(
           response['available_providers'] ?? []);
 
-      // FILTER: Only allow SmatPay and Cash in production
       final filteredProviders = providers.where((p) {
         final code = p['code']?.toString().toLowerCase() ?? '';
-        return code.contains('smatpay') || code == 'cash';
+        return code.contains('smatpay') || 
+               code == 'cash' || 
+               code == 'bank_transfer' || 
+               code == 'eft' || 
+               code == 'on_site_payment';
       }).toList();
 
-      // Ensure SmatPay is always present if card is supported
       if (!filteredProviders.any((p) => p['code'].toString().contains('smatpay'))) {
         filteredProviders.add({
           'code': 'smatpay',
           'name': 'Card Payment (SmatPay)',
           'methods': ['card', 'credit_card', 'debit_card'],
-          'fees': {'percentage': 2.5, 'fixed': 0},
+          'fees': {'percentage': 0, 'fixed': 0},
           'description': 'Secure card payment via SmatPay (Visa/Mastercard worldwide)',
         });
       }
@@ -209,8 +216,7 @@ class _PaymentProviderSelectionPageState
       return;
     }
 
-    // ✅ FIXED: Only trigger cash payment for EXPLICIT 'cash' provider
-    if (_selectedProviderCode == 'cash') {
+    if (_selectedProviderCode == 'cash' || _selectedProviderCode == 'on_site_payment') {
       await _handleCashPayment();
       return;
     }
@@ -218,25 +224,30 @@ class _PaymentProviderSelectionPageState
     setState(() => _isProcessing = true);
 
     try {
-      // Use programType directly — enrollment_type is carried in paymentMetadata
       String backendEnrollmentType = widget.programType;
+
+      double finalAmount = widget.amount;
+      String finalCurrency = widget.currency;
+
+      if (_selectedProviderCode == 'smatpay') {
+        finalAmount = (widget.enrollmentPayload?['amount_usd'] as num?)?.toDouble() ?? widget.amount;
+        finalCurrency = 'USD';
+      }
 
       final result = await ApiClient.initiatePayment(
         programId: widget.programId,
         type: backendEnrollmentType,
-        amount: widget.amount,
-        currency: widget.currency,
+        amount: finalAmount,
+        currency: finalCurrency,
         country: widget.country,
         orderId: widget.reference,
         provider: _selectedProviderCode!,
         metadata: widget.paymentMetadata ?? {},
       );
 
-      // Backend returns 'checkout_url' for the payment page
       final checkoutUrl = result['checkout_url'] as String?;
 
       if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
-        // Redirect flow → open WebView
         setState(() {
           _paymentUrl = checkoutUrl;
           _isProcessing = false;
@@ -260,7 +271,6 @@ class _PaymentProviderSelectionPageState
     setState(() => _isProcessing = true);
 
     try {
-      // First, show the comprehensive cash payment instructions
       final confirmed = await CashPaymentInstructionsPage.show(
         context,
         enrollmentType: widget.programType,
@@ -274,7 +284,6 @@ class _PaymentProviderSelectionPageState
 
       if (!mounted) return;
 
-      // If user confirmed they'll visit the office, create provisional enrollment
       if (confirmed == true) {
         final provisional = await ApiClient.createProvisionalEnrollment(
           programId: widget.programId,
@@ -289,11 +298,20 @@ class _PaymentProviderSelectionPageState
 
         if (!mounted) return;
 
+        // SHOW PASSWORD SETUP DIALOG AFTER PROVISIONAL ENROLLMENT
+        final email = extractEmailFromPayload(widget.enrollmentPayload);
+        await showPasswordSetupDialog(
+          context,
+          reference: reference ?? widget.reference,
+          email: email,
+        );
+
+        if (!mounted) return;
+
         final trainingTitle =
             provisional['training_title'] as String? ?? 'Training Program';
         final trainingDate = provisional['training_date'] as String?;
 
-        // Show success dialog with reference details
         final completed = await showDialog<bool>(
           context: context,
           barrierDismissible: false,
@@ -414,7 +432,7 @@ class _PaymentProviderSelectionPageState
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            '7 working days OR before training commencement date (whichever is earlier)',
+                            '14 days OR before training commencement date (whichever is earlier)',
                             style: TextStyle(
                                 fontSize: 11, fontStyle: FontStyle.italic),
                           ),
@@ -471,12 +489,6 @@ class _PaymentProviderSelectionPageState
         if (completed == true && mounted) {
           setState(() {
             _showSuccess = true;
-            // For cash, we update the reference to the one returned (if any) or keep existing
-            // But typically reference is updated before calling this?
-            // Actually _handleCashPayment response has 'reference'. We should use it?
-            // The widget.reference is final. Safe to just use it if unchanged,
-            // or we can pass a new reference to PaymentSuccessPage if we had it.
-            // For now, let's stick to simple state switch.
           });
         }
       }
@@ -564,7 +576,6 @@ class _PaymentProviderSelectionPageState
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ✅ Amount Display - Clear and Prominent
           Card(
             color: colorScheme.primaryContainer,
             child: Padding(
@@ -598,24 +609,17 @@ class _PaymentProviderSelectionPageState
 
           const SizedBox(height: 24),
 
-          // ✅ 5 Horizontal Payment Category Buttons
           _buildPaymentCategoryBar(theme, colorScheme),
 
           const SizedBox(height: 24),
 
-          // ✅ Providers for selected category
           _buildProvidersForSelectedCategory(theme, colorScheme),
         ],
       ),
     );
   }
 
-  // ✅ Horizontal bar with 5 payment category buttons
   Widget _buildPaymentCategoryBar(ThemeData theme, ColorScheme colorScheme) {
-    // Determine detected country for Zimbabwe-only card restriction
-    final detectedCountry = widget.country.toUpperCase();
-    // Card payment now available globally via SmatPay
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -641,15 +645,6 @@ class _PaymentProviderSelectionPageState
             ),
             _buildCategoryButton(
               theme: theme,
-              icon: Icons.phone_android,
-              label: 'Mobile Money',
-              category: 'mobile_money',
-              isSelected: _selectedPaymentCategory == 'mobile_money',
-              onTap: () => _loadProvidersForCategory('mobile_money'),
-              colorScheme: colorScheme,
-            ),
-            _buildCategoryButton(
-              theme: theme,
               icon: Icons.account_balance,
               label: 'EFT / Bank',
               category: 'eft',
@@ -659,17 +654,8 @@ class _PaymentProviderSelectionPageState
             ),
             _buildCategoryButton(
               theme: theme,
-              icon: Icons.qr_code,
-              label: 'QR Code',
-              category: 'qr',
-              isSelected: _selectedPaymentCategory == 'qr',
-              onTap: () => _loadProvidersForCategory('qr'),
-              colorScheme: colorScheme,
-            ),
-            _buildCategoryButton(
-              theme: theme,
               icon: Icons.store,
-              label: 'In-Person Payment',
+              label: 'In-Shop Payment',
               category: 'cash',
               isSelected: _selectedPaymentCategory == 'cash',
               onTap: () => _loadProvidersForCategory('cash'),
@@ -785,7 +771,6 @@ class _PaymentProviderSelectionPageState
       );
     }
 
-    // SPECIAL CASES: Show form widgets directly for card and EFT
     if (_selectedPaymentCategory == 'card') {
       return _buildCardForm(theme, colorScheme);
     }
@@ -848,7 +833,6 @@ class _PaymentProviderSelectionPageState
       );
     }
 
-    // Show providers for other categories (mobile_money, qr, cash)
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -864,7 +848,6 @@ class _PaymentProviderSelectionPageState
     );
   }
 
-  /// 💳 Build Card Payment Form Widget
   Widget _buildCardForm(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -877,11 +860,8 @@ class _PaymentProviderSelectionPageState
           subtitle: 'Secure checkout via payment gateway',
         ),
         const SizedBox(height: 16),
-        // REAL PAYMENT: Use hosted checkout widget
-        // Customer will be redirected to payment gateway's secure page
-        // where they enter card details (NOT on our form - PCI compliant!)
         HostedCheckoutWidget(
-          provider: _selectedProviderCode ?? 'flutterwave',
+          provider: 'smatpay',
           amount: widget.amount,
           currency: widget.currency,
           programId: widget.programId,
@@ -914,7 +894,6 @@ class _PaymentProviderSelectionPageState
     );
   }
 
-  /// 🏦 Build EFT Payment Form Widget
   Widget _buildEftForm(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -937,7 +916,6 @@ class _PaymentProviderSelectionPageState
           enrollmentPayload: widget.enrollmentPayload,
           onPaymentSuccess: () {
             Navigator.pop(context);
-            // Navigate to EFT-specific result page for pending verification
             context.push(
               '/eft-payment-result',
               extra: {
@@ -961,160 +939,6 @@ class _PaymentProviderSelectionPageState
             );
           },
         ),
-      ],
-    );
-  }
-
-  Widget _buildOrganizedPaymentSections(
-      ThemeData theme, ColorScheme colorScheme) {
-    if (_providers.isEmpty) {
-      return Card(
-        color: Colors.orange.shade50,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Icon(Icons.info_outline, size: 48, color: Colors.orange.shade700),
-              const SizedBox(height: 16),
-              Text(
-                'No payment methods available',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange.shade900,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Please check your internet connection or try again',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.orange.shade800,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // ✅ Group providers by category - Filtered to 3 core methods
-    final cardProviders = _providers
-        .where((p) => p['code'].toString().contains('smatpay'))
-        .toList();
-
-    // Auto-select SmatPay as default card provider
-    if (_selectedProviderCode == null) {
-      _selectedProviderCode = 'smatpay';
-    }
-
-    // EFT and Cash are handled by dedicated widgets/logic below
-
-    final cashProviders = _providers.where((p) => p['code'] == 'cash').toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ✅ Card Payment Section - Visa, Mastercard, ZimSwitch
-        _buildSectionHeader(
-          theme,
-          colorScheme,
-          icon: Icons.credit_card,
-          title: widget.country.toUpperCase() == 'ZW' 
-              ? 'Card Payment (Visa, Mastercard, ZimSwitch)' 
-              : 'Card Payment (Visa, Mastercard)',
-          subtitle: 'Secure checkout via SmatPay',
-        ),
-        // REAL PAYMENT: Use hosted checkout widget
-        // Customer will be redirected to payment gateway's secure page
-        HostedCheckoutWidget(
-          provider: 'smatpay',
-          amount: widget.amount,
-          currency: widget.currency,
-          programId: widget.programId,
-          programType: widget.programType,
-          reference: widget.reference,
-          country: widget.country,
-          enrollmentPayload: widget.enrollmentPayload,
-          onPaymentSuccess: () {
-            Navigator.pop(context);
-            result_page.PaymentResultPage.show(
-              context,
-              reference: widget.reference,
-              programId: widget.programId,
-              programType: widget.programType,
-              amount: widget.amount,
-              currency: widget.currency,
-            );
-          },
-          onPaymentError: (error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Payment failed: $error'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 24),
-
-        // ✅ EFT/Bank Transfer Section - Show EFT Widget
-        _buildSectionHeader(
-          theme,
-          colorScheme,
-          icon: Icons.account_balance,
-          title: 'EFT / Bank Transfer',
-          subtitle: 'Direct bank transfer, 24-72 hour verification',
-        ),
-        EftPaymentWidget(
-          amount: widget.amount,
-          currency: widget.currency,
-          programId: widget.programId,
-          programType: widget.programType,
-          reference: widget.reference,
-          country: widget.country,
-          enrollmentPayload: widget.enrollmentPayload,
-          onPaymentSuccess: () {
-            Navigator.pop(context);
-            // Navigate to EFT-specific result page for pending verification
-            context.push(
-              '/eft-payment-result',
-              extra: {
-                'reference': widget.reference,
-                'programId': widget.programId,
-                'programType': widget.programType,
-                'amount': widget.amount,
-                'currency': widget.currency,
-                'programTitle':
-                    widget.paymentMetadata?['program_title'] as String? ??
-                        'Selected Program',
-              },
-            );
-          },
-          onPaymentError: (error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('EFT initiation failed: $error'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 24),
-
-
-
-        // ✅ Cash Payment Section (if available)
-        if (cashProviders.isNotEmpty) ...[
-          _buildSectionHeader(
-            theme,
-            colorScheme,
-            icon: Icons.money,
-            title: 'Cash / In-Person Payment',
-            subtitle: 'Pay at office or authorized agent',
-          ),
-          ...cashProviders
-              .map((p) => _buildProviderCard(p, theme, colorScheme)),
-        ],
       ],
     );
   }
@@ -1160,526 +984,6 @@ class _PaymentProviderSelectionPageState
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// 🏦 Bank Selection Dropdown for EFT
-  Widget _buildBankSelectionDropdown(ThemeData theme, ColorScheme colorScheme) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _loadBanksFromApi(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Card(
-            elevation: 0,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
-
-        if (snapshot.hasError || !snapshot.hasData) {
-          return Card(
-            elevation: 0,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                'Failed to load banks. Please try again.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: Colors.red),
-              ),
-            ),
-          );
-        }
-
-        final data = snapshot.data!;
-        final banks = List<Map<String, dynamic>>.from(data['banks'] ?? []);
-
-        if (banks.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.account_balance,
-                        color: colorScheme.primary, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Select Your Bank',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${banks.length} banks',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _selectedBankCode,
-                  decoration: InputDecoration(
-                    hintText: 'Choose your bank',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    prefixIcon: const Icon(Icons.account_balance),
-                    filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest,
-                  ),
-                  items: banks.map((bank) {
-                    final isRecommended =
-                        bank['is_recommended'] as bool? ?? false;
-                    return DropdownMenuItem(
-                      value: bank['code'] as String,
-                      child: Row(
-                        children: [
-                          if (isRecommended) ...[
-                            Icon(Icons.star, size: 16, color: Colors.amber),
-                            const SizedBox(width: 4),
-                          ],
-                          Expanded(
-                            child: Text(
-                              bank['name'] as String,
-                              style: const TextStyle(fontSize: 13),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedBankCode = value;
-                      final selectedBank =
-                          banks.firstWhere((b) => b['code'] == value);
-                      _selectedBank = AfricanBank(
-                        code: selectedBank['code'] as String,
-                        name: selectedBank['name'] as String,
-                        swiftCode: selectedBank['swift_code'] as String?,
-                      );
-                    });
-                  },
-                  isExpanded: true,
-                ),
-                if (_selectedBank != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: colorScheme.primary.withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Bank Details for Transfer:',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildBankDetailRow(
-                            'Bank', _selectedBank!.name, theme, colorScheme),
-                        if (_selectedBank!.swiftCode != null &&
-                            _selectedBank!.swiftCode!.isNotEmpty)
-                          _buildBankDetailRow('SWIFT Code',
-                              _selectedBank!.swiftCode!, theme, colorScheme),
-                        _buildBankDetailRow(
-                            'Account Name', 'Hosi Academy', theme, colorScheme),
-                        _buildBankDetailRow(
-                            'Account Number', '1234567890', theme, colorScheme),
-                        _buildBankDetailRow(
-                            'Reference', widget.reference, theme, colorScheme),
-                        _buildBankDetailRow(
-                            'Amount',
-                            CurrencyService.instance.formatPrice(widget.amount, currencyCode: widget.currency),
-                            theme,
-                            colorScheme),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        // TODO: Show proof of payment upload dialog
-                      },
-                      icon: const Icon(Icons.upload_file),
-                      label: const Text('Upload Proof of Payment'),
-                      style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14)),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<Map<String, dynamic>> _loadBanksFromApi() async {
-    try {
-      final response = await ApiClient.get(
-        '/api/v1/payments/african-banks/',
-        queryParameters: {'country': widget.country},
-      );
-      return response.data as Map<String, dynamic>;
-    } catch (e) {
-      print('Error loading banks: $e');
-      rethrow;
-    }
-  }
-
-  Widget _buildBankDetailRow(
-      String label, String value, ThemeData theme, ColorScheme? colorScheme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
-          ),
-          SelectableText(
-            value,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colorScheme?.primary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGenericCardOption(ThemeData theme, ColorScheme colorScheme) {
-    // ✅ Simple "Pay with Card" button - redirects to payment gateway
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: GestureDetector(
-        onTap: _isProcessing ? null : () => _processCardPayment(),
-        behavior: HitTestBehavior.opaque,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              // Card icons
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.network(
-                              'https://img.icons8.com/color/48/visa.png',
-                              width: 28,
-                              height: 28,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.credit_card, size: 24)),
-                          const SizedBox(width: 2),
-                          Image.network(
-                              'https://img.icons8.com/color/48/mastercard.png',
-                              width: 28,
-                              height: 28,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.credit_card, size: 24)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Text
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pay with Card',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Credit/Debit Card - Secure Payment',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.security,
-                            size: 14, color: colorScheme.primary),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Processed by ${_getAutoSelectedProviderName()}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              // Arrow
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: _isProcessing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(Icons.arrow_forward, color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-   );
-  }
-
-  String _getAutoSelectedProviderName() {
-    return 'SmatPay';
-  }
-
-  String _getAutoSelectedProviderCode() {
-    return 'smatpay';
-  }
-
-  Future<void> _processCardPayment() async {
-    setState(() => _isProcessing = true);
-
-    try {
-      final autoProvider = _getAutoSelectedProviderCode();
-
-      final result = await ApiClient.initiatePayment(
-        programId: widget.programId,
-        type: widget.programType,
-        amount: widget.amount,
-        currency: widget.currency,
-        country: widget.country,
-        orderId: widget.reference,
-        provider: autoProvider,
-        metadata: widget.paymentMetadata ?? {},
-      );
-
-      final checkoutUrl = result['checkout_url'] as String?;
-
-      if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
-        // Show redirecting dialog with security messaging
-        if (mounted) {
-          _showRedirectingDialog(autoProvider);
-        }
-
-        // Small delay to show the dialog
-        await Future.delayed(const Duration(milliseconds: 800));
-
-        // Redirect to payment gateway
-        final uri = Uri.parse(checkoutUrl);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-          if (mounted) {
-            Navigator.pop(context); // Close redirecting dialog
-            _showVerificationDialog();
-            _startPolling();
-          }
-        } else {
-          if (mounted) {
-            Navigator.pop(context); // Close redirecting dialog
-            throw Exception('Could not open payment page');
-          }
-        }
-      } else {
-        throw Exception('No payment URL received');
-      }
-    } catch (e) {
-      setState(() => _isProcessing = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Payment failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showRedirectingDialog(String providerCode) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final providerInfo = {
-      'payfast': {'name': 'PayFast', 'color': Colors.blue},
-      'yoco': {'name': 'Yoco', 'color': Colors.purple},
-      'peach': {'name': 'Peach Payments', 'color': Colors.orange},
-      'flutterwave': {'name': 'Flutterwave', 'color': Colors.blue},
-      'paystack': {'name': 'Paystack', 'color': Colors.teal},
-      'pesapal': {'name': 'Pesapal', 'color': Colors.green},
-    };
-
-    final info = providerInfo[providerCode] ??
-        {'name': 'Payment Gateway', 'color': colorScheme.primary};
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Security badge
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: (info['color'] as Color).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.lock_outline,
-                  size: 48,
-                  color: info['color'] as Color,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Redirecting to Secure Payment',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'You are being redirected to ${info['name']} to complete your payment securely.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              // Payment method icons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.network('https://img.icons8.com/color/48/visa.png',
-                      width: 40,
-                      height: 40,
-                      errorBuilder: (_, __, ___) => Icon(Icons.credit_card,
-                          size: 40, color: Colors.grey[400])),
-                  const SizedBox(width: 8),
-                  Image.network(
-                      'https://img.icons8.com/color/48/mastercard.png',
-                      width: 40,
-                      height: 40,
-                      errorBuilder: (_, __, ___) => Icon(Icons.credit_card,
-                          size: 40, color: Colors.grey[400])),
-                  const SizedBox(width: 8),
-                  Image.network('https://img.icons8.com/color/48/amex.png',
-                      width: 40,
-                      height: 40,
-                      errorBuilder: (_, __, ___) => Icon(Icons.credit_card,
-                          size: 40, color: Colors.grey[400])),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Loading indicator
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(
-                'Please wait...',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Security notice
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.security, size: 16, color: Colors.green[700]),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Your card details are secure and encrypted',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.green[700],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -1781,11 +1085,9 @@ class _PaymentProviderSelectionPageState
       String providerCode, List<String> methods) async {
     setState(() {
       _selectedProviderCode = providerCode;
-      // Auto-select first method if available, otherwise null is fine
       _selectedMethod = methods.isNotEmpty ? methods.first : null;
     });
 
-    // Immediately initiate payment
     await _initiatePayment();
   }
 
@@ -1808,7 +1110,6 @@ class _PaymentProviderSelectionPageState
 
   void _startPolling() {
     _statusTimer?.cancel();
-    // Poll every 5 seconds
     _statusTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       try {
         final verification =
@@ -1818,7 +1119,6 @@ class _PaymentProviderSelectionPageState
         if (status == 'success' || status == 'successful') {
           timer.cancel();
           if (mounted) {
-            // Close the dialog if open
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             }
@@ -1827,7 +1127,6 @@ class _PaymentProviderSelectionPageState
         } else if (status == 'failed') {
           timer.cancel();
           if (mounted) {
-            // Close dialog
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             }
@@ -1840,12 +1139,10 @@ class _PaymentProviderSelectionPageState
           }
         }
       } catch (e) {
-        // Ignore polling errors, just retry next tick
         print('Polling error: $e');
       }
     });
 
-    // Stop polling after 10 minutes
     Timer(const Duration(minutes: 10), () {
       _statusTimer?.cancel();
     });
@@ -1876,7 +1173,6 @@ class _PaymentProviderSelectionPageState
         actions: [
           TextButton(
             onPressed: () {
-              // Cancel polling if user cancels
               _statusTimer?.cancel();
               Navigator.pop(context);
             },
@@ -1884,7 +1180,6 @@ class _PaymentProviderSelectionPageState
           ),
           FilledButton(
             onPressed: () {
-              // Manual check
               _checkPaymentStatus();
             },
             child: const Text('I Have Completed Payment'),
@@ -1903,7 +1198,7 @@ class _PaymentProviderSelectionPageState
       if (mounted) {
         if (status == 'success' || status == 'successful') {
           _statusTimer?.cancel();
-          Navigator.pop(context); // Close dialog
+          Navigator.pop(context);
           setState(() => _showSuccess = true);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

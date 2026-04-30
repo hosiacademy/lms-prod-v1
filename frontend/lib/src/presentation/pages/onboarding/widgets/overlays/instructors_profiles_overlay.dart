@@ -527,7 +527,8 @@ class _InstructorDetailDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
-        width: 800,
+        constraints: const BoxConstraints(maxWidth: 800),
+        width: MediaQuery.of(context).size.width * 0.9,
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(24),

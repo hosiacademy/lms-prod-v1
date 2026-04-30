@@ -125,49 +125,47 @@ class CurrencyService extends ChangeNotifier {
   // ---------------------------------------------------------------------------
 
   /// Fetch exchange rates from backend API (cached for 24 hours)
-  Future<void> _fetchExchangeRates() async {
-    try {
-      final response = await _dio.get(
-        '${Environment.apiBaseUrl}/api/v1/payments/exchange-rates/',
-        options: Options(
-          receiveTimeout: const Duration(seconds: 10),
-          sendTimeout: const Duration(seconds: 5),
-        ),
-      );
+  Future<void> _fetchExchangeRates({int retries = 3}) async {
+    int attempts = 0;
+    while (attempts < retries) {
+      try {
+        attempts++;
+        final response = await _dio.get(
+          '${Environment.apiBaseUrl}/api/v1/payments/exchange-rates/',
+          options: Options(
+            receiveTimeout: const Duration(seconds: 30),
+            sendTimeout: const Duration(seconds: 20),
+          ),
+        );
 
-      if (response.statusCode == 200 && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-        final rates = data['rates'] as Map<String, dynamic>?;
+        if (response.statusCode == 200 && response.data != null) {
+          final data = response.data as Map<String, dynamic>;
+          final rates = data['rates'] as Map<String, dynamic>?;
 
-        if (rates != null && rates.isNotEmpty) {
-          _exchangeRates = rates.map((key, value) =>
-            MapEntry(key.toUpperCase(), (value as num).toDouble())
-          );
-          _ratesFetchedAt = DateTime.now();
-          _ratesLoaded = true; // Mark rates as loaded
+          if (rates != null && rates.isNotEmpty) {
+            _exchangeRates = rates.map(
+                (key, value) => MapEntry(key.toUpperCase(), (value as num).toDouble()));
+            _ratesFetchedAt = DateTime.now();
+            _ratesLoaded = true;
 
-          // Parse expiry if available
-          if (data['expires_at'] != null) {
-            _ratesExpiresAt = DateTime.parse(data['expires_at']);
+            if (data['expires_at'] != null) {
+              _ratesExpiresAt = DateTime.parse(data['expires_at']);
+            }
+
+            notifyListeners();
+            debugPrint(
+                'CurrencyService: Exchange rates loaded for ${_exchangeRates.length} currencies');
+            return;
           }
-
-          notifyListeners();
-          debugPrint('CurrencyService: Exchange rates loaded for ${_exchangeRates.length} currencies');
-        } else {
-          // No rates in response - mark as not loaded
-          _ratesLoaded = false;
-          debugPrint('CurrencyService: No rates in response');
         }
-      } else {
-        // Non-200 response - mark as not loaded
-        _ratesLoaded = false;
-        debugPrint('CurrencyService: Non-200 response: ${response.statusCode}');
+      } catch (e) {
+        debugPrint('CurrencyService: Failed to fetch exchange rates (attempt $attempts): $e');
+        if (attempts >= retries) {
+          debugPrint('CurrencyService: All retries failed. Using default rates.');
+        } else {
+          await Future.delayed(Duration(seconds: 2 * attempts));
+        }
       }
-    } catch (e) {
-      // Silently fail - will use fallback rates
-      // HARDENED: Mark rates as not loaded so callers know conversion didn't happen
-      _ratesLoaded = false;
-      debugPrint('CurrencyService: Failed to fetch exchange rates: $e');
     }
   }
 
@@ -193,8 +191,8 @@ class CurrencyService extends ChangeNotifier {
       final response = await _dio.get(
         url,
         options: Options(
-          receiveTimeout: const Duration(seconds: 5),
-          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 10),
+          sendTimeout: const Duration(seconds: 10),
         ),
       );
 
@@ -318,16 +316,10 @@ class CurrencyService extends ChangeNotifier {
     // Force WHOLE NUMBERS only as per user request
     final roundedPrice = price.round();
     
-    // Pattern with thousands separator: #,##0
-    final formatter = NumberFormat.currency(
-      symbol: symbol,
-      decimalDigits: 0,
-      customPattern: '\u00a4 #,##0', // Added space and thousands separator
-    );
-
-    String formatted = formatter.format(roundedPrice);
-    
-    return formatted;
+    // Pattern without thousands separator: #0 (instead of #,##0)
+    // We use a manual formatting to guarantee NO thousand separators
+    final formattedVal = roundedPrice.toStringAsFixed(0);
+    return '$symbol $formattedVal';
   }
 
   /// Get the display currency code - Use what backend returns

@@ -32,6 +32,9 @@ class TrainingType(str, Enum):
 class PaymentMethod(str, Enum):
     """Payment Methods"""
     CARD = 'card'  # Credit/Debit cards (Visa, Mastercard, Zimswitch)
+    VISA = 'visa'
+    MASTERCARD = 'mastercard'
+    ZIMSWITCH = 'zimswitch'
     EFT = 'eft'  # Electronic Funds Transfer / Bank Transfer
     CASH = 'cash'  # In-store office payment
 
@@ -43,9 +46,9 @@ class CardProvider(str, Enum):
 
 class EFTProvider(str, Enum):
     """EFT/Bank Transfer Providers"""
-    DIRECT_TRANSFER = 'bank_transfer'  # Direct bank account transfer
+    DIRECT_TRANSFER = 'eft'  # Direct bank account transfer
     PESEPAY = 'pesepay'  # Zimbabwe mobile/online banking
-    PAYFAST = 'payfast'  # South Africa EFT/ACH
+    PAYFAST = 'eft'  # South Africa EFT/ACH
 
 
 class CashProvider(str, Enum):
@@ -67,15 +70,15 @@ COUNTRY_PAYMENT_CONFIG = {
             },
             PaymentMethod.EFT: {
                 'provider': EFTProvider.DIRECT_TRANSFER,
-                'description': '🏦 Bank Transfer (via SmarTransfer or Direct Account)',
+                'description': '🏦 Bank Transfer (Direct Deposit / SmarTransfer)',
                 'enabled': True,
             },
             PaymentMethod.CASH: {
                 'provider': CashProvider.ON_SITE,
-                'description': '💰 Pay Cash at Hosi Academy Office',
+                'description': '💰 Pay Cash at Hosi Academy Office (Harare)',
                 'enabled': True,
                 'locations': [
-                    {'name': 'Harare HQ', 'address': '...', 'hours': '9AM-5PM MON-FRI'}
+                    {'name': 'Harare HQ', 'address': '100 Liberation Legacy Way, Harare', 'hours': '9AM-4:30PM MON-FRI'}
                 ]
             },
         }
@@ -97,10 +100,11 @@ COUNTRY_PAYMENT_CONFIG = {
             },
             PaymentMethod.CASH: {
                 'provider': CashProvider.ON_SITE,
-                'description': '💰 Pay Cash at Office',
+                'description': '💰 Pay Cash at Office (Sandton/CT)',
                 'enabled': True,
                 'locations': [
-                    {'name': 'Johannesburg Office', 'address': '...', 'hours': '9AM-5PM MON-FRI'}
+                    {'name': 'Johannesburg Office', 'address': '123 Sandton Street, Sandton', 'hours': '9AM-5PM MON-FRI'},
+                    {'name': 'Cape Town Office', 'address': '456 Long Street, Cape Town', 'hours': '9AM-5PM MON-FRI'}
                 ]
             },
         }
@@ -122,10 +126,10 @@ COUNTRY_PAYMENT_CONFIG = {
             },
             PaymentMethod.CASH: {
                 'provider': CashProvider.ON_SITE,
-                'description': '💰 Pay Cash at Office',
+                'description': '💰 Pay Cash at Nairobi Office',
                 'enabled': True,
                 'locations': [
-                    {'name': 'Nairobi Office', 'address': '...', 'hours': '9AM-5PM MON-FRI'}
+                    {'name': 'Nairobi Office', 'address': 'The Oval House, Westlands', 'hours': '9AM-5PM MON-FRI'}
                 ]
             },
         }
@@ -145,11 +149,6 @@ COUNTRY_PAYMENT_CONFIG = {
                 'description': '🏦 Bank Transfer',
                 'enabled': True,
             },
-            PaymentMethod.CASH: {
-                'provider': CashProvider.ON_SITE,
-                'description': '💰 Pay Cash at Office',
-                'enabled': True,
-            },
         }
     },
     'NG': {  # Nigeria
@@ -165,11 +164,6 @@ COUNTRY_PAYMENT_CONFIG = {
             PaymentMethod.EFT: {
                 'provider': EFTProvider.DIRECT_TRANSFER,
                 'description': '🏦 Bank Transfer',
-                'enabled': True,
-            },
-            PaymentMethod.CASH: {
-                'provider': CashProvider.ON_SITE,
-                'description': '💰 Pay Cash at Office',
                 'enabled': True,
             },
         }
@@ -189,14 +183,25 @@ COUNTRY_PAYMENT_CONFIG = {
                 'description': '🏦 Bank Transfer',
                 'enabled': True,
             },
-            PaymentMethod.CASH: {
-                'provider': CashProvider.ON_SITE,
-                'description': '💰 Pay Cash at Office',
+        }
+    },
+    'ZM': {  # Zambia
+        'name': 'Zambia',
+        'currency': 'ZMW',
+        'payment_methods': {
+            PaymentMethod.CARD: {
+                'provider': CardProvider.SMATPAY,
+                'card_types': ['Visa', 'Mastercard'],
+                'description': '💳 Visa or Mastercard (SmatPay)',
+                'enabled': True,
+            },
+            PaymentMethod.EFT: {
+                'provider': EFTProvider.DIRECT_TRANSFER,
+                'description': '🏦 Bank Transfer',
                 'enabled': True,
             },
         }
     },
-    # ... other countries can be added following the same pattern
 }
 
 # Training Type specific payment method preferences (can be overridden per country)
@@ -293,7 +298,12 @@ class PaymentRoutingService:
         if not country_config:
             return None
         
-        method_config = country_config['payment_methods'].get(payment_method)
+        # Map specific card types back to CARD for provider lookup
+        lookup_method = payment_method
+        if payment_method in [PaymentMethod.VISA, PaymentMethod.MASTERCARD, PaymentMethod.ZIMSWITCH]:
+            lookup_method = PaymentMethod.CARD
+            
+        method_config = country_config['payment_methods'].get(lookup_method)
         if not method_config:
             return None
         
@@ -324,6 +334,9 @@ class PaymentRoutingService:
         available_method_codes = [m['method'] for m in available_methods]
         
         if payment_method not in available_method_codes:
+            # Allow specific card types if 'card' is enabled
+            if payment_method in ['visa', 'mastercard', 'zimswitch'] and 'card' in available_method_codes:
+                return True, None
             return False, f"Payment method '{payment_method}' not available for {country_code}"
         
         return True, None

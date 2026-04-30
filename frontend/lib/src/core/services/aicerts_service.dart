@@ -217,7 +217,9 @@ class AICertsCourse {
       imageUrl: json['feature_image_url'] as String? ?? json['certificate_badge_url'] as String?,
       certificateImageUrl: json['certificate_badge_url'] as String?,
       streamType: streamType,
-      price: json['price_individual'] != null ? double.tryParse(json['price_individual'].toString()) : null,
+      price: json['our_price_usd'] != null ? double.tryParse(json['our_price_usd'].toString()) :
+             json['price_usd'] != null ? double.tryParse(json['price_usd'].toString()) :
+             json['price_individual'] != null ? double.tryParse(json['price_individual'].toString()) : null,
       formattedPrice: json['formatted_price'] as String?,
     );
   }

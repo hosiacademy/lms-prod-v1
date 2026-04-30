@@ -70,7 +70,7 @@ class _OnboardingHeaderState extends State<OnboardingHeader> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isNarrowScreen = screenWidth < 1200;
+    final isNarrowScreen = screenWidth < 1450;
     final isMobile = screenWidth < 600;
 
     return Stack(
@@ -91,38 +91,43 @@ class _OnboardingHeaderState extends State<OnboardingHeader> {
             children: [
               SafeArea(
                 bottom: false,
+                left: false,
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 8 : (isNarrowScreen ? 12 : 32),
-                    vertical: isMobile ? 8 : 12,
+                  padding: EdgeInsets.only(
+                    left: 2,
+                    right: isMobile ? 8 : (isNarrowScreen ? 12 : 32),
+                    top: isMobile ? 8 : 12,
+                    bottom: isMobile ? 8 : 12,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Left - Logo + Africa map
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/images/logo.png',
-                            height: isMobile ? 32 : 50,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(
-                              Icons.school,
-                              size: 40,
-                              color: Color(0xFFF79150),
-                            ),
-                          ),
-                          if (!isMobile) ...[
-                            const SizedBox(width: 12),
-                            Image.asset(
-                              'assets/images/onboarding/africa_map.png',
-                              height: 45,
-                              fit: BoxFit.contain,
-                            ),
-                          ],
-                        ],
-                      ),
+                       // Left - Logo + Africa map - Take minimum space needed
+                       Row(
+                         mainAxisSize: MainAxisSize.min,
+                         children: [
+                           Image.asset(
+                             'assets/images/logo.png',
+                             height: isMobile ? 32 : 50,
+                             fit: BoxFit.contain,
+                             errorBuilder: (context, error, stackTrace) =>
+                                 const Icon(
+                               Icons.school,
+                               size: 40,
+                               color: Color(0xFFF79150),
+                             ),
+                           ),
+                           if (!isMobile) ...[
+                             const SizedBox(width: 12),
+                             Image.asset(
+                               'assets/images/onboarding/africa_map.png',
+                               height: 45,
+                               fit: BoxFit.contain,
+                             ),
+                           ],
+                         ],
+                       ),
 
                       if (isNarrowScreen)
                         Expanded(
@@ -211,21 +216,21 @@ class _OnboardingHeaderState extends State<OnboardingHeader> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              _buildTrainingButton(
-                                context,
-                                title: 'AI & Blockchain Training',
-                                hoverKey: 'ai_blockchain',
-                                overlayKey: 'ai_blockchain',
-                              ),
-                              const SizedBox(width: 32),
-                              _buildTrainingButton(
-                                context,
-                                title: 'Cybersecurity Training',
-                                hoverKey: 'cybersecurity',
-                                overlayKey: 'cybersecurity',
-                                isCybersecurity: true,
-                              ),
-                              const SizedBox(width: 24),
+                                _buildTrainingButton(
+                                  context,
+                                  title: 'AI & Blockchain Training',
+                                  hoverKey: 'ai_blockchain',
+                                  overlayKey: 'ai_blockchain',
+                                ),
+                                const SizedBox(width: 16),
+                                _buildTrainingButton(
+                                  context,
+                                  title: 'Cybersecurity Training',
+                                  hoverKey: 'cybersecurity',
+                                  overlayKey: 'cybersecurity',
+                                  isCybersecurity: true,
+                                ),
+                              const SizedBox(width: 16),
                               Consumer<ThemeService>(
                                 builder: (context, themeService, child) {
                                   return Tooltip(

@@ -10,13 +10,16 @@ class AfricanOfficesSection extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final horizontalPadding = screenWidth * 0.005; // Exactly 0.5% each side = 99% content width
+
     return Container(
       // Background adapts to theme
       color: isDark 
           ? const Color(0xFF0B1C2C) 
           : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 48),
-      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 48),
+      width: screenWidth,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -35,52 +38,72 @@ class AfricanOfficesSection extends StatelessWidget {
           const SizedBox(height: 32),
 
           // ── Cards Wrap (Responsive Grid) ──
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            alignment: WrapAlignment.center,
-            children: [
-              _buildOfficeCard(
-                context,
-                country: "South Africa",
-                city: "Johannesburg",
-                address: "Montecasino Blvd, Fourways",
-                phone: "+27 11 023 1995",
-                hours: "Mon–Fri 9AM–5PM",
-                flag: "🇿🇦",
-                googleMapsUrl: "https://maps.google.com/?q=Montecasino+Blvd+Fourways+Johannesburg",
-              ),
-              _buildOfficeCard(
-                context,
-                country: "Kenya",
-                city: "Nairobi",
-                address: "The Oval House, Ring Rd, Westlands",
-                phone: "+254 20 221 2701",
-                hours: "Mon–Fri 8AM–5PM",
-                flag: "🇰🇪",
-                googleMapsUrl: "https://maps.google.com/?q=The+Oval+House+Westlands+Nairobi",
-              ),
-              _buildOfficeCard(
-                context,
-                country: "Zimbabwe",
-                city: "Harare",
-                address: "100 Liberation Legacy Way",
-                phone: "+263 242 700 000",
-                hours: "Mon–Fri 8:30AM–4:30PM",
-                flag: "🇿🇼",
-                googleMapsUrl: "https://maps.google.com/?q=100+Liberation+Legacy+Way+Harare",
-              ),
-              _buildOfficeCard(
-                context,
-                country: "Zambia",
-                city: "Lusaka",
-                address: "Cairo Rd, Central Business District",
-                phone: "+260 211 234 567",
-                hours: "Mon–Fri 8AM–5PM",
-                flag: "🇿🇲",
-                googleMapsUrl: "https://maps.google.com/?q=Cairo+Rd+Lusaka",
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+              // On large screens, 4 cards. On medium, 2. On small, 1.
+              int crossAxisCount = 4;
+              if (availableWidth < 600) {
+                crossAxisCount = 1;
+              } else if (availableWidth < 1000) {
+                crossAxisCount = 2;
+              }
+              
+              const spacing = 12.0; // Tighter spacing for collective presence
+              final cardWidth = (availableWidth - (crossAxisCount - 1) * spacing) / crossAxisCount;
+
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildOfficeCard(
+                    context,
+                    country: "South Africa",
+                    city: "Johannesburg",
+                    address: "Montecasino Blvd, Fourways",
+                    phone: "+27 11 023 1995",
+                    hours: "Mon–Fri 9AM–5PM",
+                    flag: "🇿🇦",
+                    googleMapsUrl: "https://maps.google.com/?q=Montecasino+Blvd+Fourways+Johannesburg",
+                    cardWidth: cardWidth,
+                  ),
+                  _buildOfficeCard(
+                    context,
+                    country: "Kenya",
+                    city: "Nairobi",
+                    address: "The Oval House, Ring Rd, Westlands",
+                    phone: "+254 20 221 2701",
+                    hours: "Mon–Fri 8AM–5PM",
+                    flag: "🇰🇪",
+                    googleMapsUrl: "https://maps.google.com/?q=The+Oval+House+Westlands+Nairobi",
+                    cardWidth: cardWidth,
+                  ),
+                  _buildOfficeCard(
+                    context,
+                    country: "Zimbabwe",
+                    city: "Harare",
+                    address: "100 Liberation Legacy Way",
+                    phone: "+263 242 700 000",
+                    hours: "Mon–Fri 8:30AM–4:30PM",
+                    flag: "🇿🇼",
+                    googleMapsUrl: "https://maps.google.com/?q=100+Liberation+Legacy+Way+Harare",
+                    cardWidth: cardWidth,
+                  ),
+                  _buildOfficeCard(
+                    context,
+                    country: "Zambia",
+                    city: "Lusaka",
+                    address: "Cairo Rd, Central Business District",
+                    phone: "+260 211 234 567",
+                    hours: "Mon–Fri 8AM–5PM",
+                    flag: "🇿🇲",
+                    googleMapsUrl: "https://maps.google.com/?q=Cairo+Rd+Lusaka",
+                    cardWidth: cardWidth,
+                  ),
+                ],
+              );
+            }
           ),
         ],
       ),
@@ -96,10 +119,8 @@ class AfricanOfficesSection extends StatelessWidget {
     required String hours,
     required String flag,
     required String googleMapsUrl,
+    required double cardWidth,
   }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = screenWidth < 600 ? screenWidth * 0.9 : 260.0;
-    
     return OfficeCard(
       country: country,
       city: city,

@@ -99,7 +99,7 @@ dependencies:
   web: ^1.1.1
 
   # Error tracking & monitoring
-  sentry_flutter: ^8.3.0
+
 
 dev_dependencies:
   flutter_test:
@@ -119,34 +119,18 @@ flutter:
     - assets/images/courses/
     - assets/images/testimonials/
     - assets/images/pathways/
+    - assets/images/social/
     # Data files
     - assets/data/
     - assets/data/course_images.json
-    # Explicit files
+    # Explicit files (not in listed folders)
     - assets/images/logo.png
     - assets/images/default_avatar.png
-    - assets/images/onboarding/africa_map.png
-    - assets/images/onboarding/aicerts.png
-    - assets/images/onboarding/course_1.jpg
-    - assets/images/onboarding/course_2.jpg
-    - assets/images/onboarding/course_3.jpg
-    - assets/images/onboarding/course_3.png
-    - assets/images/onboarding/course_4.jpg
-    - assets/images/onboarding/course_5.jpg
-    - assets/images/onboarding/course_6.jpg
-    - assets/images/onboarding/course_7.jpg
-    - assets/images/onboarding/course_8.jpg
-    # New AI images (replacing images with wrong spelling/inscriptions)
+    - assets/images/testimonial_avatar.png
+    # New AI images
     - assets/images/AI_1.png
     - assets/images/AI_2.png
     - assets/images/AI_3.png
-    - assets/images/testimonial_avatar.png
-    - assets/images/social/
-    # Pathway SVG images
-    - assets/images/pathways/corporate_training.svg
-    - assets/images/pathways/custom_selection.svg
-    - assets/images/pathways/industry_training.svg
-    - assets/images/pathways/masterclasses.svg
 
   fonts:
     - family: OpenSans

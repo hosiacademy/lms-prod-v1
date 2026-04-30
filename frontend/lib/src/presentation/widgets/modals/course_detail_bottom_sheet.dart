@@ -33,19 +33,21 @@ class CourseDetailBottomSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final mq = MediaQuery.of(context);
+    final sw = mq.size.width;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.92,
-      minChildSize: 0.60,
-      maxChildSize: 0.96,
+      initialChildSize: sw < 480 ? 0.95 : 0.92,
+      minChildSize: sw < 480 ? 0.70 : 0.60,
+      maxChildSize: 1.0,
       expand: false,
       snap: true,
-      snapSizes: const [0.60, 0.92, 0.96],
+      snapSizes: [0.60, 0.92, 1.0],
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(sw < 480 ? 20 : 28)),
             boxShadow: [
               BoxShadow(
                 color: colors.shadow.withValues(alpha: 0.2),
@@ -84,7 +86,7 @@ class CourseDetailBottomSheet extends StatelessWidget {
               Expanded(
                 child: SingleChildScrollView(
                   controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.symmetric(horizontal: (sw * 0.06).clamp(16.0, 24.0)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -92,13 +94,13 @@ class CourseDetailBottomSheet extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
                         child: Container(
-                          height: 180,
+                          height: (sw * 0.45).clamp(140.0, 200.0),
                           width: double.infinity,
                           color: colors.primaryContainer,
                           child: Center(
                             child: Icon(
                               Icons.school_rounded,
-                              size: 80,
+                              size: (sw * 0.2).clamp(60.0, 100.0),
                               color: colors.primary.withValues(alpha: 0.6),
                             ),
                           ),
@@ -112,6 +114,7 @@ class CourseDetailBottomSheet extends StatelessWidget {
                         style: textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colors.onSurface,
+                          fontSize: (sw * 0.065).clamp(20.0, 28.0),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -126,6 +129,7 @@ class CourseDetailBottomSheet extends StatelessWidget {
                             '$rating ($enrollmentCount enrolled)',
                             style: textTheme.bodyMedium?.copyWith(
                               color: colors.onSurface,
+                              fontSize: (sw * 0.035).clamp(12.0, 14.0),
                             ),
                           ),
                           const Spacer(),
@@ -133,6 +137,7 @@ class CourseDetailBottomSheet extends StatelessWidget {
                             'Duration: $duration',
                             style: textTheme.bodyMedium?.copyWith(
                               color: colors.onSurface,
+                              fontSize: (sw * 0.035).clamp(12.0, 14.0),
                             ),
                           ),
                         ],
@@ -145,6 +150,7 @@ class CourseDetailBottomSheet extends StatelessWidget {
                         style: textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colors.primary,
+                          fontSize: (sw * 0.06).clamp(18.0, 24.0),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -223,10 +229,11 @@ class CourseDetailBottomSheet extends StatelessWidget {
                                 Navigator.pop(context);
                               },
                           icon: const Icon(Icons.school_rounded),
-                          label: const Text(
+                          label: Text(
                             'Enroll Now',
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                                fontSize: (sw * 0.045).clamp(16.0, 18.0), 
+                                fontWeight: FontWeight.bold),
                           ),
                           style: FilledButton.styleFrom(
                             backgroundColor: colors.primary,

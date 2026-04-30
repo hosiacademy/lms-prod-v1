@@ -57,8 +57,12 @@ class EmailService:
                 'enrollment_details': enrollment_details,
                 'access_credentials': access_credentials,
                 'platform_links': platform_links,
-                'support_email': settings.DEFAULT_FROM_EMAIL,
+                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'academy@hosiafrica.com'),
+                'support_phone': getattr(settings, 'SUPPORT_PHONE', '+27 67 231 9200'),
                 'company_name': 'Hosi Academy',
+                'company_tagline': 'The Future of Learning',
+                'logo_url': 'http://154.66.211.3:7000/assets/assets/images/logo.png',
+                'website_url': 'https://www.hosiacademy.africa',
             }
 
             # Render HTML email from template
@@ -121,9 +125,12 @@ class EmailService:
                 'program_type': program_type.replace('_', ' ').title(),
                 'failure_reason': failure_reason,
                 'support_action': support_action or "Please contact support for assistance.",
-                'support_email': settings.DEFAULT_FROM_EMAIL,
-                'support_phone': getattr(settings, 'SUPPORT_PHONE', '+27 11 234 5678'),
+                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'academy@hosiafrica.com'),
+                'support_phone': getattr(settings, 'SUPPORT_PHONE', '+27 67 231 9200'),
                 'company_name': 'Hosi Academy',
+                'company_tagline': 'The Future of Learning',
+                'logo_url': 'http://154.66.211.3:7000/assets/assets/images/logo.png',
+                'website_url': 'https://www.hosiacademy.africa',
             }
 
             # Render HTML email from template

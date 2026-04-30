@@ -47,8 +47,12 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
         AfricanCurrencies.getCurrencySymbol(_selectedCountry!);
     final currencyCode = AfricanCurrencies.getCurrencyCode(_selectedCountry!);
 
+    final mq = MediaQuery.of(context);
+    final sw = mq.size.width;
+    final contentPad = (sw * 0.05).clamp(16.0, 24.0);
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(contentPad),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,10 +60,10 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Enroll in Course',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: (sw * 0.05).clamp(16.0, 20.0),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -92,9 +96,9 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
                         const SizedBox(height: 8),
                         Text(
                           CurrencyService.instance.formatPrice(localPrice, currencyCode: currencyCode),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                            fontSize: (sw * 0.05).clamp(16.0, 20.0),
                             color: Colors.green,
                           ),
                         ),
@@ -156,7 +160,10 @@ class _PaymentBottomSheetState extends State<PaymentBottomSheet> {
               ),
               child: const Text(
                 'Complete Enrollment',
-                style: TextStyle(fontSize: 16),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

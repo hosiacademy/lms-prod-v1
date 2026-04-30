@@ -1,107 +1,90 @@
-<!-- templates/notifications/emails/eft_rejected.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Issue</title>
+    <title>Payment Issue - {{ company_name }}</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #fef2f2;
         }
         .container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 650px;
+            margin: 30px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
         .header {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
             color: white;
-            padding: 30px;
-            border-radius: 8px 8px 0 0;
+            padding: 40px 30px;
             text-align: center;
-            margin: -30px -30px 30px -30px;
+        }
+        .logo {
+            width: 150px;
+            height: auto;
+            margin-bottom: 20px;
         }
         .header h1 {
-            margin: 0;
-            font-size: 28px;
+            font-size: 26px;
+            font-weight: 700;
         }
-        .warning-icon {
-            font-size: 64px;
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #b91c1c;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .rejection-card {
+            background: #fff1f2;
+            border: 1px solid #fecaca;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .rejection-card h3 {
+            color: #991b1b;
+            font-size: 18px;
             margin-bottom: 10px;
         }
-        .reference-box {
-            background-color: #fff5f5;
-            border: 2px solid #f5576c;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            margin: 20px 0;
+        .rejection-reason {
+            font-family: 'Courier New', Courier, monospace;
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            margin-top: 10px;
         }
-        .reference-number {
-            font-size: 24px;
-            font-weight: bold;
-            color: #f5576c;
-            font-family: 'Courier New', monospace;
-        }
-        .reason-box {
-            background-color: #fff5f5;
-            border-left: 4px solid #f5576c;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .reason-box h3 {
-            margin-top: 0;
-            color: #f5576c;
-        }
-        .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        .details-table td {
-            padding: 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .details-table td:first-child {
-            font-weight: 600;
-            color: #666;
-            width: 40%;
-        }
-        .action-box {
-            background-color: #f0f4ff;
-            border: 1px solid #667eea;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .action-box h3 {
-            margin-top: 0;
-            color: #667eea;
-        }
-        .btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .cta-button {
+            display: block;
+            background: #b91c1c;
+            color: white !important;
             text-decoration: none;
-            padding: 12px 30px;
-            border-radius: 5px;
-            margin: 10px 5px 10px 0;
-            font-weight: 600;
+            padding: 18px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 700;
+            margin: 30px 0;
         }
         .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #e0e0e0;
+            background: #f1f5f9;
+            padding: 40px 30px;
             text-align: center;
-            color: #666;
+            color: #64748b;
             font-size: 14px;
         }
     </style>
@@ -109,70 +92,43 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="warning-icon">⚠️</div>
-            <h1>Payment Issue</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Action required to complete your enrollment</p>
+            <img src="{{ logo_url }}" alt="{{ company_name }}" class="logo">
+            <h1>Payment Issue Detected</h1>
         </div>
 
-        <p>Dear <strong>{{ user_name }}</strong>,</p>
+        <div class="content">
+            <p class="greeting">Hi {{ user_name }},</p>
 
-        <p>We regret to inform you that there was an issue with your EFT payment for <strong>{{ program_title }}</strong>.</p>
+            <p>We encountered an issue while verifying your EFT payment for reference <strong>{{ reference }}</strong>.</p>
 
-        <div class="reference-box">
-            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">PAYMENT REFERENCE</p>
-            <div class="reference-number">{{ reference }}</div>
-        </div>
-
-        <table class="details-table">
-            <tr>
-                <td>Payment Amount:</td>
-                <td><strong>{{ currency }} {{ amount|floatformat:2 }}</strong></td>
-            </tr>
-            <tr>
-                <td>Program:</td>
-                <td>{{ program_title }}</td>
-            </tr>
-        </table>
-
-        <div class="reason-box">
-            <h3>❌ Reason for Rejection</h3>
-            <p style="font-size: 16px; margin: 10px 0 0 0;">{{ rejection_reason }}</p>
-        </div>
-
-        <div class="action-box">
-            <h3>📋 Next Steps</h3>
-            <p>Please take one of the following actions:</p>
-            <ol style="line-height: 2;">
-                <li><strong>Make a new payment</strong> with the correct amount and reference number</li>
-                <li><strong>Contact support</strong> if you believe this is an error</li>
-                <li><strong>Upload proof of payment</strong> if you've already made the correct payment</li>
-            </ol>
-            <div style="margin-top: 20px;">
-                <a href="https://portal.hosiacademy.africa/payments/" class="btn">Make New Payment</a>
-                <a href="mailto:{{ support_email }}" class="btn">Contact Support</a>
+            <div class="rejection-card">
+                <h3>Reason for Rejection</h3>
+                <p>Our finance team provided the following feedback:</p>
+                <div class="rejection-reason">{{ rejection_reason }}</div>
             </div>
+
+            <p>Common reasons for rejection include:</p>
+            <ul style="margin-left: 20px; color: #64748b; margin-top: 10px;">
+                <li>Incorrect reference number used</li>
+                <li>Amount paid does not match the invoice amount</li>
+                <li>Proof of payment was unclear or invalid</li>
+                <li>Payment not yet reflected in our account</li>
+            </ul>
+
+            <a href="{{ website_url }}/payments/eft/{{ reference }}" class="cta-button">
+                🔄 Re-upload Proof of Payment
+            </a>
+
+            <p style="text-align: center; color: #64748b; font-size: 14px;">
+                If you believe this is an error, please contact our support team immediately with your bank-issued transaction receipt.
+            </p>
         </div>
-
-        <div style="background-color: #fff5f5; border: 1px solid #f5576c; border-radius: 8px; padding: 15px; margin: 20px 0;">
-            <strong>⏰ Important:</strong> Please resolve this payment issue within <strong>7 days</strong> to avoid cancellation of your enrollment.
-        </div>
-
-        <h2 style="color: #f5576c;">💡 Common Issues</h2>
-
-        <ul style="line-height: 2;">
-            <li><strong>Incorrect amount:</strong> Ensure you transferred the exact amount shown on your invoice</li>
-            <li><strong>Missing reference:</strong> Always include your unique reference number</li>
-            <li><strong>Wrong account:</strong> Verify you transferred to the correct bank account</li>
-            <li><strong>Bank charges:</strong> Ensure all bank charges are paid on your side (we must receive the full amount)</li>
-        </ul>
 
         <div class="footer">
-            <p><strong>We're Here to Help</strong></p>
-            <p>📧 Email: <a href="mailto:{{ support_email }}">{{ support_email }}</a><br>
-            📞 Phone: {{ support_phone }}</p>
-            <p style="margin-top: 20px; font-size: 12px; color: #999;">
-                © 2026 Hosi Academy. All rights reserved.
-            </p>
+            <p><strong>{{ company_name }}</strong></p>
+            <p>{{ company_tagline }}</p>
+            <p style="margin-top: 20px;">Support: <a href="mailto:{{ support_email }}">{{ support_email }}</a> | {{ support_phone }}</p>
+            <p style="margin-top: 15px; font-size: 12px; opacity: 0.7;">&copy; 2026 Hosi Academy. All rights reserved.</p>
         </div>
     </div>
 </body>

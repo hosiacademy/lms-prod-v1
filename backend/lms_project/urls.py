@@ -1,4 +1,4 @@
-# lms_project/urls.py
+﻿# lms_project/urls.py
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
@@ -8,16 +8,7 @@ from apps.masterclasses.admin import analytics_site, completed_site
 from apps.users.views import UserListView
 import core.admin  # Your custom admin registrations
 
-# Test Sentry integration
-def trigger_error(request):
-    """Test endpoint to verify Sentry error tracking"""
-    division_by_zero = 1 / 0
-    return None
-
-urlpatterns = [
-    # Sentry test endpoint
-    path('sentry-debug/', trigger_error),
-    
+urlpatterns = [    
     # Trigger reload
     path('api/v1/courses/masterclasses/', include('apps.masterclasses.urls')),
 
@@ -30,6 +21,10 @@ urlpatterns = [
     path("api/v1/learnerships/", include("apps.learnerships.urls")),
     path("api/v1/users/", include("apps.users.urls")),
     path("api/v1/auth/", include("apps.users.auth_urls")),
+    
+    # Cash Payment Instructions - PUBLIC (no authentication required)
+    path('api/v1/cash-payment-instructions/', include('apps.payments.cash_payment_urls')),
+    
     path("api/v1/payments/", include("apps.payments.urls")),
     # Allow enrollments to be accessed via both prefixes for frontend compatibility
     path("api/v1/enrollments/", include("apps.payments.enrollment_urls")),

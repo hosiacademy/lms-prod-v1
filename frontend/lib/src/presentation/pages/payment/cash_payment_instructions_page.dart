@@ -1,15 +1,10 @@
-// lib/src/presentation/pages/payment/cash_payment_instructions_page.dart
+﻿// lib/src/presentation/pages/payment/cash_payment_instructions_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/api_client.dart';
 
-/// Cash Payment Instructions Page
-/// 
-/// Displays pathway-specific cash payment instructions based on enrollment type.
-/// Each enrollment pathway (Masterclass, Learnership, Industry Training, etc.)
-/// has detailed, tailored instructions for the cash payment process.
 class CashPaymentInstructionsPage extends StatefulWidget {
   final String enrollmentType;
   final String programId;
@@ -102,798 +97,386 @@ class _CashPaymentInstructionsPageState
       });
     } catch (e) {
       setState(() {
-        _error = 'Failed to load payment instructions: $e';
-        _isLoadingError = true;
+        _error = e.toString();
         _isLoading = false;
+        _isLoadingError = true;
       });
     }
   }
 
   Future<void> _copyReference() async {
     setState(() => _copyingReference = true);
-    
     await Clipboard.setData(ClipboardData(text: widget.reference));
-    
     if (mounted) {
       setState(() => _copyingReference = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Reference code ${widget.reference} copied!'),
           duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
-  Future<void> _callSupport() async {
+  void _contactSupport() {
     if (_instructions == null) return;
-    
     final contact = _instructions!['contact_support'] as Map<String, dynamic>?;
-    final phone = contact?['phone'] ?? '';
-    
-    if (phone.isNotEmpty) {
-      final uri = Uri.parse('tel:$phone');
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      }
+    if (contact != null && contact['email'] != null) {
+      launchUrl(Uri.parse('mailto:${contact['email']}'));
     }
   }
 
-  Future<void> _emailSupport() async {
+  void _callSupport() {
     if (_instructions == null) return;
-    
     final contact = _instructions!['contact_support'] as Map<String, dynamic>?;
-    final email = contact?['email'] ?? '';
-    
-    if (email.isNotEmpty) {
-      final uri = Uri(
-        scheme: 'mailto',
-        path: email,
-        query: 'subject=Payment Inquiry - ${widget.reference}',
-      );
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      }
+    if (contact != null && contact['phone'] != null) {
+      launchUrl(Uri.parse('tel:${contact['phone']}'));
+    }
+  }
+
+  void _emailSupport() {
+    if (_instructions == null) return;
+    final contact = _instructions!['contact_support'] as Map<String, dynamic>?;
+    if (contact != null && contact['email'] != null) {
+      final email = contact['email'];
+      final subject = 'Payment Inquiry - ${widget.reference}';
+      launchUrl(Uri.parse('mailto:$email?subject=${Uri.encodeComponent(subject)}'));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          // Header
-          _buildHeader(theme, colors),
-
-          // Content
-          Expanded(
-            child: _isLoading
-                ? _buildLoadingIndicator(theme, colors)
-                : _isLoadingError
-                    ? _buildErrorView(theme, colors)
-                    : _buildInstructionsContent(theme, colors),
+    if (_isLoadingError) {
+      return Scaffold(
+        appBar: widget.isDialog ? null : AppBar(title: const Text('Cash Payment Instructions')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Failed to load instructions: $_error'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadInstructions,
+                child: const Text('Retry'),
+              ),
+            ],
           ),
-
-          // Action Buttons
-          _buildActionButtons(theme, colors),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(ThemeData theme, ColorScheme colors) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [colors.primary, colors.primary.withValues(alpha: 0.7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
-        ),
+      );
+    }
+
+    if (_instructions == null) {
+      return const Scaffold(
+        body: Center(child: Text('No instructions available')),
+      );
+    }
+
+    final contact = _instructions!['contact_support'] as Map<String, dynamic>?;
+
+    return Scaffold(
+      backgroundColor: widget.isDialog ? Colors.transparent : Colors.grey[100],
+      appBar: widget.isDialog ? null : AppBar(
+        title: const Text('Cash Payment Instructions'),
+        centerTitle: true,
       ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.onPrimary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    _getIconForType(_instructions?['icon'] ?? 'payments'),
-                    color: colors.onPrimary,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _instructions?['title'] ?? 'Cash Payment Instructions',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: colors.onPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _instructions?['subtitle'] ?? widget.programTitle,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.onPrimary.withValues(alpha: 0.9),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                if (widget.isDialog)
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            // Reference Code Banner
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colors.onPrimary.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colors.onPrimary.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.qr_code, color: colors.onPrimary, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Your Payment Reference',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: colors.onPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: colors.surface,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            widget.reference,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        onPressed: _copyReference,
-                        icon: Icon(
-                          _copyingReference
-                              ? Icons.check
-                              : Icons.content_copy,
-                          size: 18,
-                        ),
-                        label: Text(_copyingReference ? 'Copied!' : 'Copy'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.onPrimary,
-                          foregroundColor: colors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Show this reference at the payment office',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onPrimary.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingIndicator(ThemeData theme, ColorScheme colors) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(color: colors.primary),
-          const SizedBox(height: 24),
-          Text(
-            'Loading payment instructions...',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: colors.onSurface,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorView(ThemeData theme, ColorScheme colors) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: colors.error,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Failed to Load Instructions',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: colors.error,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _error ?? 'An unknown error occurred',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colors.onSurface,
-              ),
-            ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: _loadInstructions,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInstructionsContent(ThemeData theme, ColorScheme colors) {
-    if (_instructions == null) return const SizedBox.shrink();
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Overview Section
-          _buildOverviewSection(theme, colors),
-
-          const SizedBox(height: 32),
-
-          // Steps Section
-          _buildStepsSection(theme, colors),
-
-          const SizedBox(height: 32),
-
-          // Required Documents (Expandable)
-          _buildDocumentsSection(theme, colors),
-
-          const SizedBox(height: 32),
-
-          // Payment Locations (Expandable)
-          _buildLocationsSection(theme, colors),
-
-          const SizedBox(height: 32),
-
-          // Timeline
-          _buildTimelineSection(theme, colors),
-
-          const SizedBox(height: 32),
-
-          // Important Notes
-          _buildImportantNotesSection(theme, colors),
-
-          const SizedBox(height: 32),
-
-          // Benefits
-          _buildBenefitsSection(theme, colors),
-
-          const SizedBox(height: 32),
-
-          // Special Sections (SETA, Corporate, Career Support)
-          if (_instructions!['seta_compliance'] != null)
-            _buildSpecialSection(
-              theme,
-              colors,
-              _instructions!['seta_compliance'] as Map<String, dynamic>,
-            ),
-
-          if (_instructions!['corporate_options'] != null)
-            _buildSpecialSection(
-              theme,
-              colors,
-              _instructions!['corporate_options'] as Map<String, dynamic>,
-            ),
-
-          if (_instructions!['career_support'] != null)
-            _buildSpecialSection(
-              theme,
-              colors,
-              _instructions!['career_support'] as Map<String, dynamic>,
-            ),
-
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverviewSection(ThemeData theme, ColorScheme colors) {
-    final overview = _instructions!['overview'] as Map<String, dynamic>;
-
-    return Card(
-      color: colors.primaryContainer.withValues(alpha: 0.3),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: colors.primary,
-                  size: 28,
+            // Header
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.green.shade700, Colors.green.shade500],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  overview['heading'] as String,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colors.primary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              overview['content'] as String,
-              style: theme.textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: (overview['key_points'] as List<dynamic>)
-                  .map((point) => Chip(
-                        avatar: Icon(
-                          Icons.check_circle,
-                          size: 18,
-                          color: colors.onPrimaryContainer,
-                        ),
-                        label: Text(
-                          point as String,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.onPrimaryContainer,
-                          ),
-                        ),
-                        backgroundColor: colors.primaryContainer,
-                      ))
-                  .toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStepsSection(ThemeData theme, ColorScheme colors) {
-    final steps = _instructions!['steps'] as List<dynamic>? ?? [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Payment Process',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...steps.asMap().entries.map((entry) {
-          final index = entry.key;
-          final step = entry.value as Map<String, dynamic>;
-          final isLast = index == steps.length - 1;
-          
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Step Number & Line
-              Column(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: colors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${index + 1}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: colors.onPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  Icon(
+                    _getIconForType(_instructions?['icon'] ?? 'payments'),
+                    size: 48,
+                    color: Colors.white,
                   ),
-                  if (!isLast)
-                    Container(
-                      width: 2,
-                      height: 40,
-                      color: colors.outline.withValues(alpha: 0.3),
+                  const SizedBox(height: 16),
+                  Text(
+                    _instructions?['title'] ?? 'Cash Payment Instructions',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _instructions?['subtitle'] ?? widget.programTitle,
+                    style: const TextStyle(fontSize: 16, color: Colors.white70),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
-              const SizedBox(width: 16),
-              
-              // Step Content
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceContainerHighest.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+            ),
+            const SizedBox(height: 24),
+
+            // Reference Card
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Your Payment Reference',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
                         children: [
-                          Icon(
-                            _getIconForType(step['icon'] as String? ?? 'info'),
-                            size: 20,
-                            color: colors.primary,
-                          ),
-                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              step['title'] as String,
-                              style: theme.textTheme.titleMedium?.copyWith(
+                              widget.reference,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
+                          IconButton(
+                            onPressed: _copyReference,
+                            icon: Icon(
+                              _copyingReference ? Icons.check : Icons.copy,
+                              color: _copyingReference ? Colors.green : Colors.grey,
+                            ),
+                            tooltip: 'Copy reference',
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        step['description'] as String,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      if (step['details'] != null) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: colors.primaryContainer.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.lightbulb_outline,
-                                size: 18,
-                                color: colors.onPrimaryContainer,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  step['details'] as String,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colors.onPrimaryContainer,
-                                  ),
-                                ),
-                              ),
-                            ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Amount: ${widget.currency} ${widget.amount.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
+                        if (widget.isDialog)
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Close'),
+                          ),
                       ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            _buildOverview(),
+            const SizedBox(height: 24),
+            _buildSteps(),
+            const SizedBox(height: 24),
+            _buildDocuments(),
+            const SizedBox(height: 24),
+            _buildPaymentLocations(),
+            const SizedBox(height: 24),
+            _buildTimeline(),
+            const SizedBox(height: 24),
+            _buildImportantNotes(),
+            const SizedBox(height: 24),
+            _buildBenefits(),
+            const SizedBox(height: 24),
+
+            if (contact != null) _buildContactSupport(contact),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getIconForType(String type) {
+    switch (type) {
+      case 'class': return Icons.class_;
+      case 'school': return Icons.school;
+      case 'engineering': return Icons.engineering;
+      case 'auto_stories': return Icons.auto_stories;
+      case 'work': return Icons.work;
+      case 'qr_code': return Icons.qr_code;
+      case 'location_on': return Icons.location_on;
+      case 'payments': return Icons.payments;
+      case 'check_circle': return Icons.check_circle;
+      case 'description': return Icons.description;
+      case 'fact_check': return Icons.fact_check;
+      default: return Icons.payments;
+    }
+  }
+
+  Widget _buildOverview() {
+    final overview = _instructions!['overview'] as Map<String, dynamic>?;
+    if (overview == null) return const SizedBox.shrink();
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              overview['heading'] ?? 'How It Works',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(overview['content'] ?? ''),
+            if (overview['key_points'] != null) ...[
+              const SizedBox(height: 12),
+              ...(overview['key_points'] as List<dynamic>).map(
+                (point) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(point.toString())),
                     ],
                   ),
                 ),
               ),
             ],
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _buildDocumentsSection(ThemeData theme, ColorScheme colors) {
-    final documents = _instructions!['required_documents'] as List<dynamic>? ?? [];
-
-    return Card(
-      child: ExpansionTile(
-        leading: Icon(
-          Icons.description,
-          color: colors.primary,
-          size: 28,
-        ),
-        title: Text(
-          'Required Documents',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text('${documents.length} documents required'),
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              children: documents
-                  .map((doc) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle_outline,
-                              color: colors.primary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                doc as String,
-                                style: theme.textTheme.bodyMedium,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ))
-                  .toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLocationsSection(ThemeData theme, ColorScheme colors) {
-    final locations = _instructions!['payment_locations'] as Map<String, dynamic>?;
-
-    if (locations == null) return const SizedBox.shrink();
-
-    return Card(
-      child: ExpansionTile(
-        leading: Icon(
-          Icons.location_on,
-          color: colors.primary,
-          size: 28,
-        ),
-        title: Text(
-          'Payment Locations',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(locations['content'] as String? ?? ''),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ...(locations['locations'] as List<dynamic>?)?.map((loc) {
-                  final location = loc as Map<String, dynamic>;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              location['country'] as String,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colors.primary,
-                              ),
-                            ),
-                            if (location['note'] != null) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.primaryContainer,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  location['note'] as String,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colors.onPrimaryContainer,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: (location['cities'] as List<dynamic>)
-                              .map((city) => Chip(
-                                    label: Text(city as String),
-                                    avatar: const Icon(Icons.location_city, size: 18),
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    visualDensity: VisualDensity.compact,
-                                  ))
-                              .toList(),
-                        ),
-                      ],
-                    ),
-                  );
-                }) ?? [],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimelineSection(ThemeData theme, ColorScheme colors) {
-    final timeline = _instructions!['timeline'] as Map<String, dynamic>?;
-
-    if (timeline == null) return const SizedBox.shrink();
-
-    return Card(
-      color: colors.tertiaryContainer.withValues(alpha: 0.3),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.schedule,
-                  color: colors.tertiary,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Timeline & Deadlines',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colors.tertiary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: timeline.entries.map((entry) {
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _formatTimelineLabel(entry.key),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        entry.value as String,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildImportantNotesSection(ThemeData theme, ColorScheme colors) {
-    final notes = _instructions!['important_notes'] as List<dynamic>? ?? [];
+  Widget _buildSteps() {
+    final steps = _instructions!['steps'] as List<dynamic>? ?? [];
+    if (steps.isEmpty) return const SizedBox.shrink();
 
     return Card(
-      color: colors.errorContainer.withValues(alpha: 0.2),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Step-by-Step Process',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ...steps.map((step) => _buildStepItem(step as Map<String, dynamic>)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepItem(Map<String, dynamic> step) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.green.shade100,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                '${step['step']}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade800,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  step['title'] ?? '',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(step['description'] ?? ''),
+                if (step['details'] != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    step['details'],
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocuments() {
+    final documents = _instructions!['required_documents'] as List<dynamic>? ?? [];
+    if (documents.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  color: colors.error,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Important Notes',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colors.error,
-                  ),
+                const Icon(Icons.description, color: Colors.blue),
+                const SizedBox(width: 8),
+                const Text(
+                  'Required Documents',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            ...notes.map((note) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+            const SizedBox(height: 12),
+            ...documents.map((doc) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: colors.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          note as String,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ),
+                      const Icon(Icons.check, size: 16, color: Colors.green),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(doc.toString())),
                     ],
                   ),
                 )),
@@ -903,272 +486,236 @@ class _CashPaymentInstructionsPageState
     );
   }
 
-  Widget _buildBenefitsSection(ThemeData theme, ColorScheme colors) {
+  Widget _buildPaymentLocations() {
+    final locations = _instructions!['payment_locations'] as Map<String, dynamic>?;
+    if (locations == null) return const SizedBox.shrink();
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.location_on, color: Colors.red),
+                const SizedBox(width: 8),
+                Text(
+                  locations['heading'] ?? 'Payment Locations',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(locations['content'] ?? ''),
+            const SizedBox(height: 12),
+            ...(locations['locations'] as List<dynamic>? ?? []).map((loc) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '📍 ${loc['country']}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('Cities: ${(loc['cities'] as List).join(', ')}'),
+                      if (loc['note'] != null)
+                        Text('Note: ${loc['note']}', style: const TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeline() {
+    final timeline = _instructions!['timeline'] as Map<String, dynamic>?;
+    if (timeline == null) return const SizedBox.shrink();
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.timeline, color: Colors.purple),
+                const SizedBox(width: 8),
+                const Text(
+                  'Timeline & Deadlines',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...timeline.entries.map((entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 120,
+                        child: Text(
+                          '${entry.key}:',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(entry.value.toString())),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImportantNotes() {
+    final notes = _instructions!['important_notes'] as List<dynamic>? ?? [];
+    if (notes.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.info, color: Colors.orange),
+                const SizedBox(width: 8),
+                const Text(
+                  'Important Notes',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...notes.map((note) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 16, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(note.toString())),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBenefits() {
     final benefits = _instructions!['benefits'] as List<dynamic>? ?? [];
+    if (benefits.isEmpty) return const SizedBox.shrink();
 
     return Card(
-      color: colors.secondaryContainer.withValues(alpha: 0.3),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.card_giftcard,
-                  color: colors.secondary,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Benefits of Cash Payment',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colors.secondary,
-                  ),
+                const Icon(Icons.celebration, color: Colors.green),
+                const SizedBox(width: 8),
+                const Text(
+                  'Benefits',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: benefits
-                  .map((benefit) => Chip(
-                        avatar: Icon(
-                          Icons.verified_user,
-                          size: 18,
-                          color: colors.onSecondaryContainer,
-                        ),
-                        label: Text(
-                          benefit as String,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.onSecondaryContainer,
-                          ),
-                        ),
-                        backgroundColor: colors.secondaryContainer,
-                      ))
-                  .toList(),
-            ),
+            const SizedBox(height: 12),
+            ...benefits.map((benefit) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.star, size: 16, color: Colors.amber),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(benefit.toString())),
+                    ],
+                  ),
+                )),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSpecialSection(
-    ThemeData theme,
-    ColorScheme colors,
-    Map<String, dynamic> section,
-  ) {
-    final heading = section['heading'] as String?;
-    final content = section['content'] as String?;
-    final requirements = section['requirements'] as List<dynamic>?;
-    final options = section['options'] as List<dynamic>?;
-    final services = section['services'] as List<dynamic>?;
-
+  Widget _buildContactSupport(Map<String, dynamic> contact) {
     return Card(
-      color: colors.tertiaryContainer.withValues(alpha: 0.3),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.star_outline,
-                  color: colors.tertiary,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  heading ?? '',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colors.tertiary,
-                  ),
+                const Icon(Icons.support_agent, color: Colors.teal),
+                const SizedBox(width: 8),
+                const Text(
+                  'Need Help?',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-            if (content != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                content,
-                style: theme.textTheme.bodyMedium,
+            const SizedBox(height: 12),
+            if (contact['phone'] != null)
+              GestureDetector(
+                onTap: _callSupport,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.phone, size: 20, color: Colors.teal),
+                      const SizedBox(width: 8),
+                      Text(contact['phone']),
+                    ],
+                  ),
+                ),
               ),
-            ],
-            if (requirements != null) ...[
-              const SizedBox(height: 12),
-              ...requirements.map((req) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.assignment,
-                          color: colors.tertiary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            req as String,
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
-            ],
-            if (options != null) ...[
-              const SizedBox(height: 12),
-              ...options.map((opt) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          color: colors.tertiary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            opt as String,
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
-            ],
-            if (services != null) ...[
-              const SizedBox(height: 12),
-              ...services.map((svc) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.support_agent,
-                          color: colors.tertiary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            svc as String,
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
-            ],
+            if (contact['email'] != null)
+              GestureDetector(
+                onTap: _emailSupport,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.email, size: 20, color: Colors.teal),
+                      const SizedBox(width: 8),
+                      Text(contact['email']),
+                    ],
+                  ),
+                ),
+              ),
+            if (contact['hours'] != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  contact['hours'],
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
           ],
         ),
       ),
     );
-  }
-
-  Widget _buildActionButtons(ThemeData theme, ColorScheme colors) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        border: Border(
-          top: BorderSide(color: colors.outlineVariant),
-        ),
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            // Contact Support Button
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _callSupport,
-                icon: const Icon(Icons.phone),
-                label: const Text('Call Support'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Proceed to Office Button
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop(true);
-                },
-                icon: const Icon(Icons.location_on),
-                label: const Text('I\'ll Visit Office'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getIconForType(String type) {
-    switch (type) {
-      case 'class':
-        return Icons.class_;
-      case 'school':
-        return Icons.school;
-      case 'engineering':
-        return Icons.engineering;
-      case 'auto_stories':
-        return Icons.auto_stories;
-      case 'work':
-        return Icons.work;
-      case 'career':
-        return Icons.business_center;
-      case 'qr_code':
-        return Icons.qr_code;
-      case 'location_on':
-        return Icons.location_on;
-      case 'payments':
-        return Icons.payments;
-      case 'check_circle':
-        return Icons.check_circle;
-      case 'description':
-        return Icons.description;
-      case 'fact_check':
-        return Icons.fact_check;
-      case 'info':
-        return Icons.info_outline;
-      default:
-        return Icons.payments;
-    }
-  }
-
-  String _formatTimelineLabel(String key) {
-    switch (key) {
-      case 'reservation_period':
-        return 'Reservation Period';
-      case 'payment_deadline':
-        return 'Payment Deadline';
-      case 'confirmation':
-        return 'Confirmation Time';
-      case 'access_granted':
-        return 'Access Granted';
-      case 'verification_time':
-        return 'Verification Time';
-      case 'course_access':
-        return 'Course Access Period';
-      case 'career_consultation':
-        return 'Career Consultation';
-      default:
-        return key.replaceAll('_', ' ').split(' ').map((word) {
-          return word[0].toUpperCase() + word.substring(1);
-        }).join(' ');
-    }
   }
 }

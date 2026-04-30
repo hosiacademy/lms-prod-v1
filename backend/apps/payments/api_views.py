@@ -11,8 +11,8 @@ from django.contrib.auth import get_user_model
 
 from apps.enrollments.models import ProvisionalEnrollment
 from apps.learnerships.models import LearnershipEnrollment
-# from apps.masterclasses.models import MasterclassEnrollment  # Model doesn't exist
-# from apps.industry_based_training.models import IndustryTrainingEnrollment  # Model doesn't exist
+from apps.masterclasses.models import MasterclassEnrollment
+from apps.industry_based_training.models import IndustryTrainingEnrollment
 from apps.payments.models import PaymentTransaction, PaymentMethod
 from apps.learner_portal.models import Wishlist  # Fixed: was WishlistItem
 from apps.users.models import User
@@ -116,8 +116,16 @@ def payment_admin_operations_data(request):
     verified_count = verified.count()
     rejected_count = rejected.count()
     
+    # Get gateway transactions (successful digital payments)
+    gateway_transactions = PaymentTransaction.objects.filter(
+        status__in=['successful', 'completed'],
+        **country_filter,
+        **date_filter
+    ).exclude(provider__in=['cash', 'eft', 'bank_transfer']).select_related('user').order_by('-created_at')
+
     return Response({
         'cash_payments': [serialize_cash_payment(p) for p in cash_pending[:50]],
+        'gateway_transactions': [serialize_transaction(t) for t in gateway_transactions[:100]],
         'provisional_enrollments': [
             serialize_provisional_enrollment(p) for p in provisional_verification[:50]
         ],
@@ -131,6 +139,7 @@ def payment_admin_operations_data(request):
             'total_revenue': float(total_revenue),
             'pending_cash_count': pending_cash_count,
             'pending_cash_amount': float(pending_cash_amount),
+            'gateway_transaction_count': gateway_transactions.count(),
             'pending_verification_count': pending_verification_count,
             'verified_count': verified_count,
             'rejected_count': rejected_count,
@@ -161,14 +170,19 @@ def payment_admin_marketing_analytics(request):
                 status=status.HTTP_403_FORBIDDEN
             )
     
-    country_filter = {}
+    # Build country filter
     if country_code:
-        country_filter['user__country__code'] = country_code
+        q_filter = Q(country__code=country_code) | Q(user__country__code=country_code, country__isnull=True)
+    elif allowed_countries:
+        codes = [c['code'] for c in allowed_countries]
+        q_filter = Q(country__code__in=codes) | Q(user__country__code__in=codes, country__isnull=True)
+    else:
+        q_filter = Q()
 
     # Get wishlist items
     wishlist_items = Wishlist.objects.filter(
-        **country_filter
-    ).select_related('user').order_by('-created_at')[:limit]
+        q_filter
+    ).select_related('user', 'country').order_by('-created_at')[:limit]
 
     # Calculate marketing stats
     total_leads = wishlist_items.count()
@@ -325,12 +339,10 @@ def payment_admin_sales_analytics(request):
     revenue_by_type = []
 
     # Masterclass revenue
-    # from apps.masterclasses.models import MasterclassEnrollment  # Model doesn't exist
-    masterclass_revenue = 0
-    # masterclass_revenue = MasterclassEnrollment.objects.filter(
-    #     payment_transaction__status='successful',
-    #     payment_transaction__in=transactions
-    # ).aggregate(revenue=Sum('payment_transaction__amount'))['revenue'] or 0
+    masterclass_revenue = MasterclassEnrollment.objects.filter(
+        payment_transaction__status='successful',
+        payment_transaction__in=transactions
+    ).aggregate(revenue=Sum('payment_transaction__amount'))['revenue'] or 0
 
     revenue_by_type.append({
         'type': 'Masterclass',
@@ -351,12 +363,10 @@ def payment_admin_sales_analytics(request):
     })
 
     # Industry Training revenue
-    # IndustryTrainingEnrollment model doesn't exist
-    industry_revenue = 0
-    # industry_revenue = IndustryTrainingEnrollment.objects.filter(
-    #     payment_transaction__status='successful',
-    #     payment_transaction__in=transactions
-    # ).aggregate(revenue=Sum('payment_transaction__amount'))['revenue'] or 0
+    industry_revenue = IndustryTrainingEnrollment.objects.filter(
+        payment_transaction__status='successful',
+        payment_transaction__in=transactions
+    ).aggregate(revenue=Sum('payment_transaction__amount'))['revenue'] or 0
 
     revenue_by_type.append({
         'type': 'Industry Training',
@@ -525,10 +535,10 @@ def serialize_wishlist_lead(wishlist):
         'id': wishlist.id,
         'learner_name': wishlist.user.get_full_name() if wishlist.user else 'Unknown',
         'email': wishlist.user.email if wishlist.user else 'N/A',
-        'course_title': wishlist.course.title if wishlist.course else 'N/A',
+        'course_title': wishlist.title or (wishlist.course.title if wishlist.course and hasattr(wishlist.course, 'title') else 'N/A'),
         'training_type': wishlist.training_type,
         'interest_level': wishlist.interest_level,
-        'intended_start': wishlist.intended_start_date.isoformat() if wishlist.intended_start_date else None,
+        'intended_start': wishlist.intended_start,
         'created_at': wishlist.created_at.isoformat() if wishlist.created_at else None,
         'days_waiting': (timezone.now() - wishlist.created_at).days,
         'converted_to_cart': wishlist.converted_to_cart,
@@ -541,8 +551,25 @@ def serialize_conversion(wishlist):
     return {
         'id': wishlist.id,
         'learner_name': wishlist.user.get_full_name() if wishlist.user else 'Unknown',
-        'course_title': wishlist.course.title if wishlist.course else 'N/A',
+        'course_title': wishlist.title or (wishlist.course.title if wishlist.course and hasattr(wishlist.course, 'title') else 'N/A'),
         'training_type': wishlist.training_type,
         'converted_at': wishlist.updated_at.isoformat() if wishlist.updated_at else None,
         'days_in_funnel': (wishlist.updated_at - wishlist.created_at).days if wishlist.created_at else 0,
     }
+
+
+def serialize_transaction(transaction):
+    """Serialize successful gateway transaction"""
+    return {
+        'id': transaction.id,
+        'reference': transaction.provider_reference,
+        'learner_name': transaction.user.get_full_name() if transaction.user else 'Guest',
+        'email': transaction.user.email if transaction.user else 'N/A',
+        'provider': transaction.provider,
+        'amount': float(transaction.amount),
+        'currency': transaction.currency,
+        'amount_usd': float(transaction.metadata.get('amount_usd', transaction.amount)) if transaction.metadata else float(transaction.amount),
+        'created_at': transaction.created_at.isoformat() if transaction.created_at else None,
+        'status': transaction.status,
+    }
+

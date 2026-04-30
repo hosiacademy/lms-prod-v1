@@ -367,16 +367,13 @@ class _EftPaymentWidgetState extends State<EftPaymentWidget> {
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.check_circle_outline, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'I Have Made the Transfer',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                    : const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          'I understand the terms & conditions. I will pay this amount within the specified time. Please, activate my provisional enrollment',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
               ),
             ),

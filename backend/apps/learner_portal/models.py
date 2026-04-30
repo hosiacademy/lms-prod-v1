@@ -477,6 +477,17 @@ class Wishlist(models.Model):
     )
     object_id = models.PositiveIntegerField(verbose_name=_("Course ID"))
     course = GenericForeignKey('content_type', 'object_id')
+    title = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Course Title"))
+
+    # Regional tracking for admin filtering
+    country = models.ForeignKey(
+        'localization.Country',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='wishlists',
+        verbose_name=_("Country")
+    )
 
     # Training type for filtering
     training_type = models.CharField(

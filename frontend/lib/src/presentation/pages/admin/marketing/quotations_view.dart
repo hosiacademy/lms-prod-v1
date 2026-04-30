@@ -208,8 +208,9 @@ class _QuotationsViewState extends State<QuotationsView> {
           title: Text('New Strategic Quotation', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
           content: ResponsiveHelper.fluidScroll(
             context: ctx,
-            child: SizedBox(
-              width: 600,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 600),
+              width: MediaQuery.of(context).size.width * 0.9,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -311,8 +312,11 @@ class _QuotationsViewState extends State<QuotationsView> {
       builder: (ctx) => AlertDialog(
         contentPadding: EdgeInsets.zero,
         content: Container(
-          width: 800,
-          height: 900,
+          constraints: BoxConstraints(
+            maxWidth: 800,
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
+          width: MediaQuery.of(context).size.width * 0.9,
           color: Colors.white,
           child: Column(
             children: [

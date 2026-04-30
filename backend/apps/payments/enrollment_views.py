@@ -49,8 +49,18 @@ class FinalizeEnrollmentView(views.APIView):
             # 1. Verify Order matches User and is Paid
             order = get_object_or_404(Order, tracking=reference, user=request.user)
             
-            # Allow 'completed' or 'processing' (some providers take time but are guaranteed)
-            if order.status not in ['completed', 'processing']:
+            # Allow 'completed', 'processing', or 'pending' (for on-site/cash/bank_transfer)
+            is_provisional = (
+                order.payment_method in ['cash', 'bank_transfer', 'on_site'] or
+                metadata.get('method') in ['cash', 'bank_transfer', 'on_site'] or
+                order.metadata.get('payment_method') == 'on_site'
+            )
+            
+            allowed_statuses = ['completed', 'processing']
+            if is_provisional:
+                allowed_statuses.append('pending')
+
+            if order.status not in allowed_statuses:
                  return Response({
                      'error': f'Payment not confirmed. Current status: {order.status}'
                  }, status=status.HTTP_400_BAD_REQUEST)
@@ -97,8 +107,11 @@ class FinalizeEnrollmentView(views.APIView):
                 with transaction.atomic():
                     enrollment = serializer.save(order=order) # Link the paid order
                     
-                    # Force status to ENROLLED since paid
-                    enrollment.status = EnrollmentStatus.ENROLLED
+                    # Set status based on whether payment is actually confirmed
+                    if order.status == 'pending':
+                        enrollment.status = EnrollmentStatus.PENDING_PAYMENT
+                    else:
+                        enrollment.status = EnrollmentStatus.ENROLLED
                     enrollment.save()
                     
                     # Send notifications

@@ -56,3 +56,31 @@ class SocialShareEvent(models.Model):
         verbose_name = _('Social Share Event')
         verbose_name_plural = _('Social Share Events')
         ordering = ['-shared_at']
+
+class MarketingLead(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='marketing_leads')
+    training_type = models.CharField(max_length=50) # course, masterclass, learnership
+    object_id = models.CharField(max_length=100)
+    title = models.CharField(max_length=255)
+    
+    # Lead details (The "expression" part for prospective students)
+    goals = models.TextField(verbose_name=_("Primary Goals"))
+    professional_status = models.CharField(max_length=255)
+    planned_start = models.CharField(max_length=100)
+    expectations = models.TextField()
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, default='new', choices=[
+        ('new', 'New'),
+        ('contacted', 'Contacted'),
+        ('converted', 'Converted'),
+        ('closed', 'Closed'),
+    ])
+    
+    class Meta:
+        verbose_name = _('Marketing Lead')
+        verbose_name_plural = _('Marketing Leads')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Lead: {self.user.email} - {self.title}"

@@ -1,7 +1,8 @@
-// lib/src/presentation/pages/payment/payment_password_setup.dart
-// Shared password creation dialog — shown immediately after any payment is confirmed.
+﻿// lib/src/presentation/pages/payment/payment_password_setup.dart
+// Shared password creation dialog â€” shown immediately after any payment is confirmed.
 
 import 'package:flutter/material.dart';
+import 'cash_payment_instructions_page.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/services/auth_service.dart';
@@ -26,9 +27,9 @@ String extractEmailFromPayload(Map<String, dynamic>? payload) {
 
 /// Shows the "Create Your Password" dialog immediately after any payment is confirmed.
 ///
-/// [reference]  — payment/provisional reference used to identify the user on backend.
-/// [email]      — the email the user enrolled with; displayed as their login email.
-/// [onDone]     — called after password is saved OR skipped (navigate away).
+/// [reference]  â€” payment/provisional reference used to identify the user on backend.
+/// [email]      â€” the email the user enrolled with; displayed as their login email.
+/// [onDone]     â€” called after password is saved OR skipped (navigate away).
 Future<void> showPasswordSetupDialog(
   BuildContext context, {
   required String reference,
@@ -87,6 +88,7 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
   bool _showPassword = false;
   bool _showConfirm = false;
   bool _isLoading = false;
+  bool _hasAgreedToTerms = false;
   String? _error;
 
   @override
@@ -97,12 +99,16 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
   }
 
   Future<void> _save() async {
+    if (!_hasAgreedToTerms) {
+      setState(() { _error = 'Please read and accept the Terms and Conditions to continue.'; });
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     setState(() { _isLoading = true; _error = null; });
     try {
       await ApiClient.post('/api/v1/auth/set-password/', data: {
         'new_password': _passwordController.text,
-        'reference': widget.reference,
+        'reference_code': widget.reference,
       });
       if (mounted) Navigator.pop(context);
       widget.onDone();
@@ -117,6 +123,48 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
   void _skip() {
     Navigator.pop(context);
     widget.onDone();
+  }
+
+  void _showTermsModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Terms and Conditions'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Welcome to Hosi Academy. By enrolling and setting up your account, you agree to the following terms:\n'),
+              const Text('1. Code of Conduct', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Students are expected to maintain professionalism, respect peers and instructors, and adhere to the academic integrity guidelines.\n'),
+              const Text('2. Payment and Refunds', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('All payments are subject to the academy\'s standard refund policy. Provisional enrollments via EFT must be settled within the designated timeframe to retain access.\n'),
+              const Text('3. Intellectual Property', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('All course materials, lectures, and resources are the intellectual property of Hosi Academy and its partners. Unauthorized distribution is prohibited.\n'),
+              const Text('4. Privacy Policy', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Your personal data will be processed in accordance with our Privacy Policy to facilitate your learning experience and manage your enrollment.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+          FilledButton(
+            onPressed: () {
+              setState(() {
+                _hasAgreedToTerms = true;
+                _error = null;
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('I Agree'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -144,7 +192,7 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
               style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
             ),
 
-            // Email display — prominent, this is their login identity
+            // Email display â€” prominent, this is their login identity
             if (hasEmail) ...[
               const SizedBox(height: 16),
               Container(
@@ -226,6 +274,46 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
                 if (v != _passwordController.text) return 'Passwords do not match';
                 return null;
               },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: Checkbox(
+                    value: _hasAgreedToTerms,
+                    onChanged: (val) {
+                      setState(() {
+                        _hasAgreedToTerms = val ?? false;
+                        if (_hasAgreedToTerms) _error = null;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showTermsModal(context),
+                    child: Text.rich(
+                      TextSpan(
+                        text: 'I have read and agree to the ',
+                        style: const TextStyle(fontSize: 12),
+                        children: [
+                          TextSpan(
+                            text: 'Terms and Conditions',
+                            style: TextStyle(
+                              color: colors.primary,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),

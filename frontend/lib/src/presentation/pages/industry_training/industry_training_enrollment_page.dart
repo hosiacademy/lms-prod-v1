@@ -6,12 +6,13 @@ import '../../../data/models/course.dart';
 import '../../../core/api/api_client.dart';
 import '../../widgets/headers/enrollment_page_header.dart';
 import '../../../core/services/concierge_service.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/cart_service.dart';
 import '../../widgets/aicerts/aicerts_image_widget.dart';
 import '../../widgets/modals/aicerts/multi_step_aicerts_industry_training_modal.dart';
+import '../../widgets/modals/marketing/wishlist_lead_modal.dart';
+import '../../../core/services/wishlist_service.dart';
 
 class IndustryTrainingEnrollmentPage extends StatefulWidget {
   final bool embedMode;
@@ -134,14 +135,28 @@ class _IndustryTrainingEnrollmentPageState
         queryParameters: params,
       );
 
-      final data = response.data is Map<String, dynamic>
-          ? (response.data['results'] as List<dynamic>? ?? [])
-          : (response.data as List<dynamic>? ?? []);
+      final rawData = response.data;
+      List<dynamic> items = [];
+
+      if (rawData is Map<String, dynamic>) {
+        if (rawData.containsKey('courses') || rawData.containsKey('bundles')) {
+          items = [
+            ...(rawData['courses'] as List<dynamic>? ?? []),
+            ...(rawData['bundles'] as List<dynamic>? ?? []),
+          ];
+        } else if (rawData.containsKey('results')) {
+          items = rawData['results'] as List<dynamic>? ?? [];
+        } else {
+          // If it's a single item Map but not the wrapper we expect
+          items = [rawData];
+        }
+      } else if (rawData is List<dynamic>) {
+        items = rawData;
+      }
 
       setState(() {
-        _courses = data
-            .map((item) =>
-                Course.fromJson(item as Map<String, dynamic>))
+        _courses = items
+            .map((item) => Course.fromJson(item as Map<String, dynamic>))
             .toList();
         _isLoading = false;
       });
@@ -251,8 +266,8 @@ class _IndustryTrainingEnrollmentPageState
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: colors.surfaceContainerHighest.withValues(
-                                alpha: 0.3),
+                            color: colors.surfaceContainerHighest
+                                .withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: colors.outline.withValues(alpha: 0.2),
@@ -273,8 +288,9 @@ class _IndustryTrainingEnrollmentPageState
                                   ),
                                   Text(
                                     course.localPrice ??
-                                        CurrencyService.instance.formatUSDAmount(
-                                            course.price ?? 250),
+                                        CurrencyService.instance
+                                            .formatUSDAmount(
+                                                course.price ?? 250),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w800,
                                       fontSize: 24,
@@ -305,8 +321,7 @@ class _IndustryTrainingEnrollmentPageState
                                 if (success) {
                                   _showAddedToCartSnackbar(course);
                                 } else {
-                                  _showErrorSnackbar(
-                                      'Failed to add to cart');
+                                  _showErrorSnackbar('Failed to add to cart');
                                 }
                               }
                             },
@@ -441,7 +456,7 @@ class _IndustryTrainingEnrollmentPageState
         content: Row(
           children: [
             Icon(Icons.info_outline_rounded, color: Colors.white),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 'This course is already in your cart',
@@ -485,13 +500,16 @@ class _IndustryTrainingEnrollmentPageState
             ),
           // Filters
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               children: [
-                Row(
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Expanded(
+                    SizedBox(
+                      width: 200,
                       child: TextField(
                         controller: _searchController,
                         focusNode: _searchFocusNode,
@@ -509,7 +527,6 @@ class _IndustryTrainingEnrollmentPageState
                       ),
                     ),
                     if (_metadataLoaded) ...[
-                      const SizedBox(width: 8),
                       DropdownButton<String>(
                         value: _selectedIndustry,
                         items: _industries
@@ -525,7 +542,6 @@ class _IndustryTrainingEnrollmentPageState
                           }
                         },
                       ),
-                      const SizedBox(width: 8),
                       DropdownButton<String>(
                         value: _selectedRole,
                         items: _roles
@@ -577,7 +593,7 @@ class _IndustryTrainingEnrollmentPageState
                             gridDelegate:
                                 const SliverGridDelegateWithMaxCrossAxisExtent(
                               maxCrossAxisExtent: 360,
-                              mainAxisExtent: 380,
+                              mainAxisExtent: 398,
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
                             ),
@@ -599,11 +615,11 @@ class _IndustryTrainingEnrollmentPageState
   }
 }
 
-// ──────────────────────────────────────────────
-//  Course Card for Industry Training
-// ──────────────────────────────────────────────
+// ============================================================
+// _CourseCard Widget (Fixed)
+// ============================================================
 
-class _CourseCard extends StatelessWidget {
+class _CourseCard extends StatefulWidget {
   final Course course;
   final VoidCallback onEnroll;
   final VoidCallback onAskAI;
@@ -615,108 +631,207 @@ class _CourseCard extends StatelessWidget {
   });
 
   @override
+  State<_CourseCard> createState() => _CourseCardState();
+}
+
+class _CourseCardState extends State<_CourseCard> {
+  bool _isWishlisted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isWishlisted = wishlistService.hasCourse(widget.course.id);
+  }
+
+  void _handleWishlist() {
+    if (_isWishlisted) {
+      wishlistService.removeCourse(widget.course.id).then((success) {
+        if (success && mounted) {
+          setState(() => _isWishlisted = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Removed from wishlist')));
+        }
+      });
+    } else {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => WishlistLeadModal(
+          course: widget.course,
+          onComplete: (interest, timing, notes) async {
+            final success = await wishlistService.addCourse(widget.course);
+            if (success && mounted) {
+              setState(() => _isWishlisted = true);
+            }
+          },
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
     return Card(
-      elevation: 2,
-      color: colors.surfaceContainerHighest.withValues(alpha: 0.3),
+      elevation: 8,
+      shadowColor: colors.primary.withValues(alpha: 0.15),
+      color: colors.surface,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: colors.primary.withValues(alpha: 0.3),
-          width: 1.5,
+          color: colors.primary.withValues(alpha: 0.15),
+          width: 1.0,
         ),
       ),
-      child: GestureDetector(
-        onTap: onAskAI,
-        behavior: HitTestBehavior.opaque,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Course image - using premium card image with badge overlay
-            AICERTSCourseCardImage(
-              featureImageUrl: course.featureImageUrl,
-              certificateBadgeUrl: course.certificateBadgeUrl,
-              height: 120, // Reduced further
-              width: double.infinity,
-              showBadge: false, // Badge removed for better visibility
-              fit: BoxFit.contain,
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      course.title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colors.onSurface,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with Image
+          Stack(
+            children: [
+              AICERTSCourseCardImage(
+                featureImageUrl: widget.course.featureImageUrl,
+                certificateBadgeUrl: widget.course.certificateBadgeUrl,
+                height: 140,
+                width: double.infinity,
+                showBadge: false,
+                fit: BoxFit.contain,
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'CERTIFIED',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colors.onPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
                     ),
-                    const SizedBox(height: 8),
-                    if (course.description != null)
-                      Expanded(
-                        child: Text(
-                          course.description!,
-                          style: theme.textTheme.bodySmall,
-                          maxLines: 4,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (course.price != null)
-                          Text(
-                            CurrencyService.instance.formatUSDAmount(course.price!),
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.successGreen,
-                            ),
-                          ),
-                        ElevatedButton(
-                          onPressed: onEnroll,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colors.primary,
-                            foregroundColor: colors.onPrimary,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.shopping_cart_rounded, size: 14),
-                              const SizedBox(width: 4),
-                              const Text('Add to Cart',
-                                  style: TextStyle(
-                                      fontSize: 12, fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
+            ],
+          ),
+          // Content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title Row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Spacer(),
+                      IconButton(
+                        onPressed: _handleWishlist,
+                        icon: Icon(
+                          _isWishlisted
+                              ? Icons.bookmark
+                              : Icons.bookmark_border,
+                          size: 20,
+                          color: _isWishlisted
+                              ? colors.primary
+                              : colors.primary.withValues(alpha: 0.6),
+                        ),
+                        tooltip: 'Wishlist',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Description
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHighest
+                            .withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          widget.course.description ??
+                              'No description available.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            height: 1.5,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Footer Actions
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      if (widget.course.price != null)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ENROLLMENT FEE',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontSize: 8,
+                                letterSpacing: 1,
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                            Text(
+                              CurrencyService.instance
+                                  .formatUSDAmount(widget.course.price!),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ElevatedButton(
+                        onPressed: widget.onEnroll,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colors.primary,
+                          foregroundColor: colors.onPrimary,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.shopping_cart_rounded, size: 14),
+                            SizedBox(width: 6),
+                            Text('Enroll',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    ),
-   );
+    );
   }
 }

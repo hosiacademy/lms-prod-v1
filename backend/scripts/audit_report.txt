@@ -1,0 +1,30 @@
+
+======================================================================
+  MODEL vs DATABASE COLUMN AUDIT
+======================================================================
+
+[MODEL] payments.Order  (table: orders)
+  [OK] Fully aligned -- no mismatches
+
+[MODEL] payments.Enrollment  (table: enrollments)
+  [EXTRA IN DB] 10 column(s) in database but NOT in model:
+    + 'student_address'
+    + 'student_city'
+    + 'student_country'
+    + 'student_dob'
+    + 'student_email'
+    + 'student_full_name'
+    + 'student_gender'
+    + 'student_id_number'
+    + 'student_phone'
+    + 'student_postal_code'
+
+[MODEL] payments.PaymentTransaction  (table: payment_transactions)
+  [OK] Fully aligned -- no mismatches
+
+[MODEL] masterclasses.Masterclass  (table: masterclasses_masterclass)
+  [OK] Fully aligned -- no mismatches
+
+======================================================================
+END OF AUDIT
+======================================================================

@@ -242,25 +242,45 @@ class _AICERTSCourseDetailPageState extends State<AICERTSCourseDetailPage> {
           const SizedBox(height: 16),
 
           // Rating and students (if available)
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Icon(Icons.star, size: 20, color: colors.primary),
-              const SizedBox(width: 4),
-              Text(
-                '4.8',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.onSurface,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.star, size: 20, color: colors.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    '4.8',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '(2,450 reviews)',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Icon(Icons.people_outline, size: 20, color: colors.onSurface.withValues(alpha: 0.6)),
-              const SizedBox(width: 4),
-              Text(
-                '10k+ learners',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurface.withValues(alpha: 0.6),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.people_outline, size: 20, color: colors.onSurface.withValues(alpha: 0.6)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '10k+ learners',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colors.onSurface.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -488,7 +508,6 @@ class _AICERTSCourseDetailPageState extends State<AICERTSCourseDetailPage> {
             : 'Contact for pricing');
 
     return Container(
-      position: RelativePosition.bottom,
       decoration: BoxDecoration(
         color: colors.surface,
         boxShadow: [

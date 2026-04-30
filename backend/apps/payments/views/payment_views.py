@@ -1,4 +1,4 @@
-﻿# apps/payments/views/payment_views.py
+# apps/payments/views/payment_views.py
 import logging
 import requests
 from typing import Dict
@@ -410,12 +410,7 @@ class InitiatePaymentView(APIView):
                 )
                 # Auto-correct to SmatPay for security
                 provider_code = 'smatpay'
-                return Response({
-                    'warning': 'Card payments must use SmatPay. Payment method corrected.',
-                    'provider': 'smatpay',
-                    'country': country,
-                    'payment_method': payment_method,
-                }, status=status.HTTP_400_BAD_REQUEST)
+                logger.info(f"Silently corrected provider to smatpay for card payment")
             
             # Verify provider matches routing
             if provider_code.lower() != correct_provider.lower():
@@ -439,12 +434,26 @@ class InitiatePaymentView(APIView):
             pass
 
         try:
+            # ✅ ENFORCE USD for SmatPay
+            final_amount = float(data['amount'])
+            final_currency = data['currency']
+            
+            if provider_code.lower() == 'smatpay':
+                metadata = data.get('metadata', {})
+                if 'amount_usd' in metadata:
+                    final_amount = float(metadata['amount_usd'])
+                    final_currency = 'USD'
+                elif 'total_amount_usd' in metadata:
+                    final_amount = float(metadata['total_amount_usd'])
+                    final_currency = 'USD'
+
             result = payment_service.initiate_payment(
                 user=user if (user and user.is_authenticated) else None,
-                amount=float(data['amount']),
-                currency=data['currency'],
+                amount=final_amount,
+                currency=final_currency,
                 country=data['country'],
                 provider_code=provider_code,
+                payment_method=payment_method,
                 description=data.get('description', ''),
                 metadata=data.get('metadata', {}),
                 callback_url=data.get('callback_url'),

@@ -3,15 +3,19 @@ import '../../../data/models/course.dart';
 import '../../../core/services/cart_service.dart';
 import '../../../core/services/wishlist_service.dart';
 import '../../../core/services/currency_service.dart';
+import '../aicerts/aicerts_image_widget.dart';
 import 'bulk_enrollment_panel.dart';
+import '../modals/marketing/wishlist_lead_modal.dart';
 
 /// Course details panel with tabbed content (Overview, Curriculum, Instructor, Reviews)
 class CourseDetailsPanel extends StatefulWidget {
   final Course course;
+  final bool showPrice;
 
   const CourseDetailsPanel({
     super.key,
     required this.course,
+    this.showPrice = false,
   });
 
   @override
@@ -31,7 +35,6 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    // Check if course is in wishlist or cart
     _isWishlisted = wishlistService.hasCourse(widget.course.id);
     _isInCart = cartService.hasCourse(widget.course.id);
     _loadCourseDetails();
@@ -45,11 +48,8 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
 
   Future<void> _loadCourseDetails() async {
     try {
-      // TODO: Implement API call to get full course details
-      // final details = await ApiClient.getCourseDetails(widget.course.id);
-
       setState(() {
-        _courseDetails = {}; // Replace with actual API data
+        _courseDetails = {};
         _isLoading = false;
       });
     } catch (e) {
@@ -74,10 +74,7 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
 
     return Column(
       children: [
-        // Course Header with Image
         _buildCourseHeader(theme, colors),
-
-        // Tabs
         Container(
           decoration: BoxDecoration(
             color: colors.surface,
@@ -98,8 +95,6 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
             ],
           ),
         ),
-
-        // Tab Content
         Expanded(
           child: TabBarView(
             controller: _tabController,
@@ -111,40 +106,69 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
             ],
           ),
         ),
-
-        // Action Bar (Enroll/Add to Cart/Wishlist)
         _buildActionBar(theme, colors),
       ],
     );
   }
 
   Widget _buildCourseHeader(ThemeData theme, ColorScheme colors) {
+    // Check if this is an AICERTS course
+    final bool isAicertsCourse = (widget.course.title?.contains('AI+') == true) ||
+        (widget.course.categories?.toLowerCase().contains('aicerts') == true) ||
+        (widget.course.categories?.toLowerCase().contains('ai professional') == true) ||
+        (widget.course.categories?.toLowerCase().contains('ai technical') == true);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Course Image
-        if (widget.course.featureImageUrl != null)
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 220),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                widget.course.featureImageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: colors.surfaceContainerHighest,
-                  child: const Icon(Icons.school, size: 60),
-                ),
-              ),
-            ),
-          ),
-
-        // Course Title and Meta
+        AICERTSCourseCardImage(
+          featureImageUrl: widget.course.featureImageUrl,
+          certificateBadgeUrl: widget.course.certificateBadgeUrl,
+          height: 220,
+          width: double.infinity,
+          fit: BoxFit.contain,
+          showBadge: false,
+        ),
         Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (isAicertsCourse)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: AICERTSImageWidget(
+                            imageUrl: 'https://www.aicerts.ai/wp-content/uploads/2024/02/AIC_AI-Educator.svg',
+                            imageType: AICERTSImageType.certificate,
+                            forceSvg: true,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'AICERTS CERTIFIED',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               Text(
                 widget.course.displayTitle,
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -153,8 +177,6 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Rating and Student Count
               Row(
                 children: [
                   if (widget.course.rating != null) ...[
@@ -169,8 +191,7 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                     const SizedBox(width: 12),
                   ],
                   if (widget.course.studentCount != null) ...[
-                    Icon(Icons.people_outline,
-                        size: 18, color: colors.onSurface),
+                    Icon(Icons.people_outline, size: 18, color: colors.onSurface),
                     const SizedBox(width: 4),
                     Text(
                       '${_formatStudentCount(widget.course.studentCount!)} students',
@@ -181,8 +202,6 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                   ],
                 ],
               ),
-
-              // Instructor
               if (widget.course.instructorName != null) ...[
                 const SizedBox(height: 8),
                 Row(
@@ -190,15 +209,13 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                     if (widget.course.instructorAvatar != null)
                       CircleAvatar(
                         radius: 14,
-                        backgroundImage:
-                            NetworkImage(widget.course.instructorAvatar!),
+                        backgroundImage: NetworkImage(widget.course.instructorAvatar!),
                       )
                     else
                       CircleAvatar(
                         radius: 14,
                         backgroundColor: colors.primaryContainer,
-                        child:
-                            Icon(Icons.person, size: 18, color: colors.primary),
+                        child: Icon(Icons.person, size: 18, color: colors.primary),
                       ),
                     const SizedBox(width: 8),
                     Text(
@@ -210,22 +227,48 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                   ],
                 ),
               ],
-
-              // Price
-              if (widget.course.price != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  CurrencyService.instance.formatPrice(widget.course.price ?? 0.0),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colors.primary,
-                  ),
-                ),
+              // Cost removed per user request for side panel
+              if (widget.showPrice) ...[
+                const SizedBox(height: 16),
+                _buildPriceSection(theme, colors),
               ],
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPriceSection(ThemeData theme, ColorScheme colors) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.1)),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          Text(
+            'Enrollment Cost:',
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          ListenableBuilder(
+            listenable: CurrencyService.instance,
+            builder: (context, _) => Text(
+              CurrencyService.instance.formatUSDAmount(widget.course.price ?? 0),
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF2E7D32),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -235,7 +278,6 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Description
           Text(
             'About This Course',
             style: theme.textTheme.titleLarge?.copyWith(
@@ -250,10 +292,7 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
               height: 1.6,
             ),
           ),
-
           const SizedBox(height: 24),
-
-          // What You'll Learn
           Text(
             'What You\'ll Learn',
             style: theme.textTheme.titleLarge?.copyWith(
@@ -262,10 +301,7 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
           ),
           const SizedBox(height: 12),
           _buildLearningOutcomes(theme, colors),
-
           const SizedBox(height: 24),
-
-          // Course Details
           Text(
             'Course Details',
             style: theme.textTheme.titleLarge?.copyWith(
@@ -280,7 +316,6 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
   }
 
   Widget _buildLearningOutcomes(ThemeData theme, ColorScheme colors) {
-    // TODO: Get learning outcomes from API
     final outcomes = [
       'Master fundamental concepts',
       'Build practical skills',
@@ -289,26 +324,24 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
     ];
 
     return Column(
-      children: outcomes
-          .map((outcome) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.check_circle, color: colors.primary, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        outcome,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: colors.onSurface,
-                        ),
-                      ),
-                    ),
-                  ],
+      children: outcomes.map((outcome) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.check_circle, color: colors.primary, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                outcome,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: colors.onSurface,
                 ),
-              ))
-          .toList(),
+              ),
+            ),
+          ],
+        ),
+      )).toList(),
     );
   }
 
@@ -318,23 +351,15 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _buildDetailRow(
-                Icons.access_time,
-                'Duration',
-                widget.course.durationHours != null
-                    ? '${widget.course.durationHours} hours'
-                    : 'Self-paced',
-                theme,
-                colors),
-            const Divider(),
-            _buildDetailRow(Icons.signal_cellular_alt, 'Level', 'All levels',
+            _buildDetailRow(Icons.access_time, 'Duration',
+                widget.course.durationHours != null ? '${widget.course.durationHours} hours' : 'Self-paced',
                 theme, colors),
             const Divider(),
-            _buildDetailRow(
-                Icons.language, 'Language', 'English', theme, colors),
+            _buildDetailRow(Icons.signal_cellular_alt, 'Level', 'All levels', theme, colors),
             const Divider(),
-            _buildDetailRow(
-                Icons.closed_caption, 'Subtitles', 'Available', theme, colors),
+            _buildDetailRow(Icons.language, 'Language', 'English', theme, colors),
+            const Divider(),
+            _buildDetailRow(Icons.closed_caption, 'Subtitles', 'Available', theme, colors),
           ],
         ),
       ),
@@ -349,20 +374,12 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
         children: [
           Icon(icon, size: 20, color: colors.onSurface),
           const SizedBox(width: 12),
-          Text(
-            '$label:',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.onSurface,
-            ),
-          ),
+          Text('$label:', style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
           const Spacer(),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colors.onSurface,
-            ),
-          ),
+          Text(value, style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colors.onSurface,
+          )),
         ],
       ),
     );
@@ -374,22 +391,11 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Course Curriculum',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text('Course Curriculum', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          Text(
-            'Curriculum information will be loaded from the API.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.onSurface,
-            ),
-          ),
+          Text('Curriculum information will be loaded from the API.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
           const SizedBox(height: 24),
-
-          // TODO: Implement curriculum sections/modules from API
           _buildCurriculumPlaceholder(theme, colors),
         ],
       ),
@@ -404,29 +410,17 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
           child: ExpansionTile(
             leading: CircleAvatar(
               backgroundColor: colors.primaryContainer,
-              child: Text(
-                '${sectionIndex + 1}',
-                style: TextStyle(
-                    color: colors.primary, fontWeight: FontWeight.bold),
-              ),
+              child: Text('${sectionIndex + 1}',
+                  style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold)),
             ),
-            title: Text(
-              'Section ${sectionIndex + 1}',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            subtitle:
-                Text('TODO: Load from API', style: theme.textTheme.bodySmall),
+            title: Text('Section ${sectionIndex + 1}',
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            subtitle: Text('TODO: Load from API', style: theme.textTheme.bodySmall),
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Module content will be displayed here once API is integrated.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurface,
-                  ),
-                ),
+                child: Text('Module content will be displayed here once API is integrated.',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
               ),
             ],
           ),
@@ -441,15 +435,10 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Instructor Profile
           Row(
             children: [
               if (widget.course.instructorAvatar != null)
-                CircleAvatar(
-                  radius: 40,
-                  backgroundImage:
-                      NetworkImage(widget.course.instructorAvatar!),
-                )
+                CircleAvatar(radius: 40, backgroundImage: NetworkImage(widget.course.instructorAvatar!))
               else
                 CircleAvatar(
                   radius: 40,
@@ -461,59 +450,33 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.course.instructorName ?? 'Instructor',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text(widget.course.instructorName ?? 'Instructor',
+                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text(
-                      'Course Instructor',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurface,
-                      ),
-                    ),
+                    Text('Course Instructor',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
                   ],
                 ),
               ),
             ],
           ),
-
           const SizedBox(height: 24),
-
-          // Instructor Bio
-          Text(
-            'About the Instructor',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text('About the Instructor',
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          Text(
-            'Instructor biography and credentials will be loaded from the API.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: colors.onSurface,
-              height: 1.6,
-            ),
-          ),
-
+          Text('Instructor biography and credentials will be loaded from the API.',
+              style: theme.textTheme.bodyLarge?.copyWith(color: colors.onSurface, height: 1.6)),
           const SizedBox(height: 24),
-
-          // Instructor Stats
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildInstructorStat(
-                      Icons.school, 'Courses', 'TODO', theme, colors),
+                  _buildInstructorStat(Icons.school, 'Courses', 'TODO', theme, colors),
                   const Divider(),
-                  _buildInstructorStat(
-                      Icons.people, 'Students', 'TODO', theme, colors),
+                  _buildInstructorStat(Icons.people, 'Students', 'TODO', theme, colors),
                   const Divider(),
-                  _buildInstructorStat(
-                      Icons.star, 'Rating', 'TODO', theme, colors),
+                  _buildInstructorStat(Icons.star, 'Rating', 'TODO', theme, colors),
                 ],
               ),
             ),
@@ -531,20 +494,12 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
         children: [
           Icon(icon, size: 24, color: colors.primary),
           const SizedBox(width: 12),
-          Text(
-            label,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: colors.onSurface,
-            ),
-          ),
+          Text(label, style: theme.textTheme.bodyLarge?.copyWith(color: colors.onSurface)),
           const Spacer(),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colors.primary,
-            ),
-          ),
+          Text(value, style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colors.primary,
+          )),
         ],
       ),
     );
@@ -556,29 +511,14 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Rating Summary
           _buildRatingSummary(theme, colors),
-
           const SizedBox(height: 24),
-
-          // Reviews List
-          Text(
-            'Student Reviews',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text('Student Reviews',
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          Text(
-            'Reviews will be loaded from the API.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.onSurface,
-            ),
-          ),
-
+          Text('Reviews will be loaded from the API.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
           const SizedBox(height: 16),
-
-          // TODO: Load actual reviews from API
           _buildReviewPlaceholder(theme, colors),
         ],
       ),
@@ -591,16 +531,13 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
         padding: const EdgeInsets.all(24),
         child: Row(
           children: [
-            // Overall Rating
             Column(
               children: [
-                Text(
-                  widget.course.rating?.toStringAsFixed(1) ?? 'N/A',
-                  style: theme.textTheme.displayLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colors.primary,
-                  ),
-                ),
+                Text(widget.course.rating?.toStringAsFixed(1) ?? 'N/A',
+                    style: theme.textTheme.displayLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colors.primary,
+                    )),
                 const SizedBox(height: 8),
                 Row(
                   children: List.generate(5, (index) {
@@ -614,18 +551,11 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                   }),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Course Rating',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colors.onSurface,
-                  ),
-                ),
+                Text('Course Rating',
+                    style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurface)),
               ],
             ),
-
             const SizedBox(width: 32),
-
-            // Rating Breakdown
             Expanded(
               child: Column(
                 children: List.generate(5, (index) {
@@ -640,7 +570,7 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                         const SizedBox(width: 8),
                         Expanded(
                           child: LinearProgressIndicator(
-                            value: 0.0, // TODO: Get from API
+                            value: 0.0,
                             backgroundColor: colors.surfaceContainerHighest,
                           ),
                         ),
@@ -679,30 +609,16 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Student Name',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          Text('Student Name',
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                           Row(
                             children: [
                               Row(
-                                children: List.generate(
-                                    5,
-                                    (i) => Icon(
-                                          Icons.star,
-                                          size: 14,
-                                          color: Colors.amber[700],
-                                        )),
+                                children: List.generate(5, (i) => Icon(Icons.star, size: 14, color: Colors.amber[700])),
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                '2 days ago',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colors.onSurface,
-                                ),
-                              ),
+                              Text('2 days ago',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurface)),
                             ],
                           ),
                         ],
@@ -711,13 +627,8 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  'Review content will be loaded from the API.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurface,
-                    height: 1.5,
-                  ),
-                ),
+                Text('Review content will be loaded from the API.',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurface, height: 1.5)),
               ],
             ),
           ),
@@ -731,9 +642,7 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: colors.surface,
-        border: Border(
-          top: BorderSide(color: colors.outlineVariant),
-        ),
+        border: Border(top: BorderSide(color: colors.outlineVariant)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -744,7 +653,6 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
       ),
       child: Row(
         children: [
-          // Wishlist Button
           IconButton(
             onPressed: _toggleWishlist,
             icon: Icon(
@@ -757,10 +665,7 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
               padding: const EdgeInsets.all(12),
             ),
           ),
-
           const SizedBox(width: 12),
-
-          // Add to Cart Button
           if (!_isInCart)
             Expanded(
               child: OutlinedButton.icon(
@@ -769,27 +674,20 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
                 label: const Text('Add to Cart'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
-
           if (!_isInCart) const SizedBox(width: 12),
-
-          // Enroll Now Button
           Expanded(
             child: ElevatedButton(
               onPressed: _enrollNow,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: Text(
-                _isInCart ? 'Enroll Now' : 'Enroll Now',
+                'Enroll Now',
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: colors.onPrimary,
                   fontWeight: FontWeight.bold,
@@ -814,33 +712,33 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
   Future<void> _toggleWishlist() async {
     try {
       if (_isWishlisted) {
-        // Remove from wishlist
         final success = await wishlistService.removeCourse(widget.course.id);
         if (success && mounted) {
-          setState(() {
-            _isWishlisted = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Removed from wishlist')),
-          );
+          setState(() => _isWishlisted = false);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Removed from wishlist')));
         }
       } else {
-        // Add to wishlist
-        final success = await wishlistService.addCourse(widget.course);
-        if (success && mounted) {
-          setState(() {
-            _isWishlisted = true;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Added to wishlist')),
-          );
-        }
+        // Show lead form before adding to wishlist
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => WishlistLeadModal(
+            course: widget.course,
+            onComplete: (interest, timing, notes) async {
+              final success = await wishlistService.addCourse(widget.course);
+              if (success && mounted) {
+                setState(() => _isWishlisted = true);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Added to wishlist & leads saved!'))
+                );
+              }
+            },
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
@@ -849,25 +747,17 @@ class _CourseDetailsPanelState extends State<CourseDetailsPanel>
     try {
       if (await cartService.addCourse(widget.course)) {
         if (mounted) {
-          setState(() {
-            _isInCart = true;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Added to cart')),
-          );
+          setState(() => _isInCart = true);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to cart')));
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Course already in cart')),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Course already in cart')));
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }

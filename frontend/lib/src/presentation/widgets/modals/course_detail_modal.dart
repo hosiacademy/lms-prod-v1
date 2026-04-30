@@ -885,16 +885,23 @@ class _CourseDetailModalState extends State<CourseDetailModal> {
             const SizedBox(height: 16),
 
             // Payment providers grid
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: countryProviders.length,
-              itemBuilder: (context, index) {
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final crossCount = constraints.maxWidth < 300
+                    ? 2
+                    : constraints.maxWidth < 500
+                        ? 3
+                        : 4;
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossCount,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: countryProviders.length,
+                  itemBuilder: (context, index) {
                 final logo = countryProviders[index];
                 final isSelected = _selectedProviderName == logo.name;
 
@@ -956,6 +963,8 @@ class _CourseDetailModalState extends State<CourseDetailModal> {
                       ],
                     ),
                   ),
+                );
+              },
                 );
               },
             ),
@@ -1635,12 +1644,15 @@ class _CourseDetailModalState extends State<CourseDetailModal> {
         }
       },
       child: Dialog(
-        insetPadding: const EdgeInsets.all(16),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: MediaQuery.of(context).size.width < 480 ? 8 : 16,
+          vertical: MediaQuery.of(context).size.width < 480 ? 0 : 24,
+        ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width < 480 ? 16 : 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1652,10 +1664,10 @@ class _CourseDetailModalState extends State<CourseDetailModal> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Enrollment Details',
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: (MediaQuery.of(context).size.width * 0.055).clamp(16.0, 24.0),
                               fontWeight: FontWeight.bold,
                             ),
                           ),

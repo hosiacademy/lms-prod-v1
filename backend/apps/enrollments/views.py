@@ -98,14 +98,22 @@ def create_provisional_enrollment(request):
     try:
         from .tasks import send_provisional_enrollment_email
         send_provisional_enrollment_email.delay(provisional.id)
-    except ImportError:
-        # Tasks not yet implemented
-        pass
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to queue provisional enrollment email: {e}")
 
     # Get office details for cash payments
     office_details = None
     if initial_status == 'cash_pending':
-        office_details = get_office_details(request.user.country if hasattr(request.user, 'country') else 'ZW')
+        user_country = 'ZW'
+        if request.user and request.user.is_authenticated:
+            user_country = getattr(request.user, 'country', 'ZW')
+        elif data.get('country'):
+            # If guest, try to use country from request
+            user_country = data.get('country')
+            
+        office_details = get_office_details(user_country)
 
     return Response({
         'reference_code': provisional.reference_code,

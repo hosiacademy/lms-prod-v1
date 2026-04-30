@@ -680,11 +680,21 @@ class Order(models.Model):
 
     metadata = models.JSONField(default=dict, blank=True, verbose_name=_("Metadata"))
 
+    smatpay_fee_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name=_("SmatPay Fee Amount"),
+        help_text="SmatPay fee calculated for LMS accounting"
+    )
+
+    smatpay_fee_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        verbose_name=_("SmatPay Fee Percentage"),
+        help_text="SmatPay fee percentage applied"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Created At"))
 
     updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Updated At"))
-
-    
 
     class Meta:
 
@@ -2216,7 +2226,7 @@ class BulkEnrollment(models.Model):
 
 
 class Enrollment(models.Model):
-    enrollment_id = models.BigAutoField(primary_key=True, verbose_name=_("Enrollment ID"))
+    id = models.BigAutoField(primary_key=True, verbose_name=_("Enrollment ID"))
 
     enrollment_type = models.CharField(max_length=20, choices=EnrollmentType.choices, verbose_name=_("Enrollment Type"))
 
@@ -2240,17 +2250,17 @@ class Enrollment(models.Model):
     aicerts_enrollment_id = models.IntegerField(null=True, blank=True, default=None, verbose_name=_("AICerts Enrollment ID"), help_text=_("FK to aicerts_enrollments.id"))
     industry_enrollment_id = models.IntegerField(null=True, blank=True, default=None, verbose_name=_("Industry Enrollment ID"), help_text=_("FK to industry_based_training_industrytrainingenrollment.id"))
     
-    # Learner details snapshot
-    learner_full_name = models.CharField(max_length=255, verbose_name=_("Full Name"))
-    learner_email = models.EmailField(max_length=255, verbose_name=_("Email"))
-    learner_phone = models.CharField(max_length=20, verbose_name=_("Phone Number"))
-    learner_id_number = models.CharField(max_length=50, blank=True, null=True, verbose_name=_("ID/Passport Number"))
-    learner_dob = models.DateField(blank=True, null=True, verbose_name=_("Date of Birth"))
-    learner_gender = models.CharField(max_length=20, blank=True, null=True, verbose_name=_("Gender"))
-    learner_address = models.TextField(blank=True, null=True, verbose_name=_("Address"))
-    learner_city = models.CharField(max_length=100, blank=True, null=True, verbose_name=_("City"))
-    learner_country = models.CharField(max_length=100, verbose_name=_("Country"))
-    learner_postal_code = models.CharField(max_length=20, blank=True, null=True, verbose_name=_("Postal Code"))
+    # Learner details snapshot — db_column maps to legacy student_* column names
+    learner_full_name = models.CharField(max_length=255, db_column='student_full_name', verbose_name=_("Full Name"))
+    learner_email = models.EmailField(max_length=255, db_column='student_email', verbose_name=_("Email"))
+    learner_phone = models.CharField(max_length=20, db_column='student_phone', verbose_name=_("Phone Number"))
+    learner_id_number = models.CharField(max_length=50, blank=True, null=True, db_column='student_id_number', verbose_name=_("ID/Passport Number"))
+    learner_dob = models.DateField(blank=True, null=True, db_column='student_dob', verbose_name=_("Date of Birth"))
+    learner_gender = models.CharField(max_length=20, blank=True, null=True, db_column='student_gender', verbose_name=_("Gender"))
+    learner_address = models.TextField(blank=True, null=True, db_column='student_address', verbose_name=_("Address"))
+    learner_city = models.CharField(max_length=100, blank=True, null=True, db_column='student_city', verbose_name=_("City"))
+    learner_country = models.CharField(max_length=100, db_column='student_country', verbose_name=_("Country"))
+    learner_postal_code = models.CharField(max_length=20, blank=True, null=True, db_column='student_postal_code', verbose_name=_("Postal Code"))
     
     # Professional details
     current_occupation = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Current Occupation"))
@@ -2270,7 +2280,6 @@ class Enrollment(models.Model):
 
     # Financials
     enrollment_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name=_("Enrollment Fee"))
-    discount_applied = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name=_("Discount Applied"))
     final_amount = models.DecimalField(max_digits=12, decimal_places=2, db_column='final_amount', null=True, blank=True, default=0, verbose_name=_("Total Amount"))
     currency = models.CharField(max_length=5, default='USD', verbose_name=_("Currency"))
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='enrollments', verbose_name=_("Order"))

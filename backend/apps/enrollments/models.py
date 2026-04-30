@@ -131,7 +131,8 @@ class ProvisionalEnrollment(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.email} - {self.enrollment_type} - {self.status}"
+        email = self.user.email if self.user else "Anonymous"
+        return f"{email} - {self.enrollment_type} - {self.status}"
 
 
     def get_enrolled_item(self):
@@ -160,9 +161,7 @@ class ProvisionalEnrollment(models.Model):
         # Auto-set expiry if not set
         if not self.expires_at:
             if self.status == 'cash_pending':
-                # Rule: Payment must be made at least 3 days before the Training.
-                # If training is more than 14 days away, they have 14 days to pay.
-                # If less, they have until 3 days before the training.
+                # Rule: MIN(14 days from commitment, training_date - 3 days)
                 default_expiry = timezone.now() + timedelta(days=14)
                 training_start_date = None
                 
@@ -172,27 +171,57 @@ class ProvisionalEnrollment(models.Model):
                 else:
                     # Dynamically get start date if possible from other models
                     try:
+                        training_id = self.metadata.get('training_id') or self.metadata.get('program_id') or self.programme_id
                         if self.enrollment_type == 'masterclass':
                             from apps.masterclasses.models import Masterclass
-                            m_id = self.metadata.get('training_id') or self.programme_id
-                            if m_id:
-                                training_start_date = Masterclass.objects.get(id=m_id).start_date
+                            if training_id:
+                                training_start_date = Masterclass.objects.get(id=training_id).start_date
                         elif self.enrollment_type == 'industry':
-                            from apps.industry_based_training.models import IndustryBasedTraining
-                            i_id = self.metadata.get('training_id') or self.programme_id
-                            if i_id:
-                                training_start_date = IndustryBasedTraining.objects.get(id=i_id).start_date
+                            from apps.industry_based_training.models import AiCertsCourse
+                            if training_id:
+                                training_start_date = AiCertsCourse.objects.get(id=training_id).start_date
                     except Exception:
                         pass
                 
                 if training_start_date:
-                    if isinstance(training_start_date, timezone.datetime):
-                        training_start = training_start_date
+                    # Convert date to datetime if necessary
+                    if hasattr(training_start_date, 'year') and not hasattr(training_start_date, 'hour'):
+                        training_start = timezone.datetime.combine(training_start_date, timezone.datetime.min.time())
+                        if timezone.is_naive(training_start):
+                            training_start = timezone.make_aware(training_start)
+                    elif isinstance(training_start_date, str):
+                        from django.utils.dateparse import parse_datetime, parse_date
+                        parsed = parse_datetime(training_start_date) or parse_date(training_start_date)
+                        if parsed:
+                            if hasattr(parsed, 'hour'):
+                                training_start = parsed
+                                if timezone.is_naive(training_start):
+                                    training_start = timezone.make_aware(training_start)
+                            else:
+                                training_start = timezone.datetime.combine(parsed, timezone.datetime.min.time())
+                                if timezone.is_naive(training_start):
+                                    training_start = timezone.make_aware(training_start)
+                        else:
+                            training_start = None
                     else:
-                        training_start = timezone.datetime.combine(training_start_date, timezone.datetime.min.time()).replace(tzinfo=timezone.utc)
+                        training_start = training_start_date
+                        if training_start and timezone.is_naive(training_start):
+                            training_start = timezone.make_aware(training_start)
                     
-                    deadline_before_training = training_start - timedelta(days=3)
-                    self.expires_at = min(default_expiry, deadline_before_training)
+                    if training_start:
+                        # Ensure training_start is aware
+                        if timezone.is_naive(training_start):
+                            training_start = timezone.make_aware(training_start)
+                        
+                        deadline_before_training = training_start - timedelta(days=3)
+                        
+                        # Ensure default_expiry is aware
+                        if timezone.is_naive(default_expiry):
+                            default_expiry = timezone.make_aware(default_expiry)
+                            
+                        self.expires_at = min(default_expiry, deadline_before_training)
+                    else:
+                        self.expires_at = default_expiry
                 else:
                     self.expires_at = default_expiry
                     
@@ -208,11 +237,18 @@ class ProvisionalEnrollment(models.Model):
         super().save(*args, **kwargs)
 
     def generate_reference_code(self):
-        """Generate unique reference code for cash payments"""
+        """Generate unique reference code for cash payments: HOSI-{TYPE}-{8_DIGITS}"""
+        prefix = 'HOSI'
+        type_code = {
+            'masterclass': 'M',
+            'learnership': 'L',
+            'industry': 'I',
+            'custom_selection': 'C',
+        }.get(self.enrollment_type, 'X')
+
         while True:
-            date_part = timezone.now().strftime('%Y%m%d')
-            random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-            code = f"PROV{date_part}{random_part}"
+            random_code = ''.join(random.choices(string.digits, k=8))
+            code = f"{prefix}-{type_code}-{random_code}"
 
             # Check uniqueness
             if not ProvisionalEnrollment.objects.filter(reference_code=code).exists():

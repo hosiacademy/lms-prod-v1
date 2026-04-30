@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'apps.aicerts_integration',
     'apps.enrollments',
     'apps.certificates',
+    'apps.marketing',
 ]
 
 # ==================== MIDDLEWARE ====================
@@ -480,150 +481,6 @@ except Exception as e:
     logger.warning(f"Failed to load ENVIRONMENT from config: {e}. Defaulting to 'development'")
     ENVIRONMENT = os.environ.get('ENVIRONMENT', 'development')
 
-# ==================== SENTRY ERROR TRACKING ====================
-# Comprehensive error monitoring and performance tracking
-SENTRY_DSN = config('SENTRY_DSN', default='')
-SENTRY_ENABLED = config('SENTRY_ENABLED', default=not DEBUG, cast=bool)
-
-if SENTRY_DSN and SENTRY_ENABLED:
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
-    from sentry_sdk.integrations.celery import CeleryIntegration
-    from sentry_sdk.integrations.redis import RedisIntegration
-    from sentry_sdk.integrations.logging import LoggingIntegration
-
-    # Configure logging integration
-    sentry_logging = LoggingIntegration(
-        level=logging.INFO,        # Capture info and above as breadcrumbs
-        event_level=logging.ERROR  # Send errors as events
-    )
-
-    def before_send(event, hint):
-        """
-        Filter and modify events before sending to Sentry
-        Can be used to scrub sensitive data, filter spam, etc.
-        """
-        # Don't send events in development unless explicitly enabled
-        if DEBUG and not config('SENTRY_DEBUG_MODE', default=False, cast=bool):
-            return None
-
-        # Scrub sensitive data from event
-        if 'request' in event:
-            # Remove sensitive headers
-            headers = event['request'].get('headers', {})
-            sensitive_headers = ['Authorization', 'Cookie', 'X-API-Key']
-            for header in sensitive_headers:
-                if header in headers:
-                    headers[header] = '[Filtered]'
-
-        # Filter out specific errors (if needed)
-        if 'exception' in event:
-            exception_type = event['exception']['values'][0]['type']
-            # Example: Ignore DisallowedHost errors in production
-            if exception_type == 'DisallowedHost':
-                return None
-
-        return event
-
-    def traces_sampler(sampling_context):
-        """
-        Dynamically sample traces based on transaction type
-        Payment transactions: 100% sampling
-        Regular requests: 10% sampling
-        """
-        # Check if this is a payment transaction
-        if sampling_context.get('parent_sampled') is not None:
-            return sampling_context['parent_sampled']
-
-        # Get transaction name
-        transaction_name = sampling_context.get('transaction_context', {}).get('name', '')
-
-        # Sample 100% of payment-related transactions
-        if 'payment' in transaction_name.lower():
-            return 1.0
-
-        # Sample 100% of webhook transactions
-        if 'webhook' in transaction_name.lower():
-            return 1.0
-
-        # Sample 50% of API endpoints
-        if '/api/' in transaction_name:
-            return 0.5
-
-        # Sample 10% of everything else
-        return config('SENTRY_TRACES_SAMPLE_RATE', default=0.1, cast=float)
-
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-
-        # Integrations
-        integrations=[
-            DjangoIntegration(
-                transaction_style='url',  # Use URL pattern as transaction name
-                middleware_spans=True,     # Create spans for middleware
-                signals_spans=True,        # Create spans for signals
-                cache_spans=True,          # Monitor cache operations
-            ),
-            CeleryIntegration(
-                monitor_beat_tasks=True,   # Monitor Celery Beat scheduled tasks
-                propagate_traces=True,     # Propagate traces from sync to async
-            ),
-            RedisIntegration(),
-            sentry_logging,
-        ],
-
-        # Performance Monitoring
-        traces_sampler=traces_sampler,      # Dynamic sampling
-        enable_tracing=True,                # Enable performance monitoring
-
-        # Profiling (captures function-level performance data)
-        profiles_sample_rate=config('SENTRY_PROFILES_SAMPLE_RATE', default=0.1, cast=float),
-
-        # Environment Configuration
-        environment=ENVIRONMENT,            # development, staging, production
-        release=config('SENTRY_RELEASE', default=None),  # Git commit SHA
-
-        # Data Scrubbing
-        send_default_pii=False,             # Don't send PII by default
-        before_send=before_send,            # Custom event filtering
-
-        # Error Handling
-        attach_stacktrace=True,             # Attach stacktraces to messages
-        max_breadcrumbs=50,                 # Keep last 50 breadcrumbs
-        debug=config('SENTRY_DEBUG', default=False, cast=bool),
-
-        # Request Data
-        request_bodies='medium',            # Capture medium-sized request bodies
-        max_request_body_size='medium',     # Medium: 10KB
-
-        # Ignored Errors (add patterns you want to ignore)
-        ignore_errors=[
-            # Ignore common browser errors
-            'ResizeObserver loop limit exceeded',
-            'ResizeObserver loop completed with undelivered notifications',
-        ],
-
-        # Tags (for filtering in Sentry UI)
-        _experiments={
-            'profiles_sample_rate': config('SENTRY_PROFILES_SAMPLE_RATE', default=0.1, cast=float),
-        }
-    )
-
-    # Log Sentry initialization
-    logger.info(
-        "Sentry initialized",
-        extra={
-            'environment': ENVIRONMENT,
-            'traces_sample_rate': 'dynamic',
-            'profiles_sample_rate': config('SENTRY_PROFILES_SAMPLE_RATE', default=0.1, cast=float),
-        }
-    )
-
-elif DEBUG:
-    logger.info("Sentry disabled in DEBUG mode")
-else:
-    logger.warning("Sentry DSN not configured - error tracking disabled")
-
 # ==================== SECURITY (PRODUCTION) ====================
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
@@ -692,6 +549,12 @@ YOCO_SANDBOX = config('YOCO_SANDBOX', default=True, cast=bool)
 PAYNOW_INTEGRATION_ID = config('PAYNOW_INTEGRATION_ID', default='')
 PAYNOW_INTEGRATION_KEY = config('PAYNOW_INTEGRATION_KEY', default='')
 PAYNOW_SANDBOX = config('PAYNOW_SANDBOX', default=True, cast=bool)
+
+# SmatPay (Zimbabwe)
+SMATPAY_MERCHANT_ID = config('SMATPAY_MERCHANT_ID', default='')
+SMATPAY_MERCHANT_API_KEY = config('SMATPAY_API_KEY', default='3X0NgDdl4J3xlcaQ9SHRz')
+SMATPAY_MERCHANT_KEY = config('SMATPAY_MERCHANT_KEY', default='')
+SMATPAY_PROFILE_ID = config('SMATPAY_PROFILE_ID', default='')
 
 # M-Pesa (Kenya)
 MPESA_CONSUMER_KEY = config('MPESA_CONSUMER_KEY', default='')
@@ -788,3 +651,4 @@ AFRICAN_COUNTRY_CODES = [
     'TD', 'CF', 'GN', 'SL', 'LR', 'MR', 'GM', 'GW', 'CV', 'ST',
     'GQ', 'DJ', 'SO', 'ER', 'SS', 'SD', 'LY', 'EH'
 ]
+

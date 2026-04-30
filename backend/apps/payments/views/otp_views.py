@@ -99,21 +99,29 @@ Hosi Academy Payment System
                 logger.info(f"Payment OTP sent to {email}")
                 
             except Exception as email_error:
-                logger.error(f"Failed to send OTP email: {str(email_error)}")
-                # Still allow in development if email fails
+                logger.error(f"Failed to send OTP email to {email}: {str(email_error)}")
+                # Log OTP to console so it can still be used while email is misconfigured
+                logger.warning(f"===> [OTP FALLBACK] OTP for {email} is: {otp} (email delivery failed)")
                 if not settings.DEBUG:
                     return Response({
                         'error': 'Failed to send OTP email',
                         'details': str(email_error)
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            return Response({
+            response_data = {
                 'success': True,
-                'message': 'OTP sent successfully',
+                'message': 'Verification code sent to your email',
                 'email': email,
                 'expires_in': 600,  # 10 minutes in seconds
                 'otp_length': 6,
-            }, status=status.HTTP_200_OK)
+            }
+            
+            # In DEBUG mode, include the OTP in response to bypass email issues
+            if settings.DEBUG:
+                response_data['debug_otp'] = otp
+                logger.info(f"[DEBUG] OTP for {email}: {otp}")
+                
+            return Response(response_data, status=status.HTTP_200_OK)
             
         except Exception as e:
             logger.error(f"Error sending OTP: {str(e)}")

@@ -3,8 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils.decorators import method_decorator
 from apps.payments.decorators import require_marketing_admin
-from .models import MarketingAsset, SocialShareEvent
-from .serializers import MarketingAssetSerializer, SocialShareEventSerializer
+from apps.payments.models_admin import Administrator, SalesMarketingCountryAssignment
+from .models import MarketingAsset, SocialShareEvent, MarketingLead
+from apps.learner_portal.models import Wishlist
+from .serializers import MarketingAssetSerializer, SocialShareEventSerializer, MarketingLeadSerializer, WishlistItemSerializer
 
 class MarketingAssetViewSet(viewsets.ModelViewSet):
     queryset = MarketingAsset.objects.all()
@@ -45,3 +47,59 @@ class SocialShareEventViewSet(viewsets.ReadOnlyModelViewSet):
     @method_decorator(require_marketing_admin)
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
+
+class MarketingLeadViewSet(viewsets.ModelViewSet):
+    queryset = MarketingLead.objects.all()
+    serializer_class = MarketingLeadSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return MarketingLead.objects.all()
+            
+        # Check if user is a marketing admin
+        admin_profile = Administrator.objects.filter(user=user, is_active=True).first()
+        if admin_profile and (admin_profile.admin_type == 'marketing' or admin_profile.is_marketing_admin):
+            # For now, let admins see all leads
+            return MarketingLead.objects.all()
+        
+        return MarketingLead.objects.filter(user=user)
+
+class WishlistViewSet(viewsets.ModelViewSet):
+    serializer_class = WishlistItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # Automatically assign country based on user's country if not provided
+        country = self.request.data.get('country')
+        if not country and self.request.user.country:
+            serializer.save(user=self.request.user, country=self.request.user.country)
+        else:
+            serializer.save(user=self.request.user)
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Wishlist.objects.all()
+
+        # Check if user is a marketing admin
+        admin_profile = Administrator.objects.filter(user=user, is_active=True).first()
+        if admin_profile and (admin_profile.admin_type == 'marketing' or admin_profile.is_marketing_admin):
+            # Get assigned countries
+            assigned_countries = SalesMarketingCountryAssignment.objects.filter(
+                sales_marketing_admin=admin_profile, 
+                is_active=True
+            ).values_list('country', flat=True)
+            
+            if assigned_countries:
+                # Filter wishlists by assigned countries
+                return Wishlist.objects.filter(country__id__in=assigned_countries)
+            
+            return Wishlist.objects.none()
+
+        # Regular users only see their own wishlist
+        return Wishlist.objects.filter(user=user)

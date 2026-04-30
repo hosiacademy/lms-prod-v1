@@ -1,4 +1,4 @@
-﻿# apps/masterclasses/admin.py
+# apps/masterclasses/admin.py
 from django.contrib import admin
 from django import forms
 from django.utils.html import format_html
@@ -7,7 +7,7 @@ from django.db.models import Count, Sum, Q, Avg
 from django.urls import path
 from django.shortcuts import render
 from datetime import datetime, timedelta
-from .models import Masterclass, AFRICAN_COUNTRIES
+from .models import Masterclass, MasterclassEnrollment, AFRICAN_COUNTRIES
 from apps.aicerts_courses.models import AiCertsCourse
 
 # ==================== CUSTOM FORM ====================
@@ -363,6 +363,70 @@ class MasterclassAdmin(admin.ModelAdmin):
             country_dict = dict(AFRICAN_COUNTRIES)
             obj.country_name = country_dict.get(obj.country_code, obj.country_code)
         super().save_model(request, obj, form, change)
+
+@admin.register(MasterclassEnrollment)
+class MasterclassEnrollmentAdmin(admin.ModelAdmin):
+    list_display = [
+        'user_email',
+        'masterclass_title',
+        'status_badge',
+        'payment_status_badge',
+        'attendance_type',
+        'amount_paid',
+        'created_at',
+    ]
+    
+    list_filter = [
+        'status',
+        'payment_status',
+        'attendance_type',
+        'created_at',
+    ]
+    
+    search_fields = [
+        'user__email',
+        'user__first_name',
+        'user__last_name',
+        'masterclass__title',
+    ]
+    
+    raw_id_fields = ('user', 'masterclass', 'payment_transaction')
+    
+    def user_email(self, obj):
+        return obj.user.email
+    user_email.short_description = "User"
+    
+    def masterclass_title(self, obj):
+        return obj.masterclass.title
+    masterclass_title.short_description = "Masterclass"
+    
+    def status_badge(self, obj):
+        colors = {
+            'pending': '#ffc107',
+            'enrolled': '#28a745',
+            'completed': '#6c757d',
+            'cancelled': '#dc3545',
+        }
+        color = colors.get(obj.status, '#6c757d')
+        return format_html(
+            '<span style="background-color:{}; color:white; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:10px;">{}</span>',
+            color, obj.status.upper()
+        )
+    status_badge.short_description = "Status"
+    
+    def payment_status_badge(self, obj):
+        colors = {
+            'pending': '#ffc107',
+            'paid': '#28a745',
+            'refunded': '#17a2b8',
+            'failed': '#dc3545',
+        }
+        color = colors.get(obj.payment_status, '#6c757d')
+        return format_html(
+            '<span style="background-color:{}; color:white; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:10px;">{}</span>',
+            color, obj.payment_status.upper()
+        )
+    payment_status_badge.short_description = "Payment"
 
 # ==================== COMPLETED MASTERCLASSES ADMIN ====================
 

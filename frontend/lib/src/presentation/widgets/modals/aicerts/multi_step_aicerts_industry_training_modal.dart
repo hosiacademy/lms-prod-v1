@@ -7,11 +7,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/models/course.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/services/currency_service.dart';
+import '../../../../core/services/auth_service.dart';
+import '../../../../core/constants/pricing_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/african_phone_validator.dart';
 import '../../../pages/payment/payment_provider_selection_page.dart';
 import '../../student_portal/cascading_location_dropdowns.dart';
 import '../../../blocs/student_portal/location_bloc.dart';
 import '../../../../data/models/location.dart' as location_models;
+import '../../contact_otp_field.dart';
+import '../../aicerts/aicerts_image_widget.dart';
 import 'shared/aicerts_form_data.dart';
 
 /// AICERTS Industry Training Enrollment Modal
@@ -155,6 +160,12 @@ class _MultiStepAICERTSIndustryTrainingModalState
       _fillString(_companyPhoneController, p['last_used_company_phone']);
       _fillString(_companyAddressController, p['last_used_company_address']);
       if (mounted) setState(() {});
+      
+      // Pre-set stream type for learners
+      final streamType = _getStreamTypeForIndustry();
+      for (var learner in _learners) {
+        learner.selectedStreamType = streamType;
+      }
     } catch (_) {}
   }
 
@@ -302,7 +313,20 @@ class _MultiStepAICERTSIndustryTrainingModalState
       setState(() {
         _currentStep++;
       });
+
+      // Sync stream type to all learners whenever moving forward
+      final streamType = _getStreamTypeForIndustry();
+      for (var learner in _learners) {
+        learner.selectedStreamType = streamType;
+      }
+      
+      _saveMetadata();
     }
+  }
+
+  void _saveMetadata() {
+    // In Industry Training, we don't currently persist partial progress to SharedPreferences
+    // like in Custom Selection, but we keep the method for consistency and future-proofing.
   }
 
   void _previousStep() {
@@ -432,9 +456,11 @@ class _MultiStepAICERTSIndustryTrainingModalState
   double _calculateTotalPrice() {
     double total = 0.0;
     for (final course in widget.courses) {
-      // CRITICAL: Use actual course.price from API (reads price_usd), not hardcoded constants
-      // This ensures price persistence and matches what user sees on course cards
-      final coursePrice = course.price ?? 250.0;
+      // Use database price if available, otherwise use constants based on stream type
+      final streamType = _getStreamTypeForIndustry();
+      final coursePrice = (course.price == null || course.price == 0.0)
+          ? PricingConstants.getAICertsPrice(streamType: streamType)
+          : course.price!;
       total += coursePrice;
     }
     return total * _quantity;
@@ -497,11 +523,21 @@ class _MultiStepAICERTSIndustryTrainingModalState
 
     try {
       // Prepare enrollment data
+      // Get localized amount for payment flow
+      final currencySvc = CurrencyService.instance;
+      final totalUSD = _calculateTotalPrice();
+      final localizedAmount = currencySvc.convertFromUSD(totalUSD);
+      final userCurrency = currencySvc.userCurrency;
+      final country = _learners.isNotEmpty ? (_learners.first.selectedCountryName ?? currencySvc.countryCode) : currencySvc.countryCode;
+
       final enrollmentData = {
         'courses': widget.courses.map((c) => c.id).toList(),
         'is_corporate': _isCorporate,
         'quantity': _quantity,
-        'total_price_usd': _calculateTotalPrice(),
+        'amount': localizedAmount, // Localized amount (e.g. ZAR 3000)
+        'amount_usd': totalUSD,      // Reference USD amount (e.g. 150.0)
+        'currency': userCurrency,
+        'country': country,
         'industry': widget.industry,
         'role': widget.role,
         'stream_type': _getStreamTypeForIndustry(),
@@ -516,32 +552,20 @@ class _MultiStepAICERTSIndustryTrainingModalState
         await _cascadeProfileUpdate(_learners.first);
       }
 
-      // Show payment modal
+      // Show payment modal with LOCALISED values
       await PaymentProviderSelectionPage.show(
         context,
         reference: 'AICERTS-IT-${DateTime.now().millisecondsSinceEpoch}',
-        amount: _calculateTotalPrice(),
-        currency: 'USD',
-        country: _learners.first.selectedCountryName ?? 'ZA',
+        amount: localizedAmount,
+        currency: userCurrency,
+        country: country,
         programId: widget.courses.first.id,
         programType:
             widget.courses.length > 1 ? 'role_training' : 'industry_training',
         paymentMetadata: {
-          'enrollment_type':
-              widget.courses.length > 1 ? 'role_training' : 'industry_training',
-          'industry': widget.industry,
-          'role': widget.role,
+          ...enrollmentData,
           'course_count': widget.courses.length,
           'learner_count': _quantity,
-          'is_corporate': _isCorporate,
-          'course_ids': widget.courses.map((c) => c.id).toList(),
-          'individual_details':
-              _learners.isNotEmpty ? _learners[0].toJson() : {},
-          'terms_accepted': _learners.isNotEmpty
-              ? (_learners[0].termsAccepted &&
-                  _learners[0].aicertsPlatformAgreement)
-              : false,
-          if (_isCorporate) 'company_data': _buildCompanyData(),
         },
         enrollmentPayload: enrollmentData,
       );
@@ -627,19 +651,30 @@ class _MultiStepAICERTSIndustryTrainingModalState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final mq = MediaQuery.of(context);
+    final sw = mq.size.width;
+    final sh = mq.size.height;
+    final isNarrow = sw < 480;
+    final hInset = isNarrow ? 0.0 : (sw < 700 ? 12.0 : 20.0);
+    final vInset = isNarrow ? 0.0 : 20.0;
+    final contentPad = isNarrow ? 16.0 : 24.0;
+
     final industryName =
         widget.industry[0].toUpperCase() + widget.industry.substring(1);
     final roleText = widget.role != null ? ' (${widget.role})' : '';
 
     return Dialog(
-      insetPadding: const EdgeInsets.all(20),
+      insetPadding: EdgeInsets.symmetric(horizontal: hInset, vertical: vInset),
+      shape: isNarrow
+          ? const RoundedRectangleBorder()
+          : RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
+        constraints: BoxConstraints(
           maxWidth: 900,
-          maxHeight: 800,
+          maxHeight: isNarrow ? sh : sh * 0.9,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(contentPad),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -648,22 +683,28 @@ class _MultiStepAICERTSIndustryTrainingModalState
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$industryName$roleText Industry Training',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$industryName$roleText Industry Training',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: (sw * 0.045).clamp(14.0, 20.0),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
                         ),
-                      ),
-                      Text(
-                        '${widget.courses.length} industry-specific AI courses',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
+                        Text(
+                          '${widget.courses.length} industry-specific AI courses',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            fontSize: (sw * 0.03).clamp(10.0, 13.0),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -675,7 +716,11 @@ class _MultiStepAICERTSIndustryTrainingModalState
 
               // Industry Information Banner
               _buildIndustryInfoBanner(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+
+              // Persistent Price Summary Bar
+              _buildPriceBar(theme, colors),
+              const SizedBox(height: 12),
 
               // Stepper
               Expanded(
@@ -1457,7 +1502,14 @@ class _MultiStepAICERTSIndustryTrainingModalState
             return null;
           },
         ),
-        const SizedBox(height: 16),
+        ContactOtpField(
+          contactController: learner.emailController,
+          contactType: 'email',
+          onVerifiedChanged: (verified) =>
+              setState(() => learner.emailVerified = verified),
+        ),
+        if (learner.emailVerified) ...[
+          const SizedBox(height: 16),
 
         // Phone with country code
         _buildPhoneField(
@@ -1512,6 +1564,7 @@ class _MultiStepAICERTSIndustryTrainingModalState
           controlAffinity: ListTileControlAffinity.leading,
         ),
       ],
+    ],
     );
   }
 
@@ -1530,15 +1583,18 @@ class _MultiStepAICERTSIndustryTrainingModalState
           width: 120,
           child: DropdownButtonFormField<String>(
             value: currentIso,
+            isExpanded: true,
             decoration: const InputDecoration(
               labelText: 'Country',
               border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
             items: AfricanPhoneValidator.supportedCountries.map((iso) {
               final countryInfo = AfricanPhoneValidator.getInfoForCountry(iso);
               return DropdownMenuItem<String>(
                 value: iso,
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Image.network(
                       'https://flagcdn.com/w20/${iso.toLowerCase()}.png',
@@ -1547,7 +1603,10 @@ class _MultiStepAICERTSIndustryTrainingModalState
                           const Icon(Icons.flag, size: 20),
                     ),
                     const SizedBox(width: 8),
-                    Text(countryInfo?.countryCode ?? ''),
+                    Text(
+                      countryInfo?.countryCode ?? '',
+                      style: const TextStyle(fontSize: 14),
+                    ),
                   ],
                 ),
               );
@@ -1643,8 +1702,16 @@ class _MultiStepAICERTSIndustryTrainingModalState
                 const SizedBox(height: 8),
                 ...widget.courses.map((course) {
                   return ListTile(
-                    leading: Icon(Icons.check_circle, color: colors.primary),
-                    title: Text(course.title),
+                    leading: SizedBox(
+                      width: 80,
+                      child: AICERTSCourseCardImage(
+                        featureImageUrl: course.featureImageUrl,
+                        height: 45,
+                        width: 80,
+                        showBadge: false,
+                      ),
+                    ),
+                    title: const SizedBox.shrink(), // Title is in the SVG image
                     subtitle: Text(course.description ?? ''),
                   );
                 }).toList(),
@@ -1676,9 +1743,10 @@ class _MultiStepAICERTSIndustryTrainingModalState
                       style: theme.textTheme.bodyLarge,
                     ),
                     Text(
-                      currency.formatPrice(totalPrice),
+                      currency.formatUSDAmount(totalPrice),
                       style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.successGreen,
                       ),
                     ),
                   ],
@@ -1739,6 +1807,47 @@ class _MultiStepAICERTSIndustryTrainingModalState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPriceBar(ThemeData theme, ColorScheme colors) {
+    final currencySvc = CurrencyService.instance;
+    final totalUSD = _calculateTotalPrice();
+    final localizedTotal = currencySvc.convertFromUSD(totalUSD);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Icon(Icons.shopping_cart_outlined, size: 16, color: colors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Total Enrollment Cost:',
+                    style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '${currencySvc.userCurrency} ${currencySvc.formatPrice(localizedTotal)}',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: colors.primary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

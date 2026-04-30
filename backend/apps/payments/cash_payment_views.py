@@ -1,4 +1,4 @@
-# apps/payments/cash_payment_views.py
+﻿# apps/payments/cash_payment_views.py
 """
 Cash Payment Instructions View
 Provides pathway-specific cash payment instructions for all enrollment types.
@@ -7,14 +7,17 @@ Provides pathway-specific cash payment instructions for all enrollment types.
 from rest_framework import views
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from django.utils import timezone
 from datetime import timedelta
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class CashPaymentInstructionsView(views.APIView):
     """
     GET /api/payments/cash-payment-instructions/
-    
+
     Returns detailed cash payment instructions based on enrollment type.
     Each pathway (Masterclass, Learnership, Industry Training, Custom Selection)
     has specific instructions tailored to its enrollment process.
@@ -25,18 +28,18 @@ class CashPaymentInstructionsView(views.APIView):
         enrollment_type = request.query_params.get('enrollment_type', 'masterclass')
         program_id = request.query_params.get('program_id')
         program_title = request.query_params.get('program_title', 'the selected programme')
-        
+
         instructions = self._get_cash_instructions(
             enrollment_type=enrollment_type,
             program_title=program_title
         )
-        
+
         return Response(instructions)
 
     def _get_cash_instructions(self, enrollment_type: str, program_title: str) -> dict:
         """
         Get cash payment instructions specific to enrollment pathway.
-        
+
         Returns comprehensive instructions including:
         - Process overview
         - Step-by-step guide
@@ -45,7 +48,7 @@ class CashPaymentInstructionsView(views.APIView):
         - Timeline and deadlines
         - What happens after payment
         """
-        
+
         base_instructions = {
             'masterclass': self._get_masterclass_cash_instructions(program_title),
             'learnership': self._get_learnership_cash_instructions(program_title),
@@ -53,7 +56,7 @@ class CashPaymentInstructionsView(views.APIView):
             'custom_selection': self._get_custom_selection_cash_instructions(program_title),
             'role_training': self._get_role_training_cash_instructions(program_title),
         }
-        
+
         return base_instructions.get(enrollment_type, base_instructions['masterclass'])
 
     def _get_masterclass_cash_instructions(self, program_title: str) -> dict:

@@ -23,6 +23,7 @@ class Course {
   final bool? active;
   final String? streamType; // 'professional' or 'technical'
   final String? externalId;
+  final String? categories;
 
   // Course type for enrollment routing
   final String?
@@ -60,6 +61,7 @@ class Course {
     this.active,
     this.streamType,
     this.courseType,
+    this.categories,
     this.rating,
     this.studentCount,
     this.instructorName,
@@ -146,6 +148,7 @@ class Course {
       aiTools: aiTools,
       description: _decodeHtml(json['description'] as String?),
       industry: json['industry'] as String?,
+      categories: _decodeHtml(json['categories'] as String?),
       certificationLevel: json['certification_level'] as String?,
       roleType: json['role_type'] as String?,
       country: json['country'] as String?,
@@ -154,13 +157,15 @@ class Course {
       startDate: parseDate(json['start_date'] as String?),
       endDate: parseDate(json['end_date'] as String?),
       status: json['status'] as String?,
-      price: json['price'] != null
-          ? double.tryParse(json['price'].toString())
-          : json['price_usd'] != null
-              ? double.tryParse(json['price_usd'].toString())
-              : json['our_price_usd'] != null
-                  ? double.tryParse(json['our_price_usd'].toString())
-                  : null,
+      price: json['price_usd'] != null
+          ? double.tryParse(json['price_usd'].toString())
+          : json['our_price_usd'] != null
+              ? double.tryParse(json['our_price_usd'].toString())
+              : json['price_individual'] != null
+                  ? double.tryParse(json['price_individual'].toString())
+                  : (json['currency'] == 'USD' && json['price'] != null)
+                      ? double.tryParse(json['price'].toString())
+                      : null,
       durationHours: json['duration_hours'] as int? ?? json['duration'] as int?,
       active: json['active'] as bool?,
       streamType: json['stream_type'] as String? ?? json['stream'] as String?,
@@ -194,28 +199,21 @@ class Course {
   static String _decodeHtml(String? html) {
     if (html == null || html.isEmpty) return html ?? '';
 
-    // First: Fix common encoding/OCR issues in course descriptions
     String cleaned = html
-        // Fix split words (e.g., "Durati on" → "Duration")
-        .replaceAll(RegExp(r'(\w+)\s+([a-z])(?=\s|$)'), r'$1$2')
-        // Fix common OCR/copy-paste errors
-        .replaceAll(RegExp(r'\s+([,.!?;:])'), r'$1') // Remove space before punctuation
-        .replaceAll(RegExp(r'([a-z])([A-Z])'), r'$1 $2') // Add space before capital letters in run-on text
-        // Replace common block tags with newlines to preserve some structure
-        .replaceAll(RegExp(r'<li>', caseSensitive: false), '• ')
-        .replaceAll(RegExp(r'</li>', caseSensitive: false), '\n')
-        .replaceAll(RegExp(r'</p>|<br\s*/?>', caseSensitive: false), '\n\n')
-        .replaceAll(RegExp(r'</div>', caseSensitive: false), '\n');
-
-    final htmlTagRegExp =
-        RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false);
-
-    cleaned = cleaned
-        .replaceAll(htmlTagRegExp, '') // Remove remaining tags
-        .replaceAll('&nbsp;', ' ')
+        // Replace block-level tags with spaces/newlines to prevent word merging
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'<li[^>]*>', caseSensitive: false), '\n• ')
+        .replaceAll(RegExp(r'<p[^>]*>', caseSensitive: false), '\n\n')
+        .replaceAll(
+            RegExp(r'</?(ul|ol|tr|td|th|div|h\d)[^>]*>', caseSensitive: false),
+            ' ')
+        // Remove all remaining HTML tags
+        .replaceAll(RegExp(r'<[^>]+>'), '')
+        // Decode common HTML entities
         .replaceAll('&amp;', '&')
         .replaceAll('&lt;', '<')
         .replaceAll('&gt;', '>')
+        .replaceAll('&nbsp;', ' ')
         .replaceAll('&quot;', '"')
         .replaceAll('&#39;', "'")
         .replaceAll('&#039;', "'")
@@ -311,6 +309,7 @@ class Course {
       'active': active,
       'stream_type': streamType,
       'course_type': courseType,
+      'categories': categories,
       'rating': rating,
       'student_count': studentCount,
       'instructor_name': instructorName,

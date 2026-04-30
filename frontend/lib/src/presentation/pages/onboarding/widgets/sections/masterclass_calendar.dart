@@ -49,13 +49,16 @@ class MasterclassCalendarState extends State<MasterclassCalendar> {
     'Dec'
   ];
   int _selectedMonthIndex = 0; // 0 for ALL, 1-12 for specific months
-  DateTime _baseDate = DateTime(DateTime.now().year, 1, 1);
+  late DateTime _baseDate;
   int? _highlightedQuarter;
   List<int> _highlightedMonthIndices = [];
 
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    // Dynamic calendar: starts from current month and projects 12 months ahead
+    _baseDate = DateTime(now.year, now.month, 1);
     // Initialize currency service for IP-based currency conversion
     CurrencyService.instance.initialize();
   }
@@ -189,54 +192,31 @@ class MasterclassCalendarState extends State<MasterclassCalendar> {
 
     return Column(
       children: [
-        // === MONTH TABS - horizontally scrollable ===
         Container(
           width: double.infinity,
-          margin:
-              const EdgeInsets.symmetric(horizontal: 12.0), // Increased margin
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(
-                horizontal: 4), // Add padding for scroll
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                // ALL Tab
-                _buildMonthTab(
-                  monthDate: _baseDate,
-                  index: 0,
-                  isSelected: _selectedMonthIndex == 0,
-                  quarter: 0,
-                  isHighlighted: false,
+          margin: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ...List.generate(12, (index) {
+                final monthDate = _availableMonths[index];
+                final actualIndex = index + 1;
+                final isSelected = actualIndex == _selectedMonthIndex;
+                final quarter = _getQuarterForDate(monthDate);
+                final isHighlighted =
+                    _highlightedMonthIndices.contains(actualIndex);
+
+                return _buildMonthTab(
+                  monthDate: monthDate,
+                  index: actualIndex,
+                  isSelected: isSelected,
+                  quarter: quarter,
+                  isHighlighted: isHighlighted,
                   theme: theme,
                   colorScheme: colorScheme,
-                  label: 'ALL',
-                ),
-                // January to December Tabs
-                ...List.generate(12, (index) {
-                  final monthDate = _availableMonths[index];
-                  final actualIndex = index + 1;
-                  final isSelected = actualIndex == _selectedMonthIndex;
-                  final quarter = _getQuarterForDate(monthDate);
-                  final isHighlighted =
-                      _highlightedMonthIndices.contains(actualIndex);
-
-                  return Padding(
-                    padding: const EdgeInsets.only(
-                        left: 10), // Increased from 6 to 10
-                    child: _buildMonthTab(
-                      monthDate: monthDate,
-                      index: actualIndex,
-                      isSelected: isSelected,
-                      quarter: quarter,
-                      isHighlighted: isHighlighted,
-                      theme: theme,
-                      colorScheme: colorScheme,
-                    ),
-                  );
-                }),
-              ],
-            ),
+                );
+              }),
+            ],
           ),
         ),
 
@@ -278,8 +258,8 @@ class MasterclassCalendarState extends State<MasterclassCalendar> {
       colorScheme.tertiary,
       colorScheme.primaryContainer,
     ];
-    final quarterColor =
-        index == 0 ? colorScheme.secondary : quarterColors[quarter];
+    // Modulo 4 ensures quarter colors cycle correctly even when crossing years
+    final quarterColor = quarterColors[quarter % 4];
 
     Color backgroundColor;
     if (isSelected || isHighlighted) {
@@ -441,7 +421,7 @@ class MasterclassCalendarState extends State<MasterclassCalendar> {
         if (w < 420) {
           crossAxisCount = 1;
           childAspectRatio =
-              1.45; // single column — wider card, comfortable height
+              1.1; // single column — more portrait for mobile readability
         } else if (w < 768) {
           crossAxisCount = 2;
           childAspectRatio = 0.68; // 2-col portrait cards
@@ -609,6 +589,9 @@ class _MasterclassHoverCardState extends State<_MasterclassHoverCard> {
       },
       child: GestureDetector(
         onTap: widget.onTap,
+        onTapDown: (_) => setState(() => _isHovered = true),
+        onTapUp: (_) => setState(() => _isHovered = false),
+        onTapCancel: () => setState(() => _isHovered = false),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
@@ -901,7 +884,8 @@ class _QuarterTab extends StatelessWidget {
       colorScheme.tertiary,
       colorScheme.primaryContainer,
     ];
-    final quarterColor = quarterColors[quarter];
+    // Ensure modulo 4 to handle cross-year quarter colors safely
+    final quarterColor = quarterColors[quarter % 4];
 
     return GestureDetector(
       onTap: onTap,

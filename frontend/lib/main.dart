@@ -1,7 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'src/core/theme/app_theme.dart';
 import 'src/core/services/theme_service.dart';
@@ -12,20 +11,11 @@ import 'src/presentation/widgets/ai/native_ai_assistant.dart';
 import 'src/core/services/currency_service.dart';
 
 import 'src/core/api/api_client.dart';
+import 'src/core/config/environment.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Sentry for error tracking and performance monitoring
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = 'https://e590241e4409ae1ccb884023ca3aa781@o4511036540190720.ingest.de.sentry.io/4511036759146576';
-      options.tracesSampleRate = 1.0;
-      options.profilesSampleRate = 1.0;
-      options.environment = kDebugMode ? 'development' : 'production';
-      options.sendDefaultPii = false;
-    },
-  );
 
   // Initialize API Client (Auth Interceptors)
   ApiClient.initialize();

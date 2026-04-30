@@ -8,8 +8,8 @@ class PricingConstants {
   // These should be kept in sync with the database defaults
   static const double masterclassTechnicalPhysical = 1100.0;
   static const double masterclassTechnicalOnline = 700.0;
-  static const double masterclassProfessionalPhysical = 700.0;
-  static const double masterclassProfessionalOnline = 500.0;
+  static const double masterclassProfessionalPhysical = 470.0;
+  static const double masterclassProfessionalOnline = 320.0;
 
   // AICERTS course pricing based on stream type
   static const double aicertsTechnical = 420.0;

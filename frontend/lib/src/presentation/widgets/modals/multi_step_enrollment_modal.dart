@@ -1,7 +1,9 @@
 // lib/src/presentation/widgets/modals/multi_step_enrollment_modal.dart
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -592,24 +594,8 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
         },
       };
 
-      // OTP verification before payment
-      final paymentEmail = _isCorporate
-          ? _companyEmailController.text.trim()
-          : firstLearner.emailController.text.trim();
-
-      final paymentToken = await _showOTPDialog(
-        email: paymentEmail,
-        amount: displayAmount,
-        currency: currency,
-        country: country,
-      );
-
-      if (paymentToken == null) {
-        // User cancelled OTP
-        if (mounted) setState(() => _isProcessing = false);
-        return;
-      }
-
+      // OTP verification before payment removed per user request
+      
       // Cascade form data back to student profile (best-effort)
       if (!_isCorporate && _learners.isNotEmpty) {
         await _cascadeProfileUpdate(_learners.first);
@@ -618,7 +604,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
       final response = await ApiClient.initiatePayment(
         programId: programId,
         type: type,
-        amount: finalAmount,
+        amount: displayAmount,
         metadata: paymentMetadata,
       );
 
@@ -647,35 +633,40 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
   }
 
   /// Get base amount using masterclass price based on attendance mode (online/physical)
-  /// CRITICAL: Returns LOCALIZED price (already converted if from backend, or converted here if from constants)
+  /// CRITICAL: Returns price in USD. Conversion to local currency happens in _proceedToPayment and formatting helpers.
   double get _baseAmount {
     if (widget.masterclass != null) {
-      final masterclass = widget.masterclass!;
-      final streamType = masterclass.streamType ?? 'professional';
+      final mc = widget.masterclass!;
       if (_isOnline) {
-        // Online mode: use priceOnlineUsd from API (already localized)
-        final onlinePrice = masterclass.priceOnlineUsd;
+        // Online mode: use priceOnlineUsd OR onlinePrice (localized)
+        // If priceOnlineUsd is available, it's USD. If not, we use onlinePrice.
+        final onlinePrice = mc.priceOnlineUsd ?? mc.onlinePrice;
         if (onlinePrice != null && onlinePrice > 0) {
           return onlinePrice;
         }
-        return 0.0; // Strictly from backend - no fallback to constants
+        // Fallback to constants if DB values are missing
+        return PricingConstants.getMasterclassPrice(
+          streamType: mc.streamType ?? 'professional',
+          isOnline: true,
+        );
       } else {
-        // Physical mode: use pricePhysicalUsd from API (already localized)
-        final physicalPrice = masterclass.pricePhysicalUsd;
+        // Physical mode: use pricePhysicalUsd OR physicalPrice (localized)
+        final physicalPrice = mc.pricePhysicalUsd ?? mc.physicalPrice;
         if (physicalPrice != null && physicalPrice > 0) {
           return physicalPrice;
         }
-        return 0.0; // Strictly from backend - no fallback to constants
+        // Fallback to constants if DB values are missing
+        return PricingConstants.getMasterclassPrice(
+          streamType: mc.streamType ?? 'professional',
+          isOnline: false,
+        );
       }
     }
 
-    // For custom course selection, prioritize backend price
+    // Custom selection or industry training
     return widget.courses?.fold<double>(0.0, (sum, c) {
-          if (c.price != null && c.price! > 0) {
-            // AICertsService already localized the price if it came from backend
-            return sum + c.price!;
-          }
-          return sum; // No fallback to constants
+          // Courses prices are in USD
+          return sum + (c.price ?? 0.0);
         }) ??
         0.0;
   }
@@ -770,6 +761,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
       ),
       builder: (ctx) {
         final colors = Theme.of(ctx).colorScheme;
+        final w = MediaQuery.of(ctx).size.width;
         return Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -818,7 +810,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                           ),
                           alignment: Alignment.center,
                           child: Text(p.icon.isNotEmpty ? p.icon : '🎉',
-                              style: const TextStyle(fontSize: 22)),
+                              style: TextStyle(fontSize: (w * 0.05).clamp(16.0, 22.0))),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -826,22 +818,22 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(p.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontWeight: FontWeight.w700,
-                                      fontSize: 15)),
+                                      fontSize: (w * 0.037).clamp(12.0, 15.0))),
                               if (p.discountPercentage != null)
                                 Text(
                                   '${p.discountPercentage!.toStringAsFixed(0)}% off your total',
                                   style: TextStyle(
                                       color: colors.primary,
-                                      fontSize: 13,
+                                      fontSize: (w * 0.033).clamp(11.0, 13.0),
                                       fontWeight: FontWeight.w600),
                                 ),
                               Text(p.description,
                                   style: TextStyle(
                                       color: colors.onSurface
                                           .withValues(alpha: 0.6),
-                                      fontSize: 12),
+                                      fontSize: (w * 0.03).clamp(10.0, 12.0)),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis),
                             ],
@@ -1149,18 +1141,27 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
             : 'professional');
     final isTechnical = streamType == 'technical';
 
-    // Get prices based on course type
+    // Get prices based on course type with robust fallbacks
     final double onlinePrice;
     final double physicalPrice;
 
-    if (isCustomSelection) {
-      // AICERTS custom selection - online/self-paced only pricing
-      onlinePrice = 0.0;
-      physicalPrice = 0.0;
-    } else if (widget.masterclass != null) {
-      // Masterclass pricing - use ACTUAL API price from database
-      onlinePrice = widget.masterclass!.priceOnlineUsd ?? 0.0;
-      physicalPrice = widget.masterclass!.pricePhysicalUsd ?? 0.0;
+    if (widget.masterclass != null) {
+      final mc = widget.masterclass!;
+      // Use the same strict logic as _baseAmount - no fallback to priceUsd
+      onlinePrice = mc.priceOnlineUsd ?? mc.onlinePrice ?? 
+          PricingConstants.getMasterclassPrice(streamType: streamType, isOnline: true);
+      physicalPrice = mc.pricePhysicalUsd ?? mc.physicalPrice ?? 
+          PricingConstants.getMasterclassPrice(streamType: streamType, isOnline: false);
+    } else if (widget.courses != null) {
+      // Calculate total for custom selection with robust fallbacks per course
+      onlinePrice = widget.courses!.fold<double>(0.0, (sum, c) {
+        final stream = (c.streamType ?? c.industry ?? 'professional').toLowerCase();
+        final effectivePrice = (c.price == null || c.price == 0.0)
+            ? PricingConstants.getAICertsPrice(streamType: stream)
+            : c.price!;
+        return sum + effectivePrice;
+      });
+      physicalPrice = 0.0; // Courses are online only for custom selection
     } else {
       onlinePrice = 0.0;
       physicalPrice = 0.0;
@@ -1170,9 +1171,9 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.masterclass != null)
-          _buildMasterclassInfoCard(colors)
+          _buildMasterclassInfoCard(colors, w)
         else
-          _buildCoursesInfoCard(colors),
+          _buildCoursesInfoCard(colors, w),
         const SizedBox(height: 24),
 
         // Attendance Mode Selection with Costs
@@ -1515,7 +1516,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                           // Strikethrough original price
                           Text(
                             CurrencyService.instance
-                                .formatPrice(_baseAmount * _quantity),
+                                .formatUSDAmount(_baseAmount * _quantity),
                             style: TextStyle(
                               fontSize: (w * 0.045).clamp(12.0, 16.0),
                               decoration: TextDecoration.lineThrough,
@@ -1524,8 +1525,8 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                           ),
                         ],
                         Text(
-                          CurrencyService.instance
-                              .formatPrice(_totalAmount),
+                            CurrencyService.instance
+                                .formatUSDAmount(_totalAmount),
                           style: TextStyle(
                             fontSize: (w * 0.068).clamp(16.0, 24.0),
                             fontWeight: FontWeight.bold,
@@ -1542,7 +1543,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                 if (_quantity > 1) ...[
                   const SizedBox(height: 12),
                   Text(
-                    '$_unitPriceLabel: ${CurrencyService.instance.formatPrice(_discountedBaseAmount)}',
+                    '$_unitPriceLabel: ${CurrencyService.instance.formatUSDAmount(_discountedBaseAmount)}',
                     style: TextStyle(
                       fontSize: 12,
                       color: colors.onSurface,
@@ -1550,7 +1551,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Total for $_quantity participants: ${CurrencyService.instance.formatPrice(_totalAmount)}',
+                    'Total for $_quantity participants: ${CurrencyService.instance.formatUSDAmount(_totalAmount)}',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -1745,7 +1746,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
     );
   }
 
-  Widget _buildMasterclassInfoCard(ColorScheme colors) {
+  Widget _buildMasterclassInfoCard(ColorScheme colors, double w) {
     final mc = widget.masterclass;
 
     // Check if this is the $5 masterclass
@@ -1813,13 +1814,19 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
             const SizedBox(height: 12),
             Text(
               mc.title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: (w * 0.045).clamp(14.0, 18.0),
+                fontWeight: FontWeight.bold,
+              ),
             ),
             if (mc.focusArea != null) ...[
               const SizedBox(height: 8),
               Text(
                 mc.focusArea!,
-                style: TextStyle(fontSize: 14, color: colors.onSurface),
+                style: TextStyle(
+                  fontSize: (w * 0.035).clamp(12.0, 14.0),
+                  color: colors.onSurface,
+                ),
               ),
             ],
             // SPECIAL $5 PRICE DISPLAY
@@ -1847,7 +1854,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     Text(
                       'ONLY \$5 USD',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: (w * 0.06).clamp(18.0, 24.0),
                         fontWeight: FontWeight.w900,
                         color: Colors.amber,
                       ),
@@ -1888,7 +1895,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
     );
   }
 
-  Widget _buildCoursesInfoCard(ColorScheme colors) {
+  Widget _buildCoursesInfoCard(ColorScheme colors, double w) {
     final totalCourses = widget.courses?.length ?? 0;
 
     return Card(
@@ -1920,7 +1927,10 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
             const SizedBox(height: 12),
             Text(
               'Custom Selection ($totalCourses Courses)',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: (w * 0.045).clamp(14.0, 18.0),
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 12),
             ...widget.courses!.take(3).map((c) => Padding(
@@ -2419,16 +2429,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   },
                   w: w,
                 ),
-                ContactOtpField(
-                  contactController: learner.phoneController,
-                  contactType: 'phone',
-                  phoneDialCode: AfricanPhoneValidator.getInfoForCountry(
-                          learner.phoneIsoCode)
-                      ?.countryCode,
-                  onVerifiedChanged: (verified) =>
-                      setState(() => learner.phoneVerified = verified),
-                ),
-                if (learner.emailVerified && learner.phoneVerified) ...[
+                if (learner.emailVerified) ...[
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: learner.idNumberController,
@@ -2508,6 +2509,9 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                             learner.emergencyPhoneIsoCode = country.code;
                           }
                         });
+                        // Persist location change
+                        final programId = widget.masterclass?.id ?? 0;
+                        learner.saveToStorage('enrollment_progress_${programId}_$_currentLearnerIndex');
                       },
                       isRequired: true,
                       countryLabel: 'Country *',
@@ -2695,7 +2699,6 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
   Widget _buildContactsLockedNotice(
       ColorScheme colors, LearnerFormData learner) {
     final emailDone = learner.emailVerified;
-    final phoneDone = learner.phoneVerified;
     return Container(
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(16),
@@ -2713,17 +2716,13 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Verify your contact details to continue',
+                  'Verify your email address to continue',
                   style: TextStyle(
                       fontWeight: FontWeight.w600, color: colors.onSurface),
                 ),
                 const SizedBox(height: 4),
                 if (!emailDone)
                   Text('• Email address not yet verified',
-                      style: TextStyle(
-                          fontSize: 12, color: colors.onSurfaceVariant)),
-                if (!phoneDone)
-                  Text('• Phone number not yet verified',
                       style: TextStyle(
                           fontSize: 12, color: colors.onSurfaceVariant)),
               ],
@@ -2810,7 +2809,71 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
             ),
           ),
         ),
+        
+        const SizedBox(height: 16),
+        
+        // ✅ NEW: Business Rules for Provisional Enrollment (Cash/EFT)
+        if (widget.masterclass != null)
+          Card(
+            color: colors.primaryContainer.withValues(alpha: 0.1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: colors.primary.withValues(alpha: 0.3)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.gavel_rounded, color: colors.primary, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Masterclass Enrollment Rules',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildRuleRow(colors, 'Provisional Booking', 'Your booking is provisional until payment is confirmed.'),
+                  _buildRuleRow(colors, 'Payment Deadline', 'Payment must be settled within 14 days or at least 3 days before the Masterclass start date.'),
+                  _buildRuleRow(colors, 'Payment Methods', 'We accept Cash, POS/Swipe, or EFT at our physical offices.'),
+                  _buildRuleRow(colors, 'Reference Code', 'A unique reference code will be generated for your visit to our office.'),
+                  _buildRuleRow(colors, 'Confirmation', 'Full enrollment access will be granted immediately after payment settlement.'),
+                ],
+              ),
+            ),
+          ),
       ],
+    );
+  }
+
+  Widget _buildRuleRow(ColorScheme colors, String label, String rule) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.check_circle_outline, size: 14, color: colors.primary.withValues(alpha: 0.7)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(fontSize: 12, color: colors.onSurface),
+                children: [
+                  TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  TextSpan(text: rule),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2995,7 +3058,7 @@ class LearnerFormData {
   String? formattedPhoneNumber;
   bool isPhoneValid = false;
   bool emailVerified = false;
-  bool phoneVerified = false;
+  bool phoneVerified = true;
 
   // ✅ REMOVED: isExistingStudent - NO MORE "ENROLLING AS" CRAP
   // All users manually enter their details - no assumptions
@@ -3050,6 +3113,68 @@ class LearnerFormData {
     notesController.dispose();
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'firstName': firstNameController.text,
+      'lastName': lastNameController.text,
+      'email': emailController.text,
+      'phone': phoneController.text,
+      'phoneIsoCode': phoneIsoCode,
+      'idNumber': idNumberController.text,
+      'dob': dobController.text,
+      'gender': selectedGender,
+      'address': addressController.text,
+      'postalCode': postalCodeController.text,
+      'occupation': occupationController.text,
+      'education': selectedEducationLevel,
+      'institution': institutionController.text,
+      'country': selectedCountry?.toJson(),
+      'state': selectedState?.toJson(),
+      'city': selectedCity?.toJson(),
+      'emailVerified': emailVerified,
+    };
+  }
+
+  void fromJson(Map<String, dynamic> json) {
+    firstNameController.text = json['firstName'] ?? '';
+    lastNameController.text = json['lastName'] ?? '';
+    emailController.text = json['email'] ?? '';
+    phoneController.text = json['phone'] ?? '';
+    phoneIsoCode = json['phoneIsoCode'] ?? 'ZA';
+    idNumberController.text = json['idNumber'] ?? '';
+    dobController.text = json['dob'] ?? '';
+    selectedGender = json['gender'];
+    addressController.text = json['address'] ?? '';
+    postalCodeController.text = json['postalCode'] ?? '';
+    occupationController.text = json['occupation'] ?? '';
+    selectedEducationLevel = json['education'];
+    institutionController.text = json['institution'] ?? '';
+    emailVerified = json['emailVerified'] ?? false;
+    
+    if (json['country'] != null) {
+      selectedCountry = location_models.Country.fromJson(json['country']);
+    }
+    if (json['state'] != null) {
+      selectedState = location_models.State.fromJson(json['state']);
+    }
+    if (json['city'] != null) {
+      selectedCity = location_models.City.fromJson(json['city']);
+    }
+  }
+
+  Future<void> saveToStorage(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, jsonEncode(toJson()));
+  }
+
+  Future<void> loadFromStorage(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(key);
+    if (data != null) {
+      fromJson(jsonDecode(data));
+    }
+  }
+
   bool validate() {
     if (firstNameController.text.trim().isEmpty ||
         lastNameController.text.trim().isEmpty) return false;
@@ -3065,7 +3190,6 @@ class LearnerFormData {
     }
 
     if (!emailVerified) return false;
-    if (!phoneVerified) return false;
     if (idNumberController.text.trim().isEmpty) return false;
     if (dobController.text.trim().isEmpty) return false;
     if (selectedGender == null) return false;

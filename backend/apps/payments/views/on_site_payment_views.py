@@ -1,4 +1,4 @@
-# backend/apps/payments/views/on_site_payment_views.py
+﻿# backend/apps/payments/views/on_site_payment_views.py
 """
 On-Site / In-Person Payment Views
 
@@ -22,7 +22,7 @@ Flow:
 2. System detects user country from IP (or user selection)
 3. System auto-generates reference code linked to training + amount
 4. Provisional enrollment created immediately (status: cash_pending)
-5. Logged in Payment Admin + Sales Admin dashboards
+5. Logged in Payment Admin AND Sales Admin dashboards
 6. User receives reference code + assigned office + payment deadline
 7. User visits physical office with reference code
 8. Admin/agent looks up enrollment using reference code
@@ -43,6 +43,7 @@ from django.db import transaction as db_transaction
 from decimal import Decimal
 
 from apps.enrollments.models import ProvisionalEnrollment
+from apps.enrollments.tasks import send_provisional_enrollment_email
 from apps.payments.models import PaymentTransaction, PaymentStatus, PaymentProvider
 from apps.learnerships.models import LearnershipEnrollment, EnrollmentStatus as LearnershipEnrollmentStatus
 from apps.masterclasses.models import Masterclass
@@ -57,7 +58,7 @@ logger = logging.getLogger(__name__)
 def create_on_site_enrollment(request):
     """
     Create provisional enrollment for on-site/cash payment.
-    
+
     BUSINESS RULES (from ProvisionalEnrollment.save()):
     1. Reference code auto-generated when status='cash_pending'
     2. Expiry calculated as: MIN(14 days from now, training_date - 3 days)
@@ -65,14 +66,14 @@ def create_on_site_enrollment(request):
     4. Office defaults to user's country (from IP or selection)
     5. Logged in Payment Admin AND Sales Admin dashboards immediately
     6. Provisional enrollment created IMMEDIATELY on commitment
-    
+
     This is called when user selects "Pay at Office" / "Cash Payment" option.
     Delegates to existing apps/enrollments/views.py create_provisional_enrollment()
     which implements all business rules correctly.
     """
     try:
         data = request.data
-        
+
         enrollment_type = data.get('enrollment_type')
         program_id = data.get('program_id')
         amount = Decimal(str(data.get('amount', 0)))
@@ -80,27 +81,27 @@ def create_on_site_enrollment(request):
         user_data = data.get('user_data', {})
         metadata = data.get('metadata', {})
         selected_office_country = data.get('selected_office_country')  # User can override default
-        
+
         # Validate required fields
         if not enrollment_type or not program_id:
             return Response({
                 'error': 'Enrollment type and program ID are required'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         if amount <= 0:
             return Response({
                 'error': 'Invalid amount'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Get or create user
         from apps.users.models import User
-        
+
         email = user_data.get('email')
         if not email:
             return Response({
                 'error': 'User email is required'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Get or create user
         user, created = User.objects.get_or_create(
             email=email,
@@ -111,7 +112,7 @@ def create_on_site_enrollment(request):
                 'phone': user_data.get('phone', ''),
             }
         )
-        
+
         # Update user details if provided
         if user_data.get('first_name'):
             user.first_name = user_data.get('first_name')
@@ -119,10 +120,8 @@ def create_on_site_enrollment(request):
             user.last_name = user_data.get('last_name')
         if user_data.get('phone'):
             user.phone = user_data.get('phone')
-        
+
         # Set country from IP detection or user selection
-        # Priority: 1) User selection, 2) IP detection, 3) Default to existing user country
-        # user.country is a ForeignKey to localization.Country — must assign an object, not a string
         from apps.localization.models import Country as LocalizationCountry
 
         def _resolve_country(code):
@@ -150,12 +149,10 @@ def create_on_site_enrollment(request):
         # Derive plain code string for metadata / instructions (Country obj or None)
         country_code = user.country.code if user.country else (selected_office_country or 'ZW')
         user.save()
-        
-        from apps.enrollments.models import ProvisionalEnrollment
-        
+
         # Determine training start date for expiry calculation
         training_start_date = _get_training_start_date(enrollment_type, program_id)
-        
+
         # Create provisional enrollment (save() will apply business rules)
         provisional = ProvisionalEnrollment.objects.create(
             user=user,
@@ -170,7 +167,7 @@ def create_on_site_enrollment(request):
                 'training_start_date': training_start_date.isoformat() if training_start_date else None,
             }
         )
-        
+
         # Create payment transaction to link with the enrollment
         with db_transaction.atomic():
             transaction = PaymentTransaction.objects.create(
@@ -193,6 +190,9 @@ def create_on_site_enrollment(request):
             # Link transaction to provisional enrollment
             provisional.payment_transaction = transaction
             provisional.save()
+
+        # Send email notification with payment instructions
+        send_provisional_enrollment_email.delay(provisional.id)
 
         # Get office locations and instructions for the SELECTED country
         office_instructions = get_office_instructions(country_code)
@@ -232,7 +232,7 @@ def create_on_site_enrollment(request):
                 'sales_admin': '/admin/sales/provisional-enrollments/',
             }
         }, status=status.HTTP_201_CREATED)
-        
+
     except Exception as e:
         logger.error(f"Error creating on-site enrollment: {e}")
         import traceback
@@ -254,7 +254,6 @@ def _get_training_start_date(enrollment_type, program_id):
             return masterclass.start_date
         elif enrollment_type == 'industry':
             industry_course = AiCertsCourse.objects.get(id=program_id)
-            # Industry courses may not have start date
             return getattr(industry_course, 'start_date', None)
     except Exception:
         logger.warning(f"Could not get training start date for {enrollment_type}/{program_id}")
@@ -266,14 +265,14 @@ def _get_training_start_date(enrollment_type, program_id):
 def get_on_site_enrollment(request, reference_code):
     """
     Get on-site enrollment details by reference code
-    
+
     Used by admin/agent to look up enrollment when user arrives at office.
     """
     try:
         provisional = ProvisionalEnrollment.objects.select_related(
             'user', 'payment_transaction'
         ).get(reference_code=reference_code)
-        
+
         # Check if expired
         if provisional.status == 'cash_pending' and provisional.expires_at < timezone.now():
             provisional.status = 'expired'
@@ -283,7 +282,7 @@ def get_on_site_enrollment(request, reference_code):
                 'expired': True,
                 'expires_at': provisional.expires_at.isoformat()
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Check if already paid
         if provisional.status in ['confirmed', 'rejected']:
             return Response({
@@ -291,10 +290,10 @@ def get_on_site_enrollment(request, reference_code):
                 'status': provisional.status,
                 'settled_at': provisional.verified_at.isoformat() if provisional.verified_at else None,
             })
-        
+
         # Get enrollment details
         item = provisional.get_enrolled_item()
-        
+
         return Response({
             'reference_code': provisional.reference_code,
             'status': provisional.status,
@@ -315,12 +314,12 @@ def get_on_site_enrollment(request, reference_code):
             'days_remaining': (provisional.expires_at - timezone.now()).days,
             'metadata': provisional.metadata,
         })
-        
+
     except ProvisionalEnrollment.DoesNotExist:
         return Response({
             'error': 'Reference code not found'
         }, status=status.HTTP_404_NOT_FOUND)
-    
+
     except Exception as e:
         logger.error(f"Error getting on-site enrollment: {e}")
         return Response({
@@ -333,10 +332,10 @@ def get_on_site_enrollment(request, reference_code):
 def settle_on_site_payment(request, reference_code):
     """
     Settle on-site payment at office
-    
+
     Called by admin/agent when user completes payment at office.
     Supports Cash, POS/Swipe, and Bank Transfer payment methods.
-    
+
     Request:
     {
         "payment_method": "cash|pos|bank_transfer",
@@ -351,28 +350,28 @@ def settle_on_site_payment(request, reference_code):
     """
     try:
         data = request.data
-        
+
         payment_method = data.get('payment_method', 'cash')
         amount_paid = Decimal(str(data.get('amount_paid', 0)))
         notes = data.get('notes', '')
-        
+
         if payment_method not in ['cash', 'pos', 'bank_transfer']:
             return Response({
                 'error': 'Invalid payment method. Must be: cash, pos, or bank_transfer'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         with db_transaction.atomic():
             # Get provisional enrollment
             provisional = ProvisionalEnrollment.objects.select_related(
                 'payment_transaction'
             ).get(reference_code=reference_code)
-            
+
             # Check if already settled
             if provisional.status in ['confirmed', 'rejected', 'expired']:
                 return Response({
                     'error': f'Enrollment already {provisional.status}'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             # Update payment transaction
             transaction = provisional.payment_transaction
             if transaction:
@@ -391,7 +390,7 @@ def settle_on_site_payment(request, reference_code):
                 if amount_paid > 0:
                     transaction.amount_paid = amount_paid
                 transaction.save()
-            
+
             # Update provisional enrollment
             provisional.status = 'confirmed'
             provisional.verified_by = request.user
@@ -404,7 +403,7 @@ def settle_on_site_payment(request, reference_code):
                 'settled_at': timezone.now().isoformat(),
             }
             provisional.save()
-            
+
             # Create final enrollment based on type
             if provisional.enrollment_type == 'learnership' and provisional.programme:
                 _create_learnership_enrollment(provisional, transaction)
@@ -414,9 +413,9 @@ def settle_on_site_payment(request, reference_code):
                 _create_industry_enrollment(provisional, transaction)
             elif provisional.enrollment_type == 'custom_selection':
                 _create_custom_selection_enrollment(provisional, transaction)
-        
+
         logger.info(f"On-site payment settled: {reference_code} via {payment_method}")
-        
+
         return Response({
             'success': True,
             'message': f'Payment settled successfully via {payment_method}',
@@ -425,12 +424,12 @@ def settle_on_site_payment(request, reference_code):
             'payment_method': payment_method,
             'settled_at': timezone.now().isoformat(),
         })
-        
+
     except ProvisionalEnrollment.DoesNotExist:
         return Response({
             'error': 'Reference code not found'
         }, status=status.HTTP_404_NOT_FOUND)
-    
+
     except Exception as e:
         logger.error(f"Error settling on-site payment: {e}")
         import traceback
@@ -448,21 +447,21 @@ def get_pending_on_site_payments(request):
     """
     try:
         country = request.query_params.get('country')
-        
+
         # Base query
         pending = ProvisionalEnrollment.objects.filter(
             status='cash_pending'
         ).select_related('user', 'payment_transaction').order_by('-created_at')
-        
+
         # Filter by country if provided
         if country:
             pending = pending.filter(user__country=country)
-        
+
         # Check for expired
         now = timezone.now()
         expired_count = pending.filter(expires_at__lt=now).count()
         active_count = pending.filter(expires_at__gte=now).count()
-        
+
         # Serialize
         pending_list = []
         for p in pending[:100]:  # Limit to 100
@@ -482,7 +481,7 @@ def get_pending_on_site_payments(request):
                 'days_remaining': max(0, (p.expires_at - now).days),
                 'country': p.user.country.name if p.user and p.user.country else 'Unknown',
             })
-        
+
         return Response({
             'pending': pending_list,
             'summary': {
@@ -491,7 +490,7 @@ def get_pending_on_site_payments(request):
                 'expired': expired_count,
             }
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting pending on-site payments: {e}")
         return Response({
@@ -510,11 +509,11 @@ def generate_reference_code(enrollment_type):
         'industry': 'I',
         'custom_selection': 'C',
     }.get(enrollment_type, 'X')
-    
+
     # Generate random 8-digit code
     import random
     random_code = ''.join(random.choices(string.digits, k=8))
-    
+
     return f"{prefix}-{type_code}-{random_code}"
 
 
@@ -522,7 +521,7 @@ def get_office_instructions(country_code):
     """Get office locations and payment instructions for country"""
     # This would typically come from a database or config
     # For now, return static instructions
-    
+
     offices = {
         'ZA': {
             'country_name': 'South Africa',
@@ -583,13 +582,13 @@ def get_office_instructions(country_code):
             ],
         },
     }
-    
+
     # Default to South Africa if country not found
     if country_code not in offices:
         country_code = 'ZA'
-    
+
     office_data = offices.get(country_code, offices['ZA'])
-    
+
     return {
         **office_data,
         'support': {
@@ -615,26 +614,28 @@ def _create_learnership_enrollment(provisional, transaction):
     """Create learnership enrollment after payment"""
     try:
         from apps.learnerships.models import LearnershipEnrollment, EnrollmentStatus
-        
+
         # Check if already exists
         existing = LearnershipEnrollment.objects.filter(
             payment_transaction=transaction
         ).first()
-        
+
         if existing:
             # Update existing
             existing.status = EnrollmentStatus.ENROLLED
             existing.payment_status = 'paid'
             existing.save()
             return existing
-        
+
         # Create new
+        from apps.learnerships.models import EnrollmentStatus as LearnershipStatus
+
         return LearnershipEnrollment.objects.create(
             programme=provisional.programme,
             user=provisional.user,
             payment_transaction=transaction,
             enrollment_type='individual',
-            status=EnrollmentStatus.ENROLLED,
+            status=LearnershipStatus.CONFIRMED,
             payment_status='paid',
             metadata=provisional.metadata,
         )
@@ -646,14 +647,14 @@ def _create_learnership_enrollment(provisional, transaction):
 def _create_masterclass_enrollment(provisional, transaction):
     """Create masterclass enrollment after payment"""
     try:
-        from apps.masterclasses.models import MasterclassEnrollment
-        
+        from apps.masterclasses.models import MasterclassEnrollment, Masterclass
+
         program_id = provisional.metadata.get('program_id')
         if not program_id:
             raise ValueError("Program ID not found in metadata")
-        
+
         masterclass = Masterclass.objects.get(id=program_id)
-        
+
         return MasterclassEnrollment.objects.create(
             masterclass=masterclass,
             user=provisional.user,
@@ -666,48 +667,66 @@ def _create_masterclass_enrollment(provisional, transaction):
         logger.error(f"Error creating masterclass enrollment: {e}")
         raise
 
-
 def _create_industry_enrollment(provisional, transaction):
     """Create industry training enrollment after payment"""
     try:
+        from apps.industry_based_training.models import IndustryTrainingEnrollment
+        from apps.aicerts_courses.models import AiCertsCourse
+        from django.contrib.contenttypes.models import ContentType
+
         program_id = provisional.metadata.get('program_id')
         if not program_id:
             raise ValueError("Program ID not found in metadata")
-        
+
         industry_course = AiCertsCourse.objects.get(id=program_id)
-        
-        # Create enrollment (model may vary)
-        return {
-            'program': industry_course,
-            'user': provisional.user,
-            'status': 'enrolled',
-        }
+
+        # Create enrollment
+        return IndustryTrainingEnrollment.objects.create(
+            user=provisional.user,
+            enrollment_type='industry_training',
+            content_type=ContentType.objects.get_for_model(AiCertsCourse),
+            object_id=industry_course.id,
+            payment_transaction=transaction,
+            status='enrolled',
+            payment_status='paid',
+            metadata=provisional.metadata,
+        )
     except Exception as e:
         logger.error(f"Error creating industry enrollment: {e}")
         raise
 
-
 def _create_custom_selection_enrollment(provisional, transaction):
     """Create custom selection enrollment after payment"""
     try:
-        from apps.courses.models import Course
-        from apps.enrollments.models import GenericEnrollment, EnrollmentType
+        from apps.aicerts_courses.models import AiCertsCourse
+        from apps.payments.models import Enrollment, EnrollmentType, EnrollmentStatus
         from django.contrib.contenttypes.models import ContentType
-        
+        import random
+        import string
+
         program_id = provisional.metadata.get('program_id')
         if not program_id:
             raise ValueError("Program ID not found in metadata")
-        
-        course = Course.objects.get(id=program_id)
-        
-        return GenericEnrollment.objects.create(
+
+        course = AiCertsCourse.objects.get(id=program_id)
+
+        # Generate enrollment code
+        enrollment_code = f"ENR-C-{random.randint(100000, 999999)}"
+
+        return Enrollment.objects.create(
             enrollment_type=EnrollmentType.CUSTOM_SELECTION,
-            content_type=ContentType.objects.get_for_model(course),
+            content_type=ContentType.objects.get_for_model(AiCertsCourse),
             object_id=course.id,
             user=provisional.user,
-            status='enrolled',
-            payment_transaction=transaction,
-            metadata=provisional.metadata,
+            status=EnrollmentStatus.ENROLLED,
+            enrollment_code=enrollment_code,
+            learner_full_name=provisional.user.display_name,
+            learner_email=provisional.user.email,
+            learner_phone=getattr(provisional.user, 'phone_number', ''),
+            learner_country=getattr(provisional.user, 'country', 'ZA'),
+            final_amount=transaction.amount,
+            currency=transaction.currency,
+            order=transaction.order,
         )
     except Exception as e:
         logger.error(f"Error creating custom selection enrollment: {e}")

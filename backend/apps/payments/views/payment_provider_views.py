@@ -1,4 +1,4 @@
-# apps/payments/views/payment_provider_views.py
+﻿# apps/payments/views/payment_provider_views.py
 """
 Payment Provider Views with IP-based detection.
 
@@ -230,6 +230,46 @@ class GetProvidersByCategoryView(APIView):
         amount = request.query_params.get('amount')
         currency = request.query_params.get('currency', 'USD')
 
+        # CASH CATEGORY: Return static cash provider data
+        if category == 'cash':
+            office_locations = {
+                'ZA': [
+                    {'name': 'Johannesburg Office', 'address': '123 Sandton Street, Sandton, 2196', 'hours': '9AM-5PM MON-FRI', 'phone': '+27 11 123 4567'},
+                    {'name': 'Cape Town Office', 'address': '456 Long Street, Cape Town, 8001', 'hours': '9AM-5PM MON-FRI', 'phone': '+27 21 123 4567'}
+                ],
+                'ZW': [
+                    {'name': 'Harare HQ', 'address': '100 Liberation Legacy Way, Harare', 'hours': '9AM-4:30PM MON-FRI', 'phone': '+263 24 123 4567'}
+                ],
+                'KE': [
+                    {'name': 'Nairobi Office', 'address': 'The Oval House, Ring Road, Westlands', 'hours': '8AM-5PM MON-FRI, Sat 9AM-1PM', 'phone': '+254 20 123 4567'}
+                ],
+            }
+            locations = office_locations.get(country_code, office_locations.get('ZA', []))
+            return Response({
+                'country': country_code,
+                'category': category,
+                'providers': [
+                    {
+                        'id': 'cash_manual',
+                        'code': 'cash',
+                        'name': 'Pay in Cash at Office',
+                        'category': 'cash',
+                        'description': 'Visit our office to pay in cash. Your enrollment will be activated after payment verification.',
+                        'fee_percentage': 0,
+                        'fixed_fee': 0,
+                        'min_amount': 1,
+                        'max_amount': 1000000,
+                        'supported_currencies': ['USD', 'ZAR', 'KES'],
+                        'supported_methods': ['cash'],
+                        'is_recommended': True,
+                        'priority': 1,
+                        'is_sandbox': False,
+                        'locations': locations,
+                    }
+                ],
+                'landscape': None,
+            })
+
         # Map frontend categories to backend categories
         category_mapping = {
             'card': ['aggregator', 'international', 'local_gateway'],
@@ -247,6 +287,7 @@ class GetProvidersByCategoryView(APIView):
             recommended_providers = landscape.recommended_providers or []
         except CountryPaymentLandscape.DoesNotExist:
             recommended_providers = []
+            landscape = None
 
         # Get provider configs for this country with fees
         provider_configs = ProviderCountryConfig.objects.filter(

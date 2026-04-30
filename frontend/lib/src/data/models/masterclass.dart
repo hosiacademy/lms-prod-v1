@@ -22,9 +22,10 @@ class Masterclass {
   final String? formattedPriceStr;
   final String? formattedPricePhysical;
   final String? formattedPriceOnline;
-  final double? onlinePrice;
-  final double? pricePhysicalUsd; // Physical attendance price in USD (localized if from backend)
-  final double? priceOnlineUsd; // Online attendance price in USD (localized if from backend)
+  final double? onlinePrice; // Online attendance price (localized from backend)
+  final double? physicalPrice; // Physical attendance price (localized from backend)
+  final double? pricePhysicalUsd; // Physical attendance price in USD
+  final double? priceOnlineUsd; // Online attendance price in USD
   final bool isFeatured;
   final bool active;
   final String? launchPhase;
@@ -88,6 +89,7 @@ class Masterclass {
     this.formattedPricePhysical,
     this.formattedPriceOnline,
     this.onlinePrice,
+    this.physicalPrice,
     this.pricePhysicalUsd,
     this.priceOnlineUsd,
     this.isFeatured = false,
@@ -217,15 +219,24 @@ class Masterclass {
       formattedPriceStr: json['formatted_price'] as String? ?? json['formatted_price_physical'] as String?,
       formattedPricePhysical: json['formatted_price_physical'] as String?,
       formattedPriceOnline: json['formatted_price_online'] as String?,
-      onlinePrice: json['online_price'] != null
-          ? double.tryParse(json['online_price'].toString())
+      onlinePrice: json['price_online'] != null
+          ? double.tryParse(json['price_online'].toString())
+          : json['price'] != null
+              ? double.tryParse(json['price'].toString())
+              : null,
+      physicalPrice: json['price_physical'] != null
+          ? double.tryParse(json['price_physical'].toString())
           : null,
       pricePhysicalUsd: json['price_physical_usd'] != null
           ? double.tryParse(json['price_physical_usd'].toString())
-          : null,
+          : json['price_physical'] != null
+              ? double.tryParse(json['price_physical'].toString())
+              : null,
       priceOnlineUsd: json['price_online_usd'] != null
           ? double.tryParse(json['price_online_usd'].toString())
-          : null,
+          : json['price'] != null
+              ? double.tryParse(json['price'].toString())
+              : null,
       isFeatured: json['is_featured'] as bool? ?? false,
       active: json['active'] as bool? ?? true,
       launchPhase: json['launch_phase'] as String?,
@@ -339,21 +350,13 @@ class Masterclass {
   /// Returns null if not set, in which case use calculated price
   /// Priority: pricePhysicalUsd (for consistency with enrollment display) > priceUsd
   double? get price {
-    // First try pricePhysicalUsd (the main displayed price)
-    if (pricePhysicalUsd != null && pricePhysicalUsd! > 0) {
-      return pricePhysicalUsd;
-    }
-    // Fallback to priceUsd (legacy/online price)
+    // Priority: pricePhysicalUsd (USD) -> physicalPrice (localized) -> priceUsd (legacy)
+    if (pricePhysicalUsd != null && pricePhysicalUsd! > 0) return pricePhysicalUsd;
+    if (physicalPrice != null && physicalPrice! > 0) return physicalPrice;
     return priceUsd;
   }
 
-  /// Get physical attendance price - Strictly from database
-  double? get physicalPrice {
-    if (pricePhysicalUsd != null && pricePhysicalUsd! > 0) {
-      return pricePhysicalUsd!;
-    }
-    return null; // No fallback to constants
-  }
+  // Note: physicalPrice is now a property mapped from JSON.
 
   /// Get online attendance price - Strictly from database
   double? get onlinePriceCalculated {

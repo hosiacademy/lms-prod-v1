@@ -9,6 +9,7 @@ import '../../widgets/headers/dashboard_header.dart';
 import 'marketing/marketing_sidebar.dart';
 import 'marketing/quotations_view.dart';
 import 'marketing/messaging_view.dart';
+import 'marketing/marketing_leads_view.dart';
 import 'package:frontend/src/core/utils/responsive_helper.dart';
 
 class MarketingAdminPage extends StatefulWidget {
@@ -224,7 +225,7 @@ class _MarketingAdminPageState extends State<MarketingAdminPage> {
   Widget _buildContent(ThemeData theme, ColorScheme colors) {
     switch (_selectedSection) {
       case 'leads':
-        return _buildLeadsView(theme, colors);
+        return const MarketingLeadsView();
       case 'revenue':
         return _buildSalesView(theme, colors);
       case 'partners':
@@ -452,7 +453,15 @@ class _MarketingAdminPageState extends State<MarketingAdminPage> {
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(lead['learner_name'] ?? 'Guest'),
-                    subtitle: Text('${lead['course_title']} (${lead['training_type']})'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${lead['course_title']} (${lead['training_type']})'),
+                        if (lead['country_name'] != null)
+                          Text(lead['country_name']!, 
+                            style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: colors.onSurface.withValues(alpha: 0.5))),
+                      ],
+                    ),
                     trailing: Chip(
                       label: Text('${lead['days_waiting']}d',
                           style: TextStyle(

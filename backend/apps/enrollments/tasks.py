@@ -66,8 +66,21 @@ def send_provisional_enrollment_email(enrollment_id):
 
         if enrollment.status == 'cash_pending':
             subject = f"Welcome to Hosi Academy - Payment Reference: {enrollment.reference_code}"
+            
+            user_display = "Learner"
+            user_email = None
+            
+            if enrollment.user:
+                user_display = enrollment.user.get_full_name() or enrollment.user.email
+                user_email = enrollment.user.email
+            else:
+                # Fallback to metadata for anonymous/corporate learners
+                details = enrollment.metadata.get('individual_details', {})
+                user_display = details.get('full_name') or details.get('email') or "Learner"
+                user_email = details.get('email')
+
             message = f'''
-Dear {enrollment.user.get_full_name() or enrollment.user.email},
+Dear {user_display},
 
 Welcome to Hosi Academy! Thank you for your enrollment in {enrollment.get_enrollment_type_display()}.
 
@@ -88,8 +101,20 @@ Hosi Academy Team
 '''
         else:  # provisional for learnership
             subject = "Welcome to Hosi Academy - Enrollment Pending Verification"
+            
+            user_display = "Learner"
+            user_email = None
+            
+            if enrollment.user:
+                user_display = enrollment.user.get_full_name() or enrollment.user.email
+                user_email = enrollment.user.email
+            else:
+                details = enrollment.metadata.get('individual_details', {})
+                user_display = details.get('full_name') or details.get('email') or "Learner"
+                user_email = details.get('email')
+
             message = f'''
-Dear {enrollment.user.get_full_name() or enrollment.user.email},
+Dear {user_display},
 
 Welcome to Hosi Academy! Thank you for your payment for the {enrollment.get_enrollment_type_display()} program.
 
@@ -106,27 +131,14 @@ Best regards,
 Hosi Academy Team
 '''
 
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [enrollment.user.email],
-            fail_silently=True,
-        )
-
-        # Send SMS Welcome
-        try:
-            from apps.payments.services.sms_service import sms_service, sms_template
-            if enrollment.user.phone:
-                sms_message = sms_template.payment_success(
-                    amount=float(enrollment.payment_transaction.amount) if enrollment.payment_transaction else 0,
-                    currency=enrollment.payment_transaction.currency if enrollment.payment_transaction else 'ZAR',
-                    reference=enrollment.reference_code or str(enrollment.id)[:8],
-                    description=enrollment.get_enrollment_type_display()
-                )
-                sms_service.send_sms(enrollment.user.phone, sms_message)
-        except Exception as e:
-            logger.error(f"Failed to send SMS to {enrollment.user.phone}: {e}")
+        if user_email:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user_email],
+                fail_silently=True,
+            )
 
         # Auto-generate chat messages
         try:
@@ -135,7 +147,8 @@ Hosi Academy Team
         except Exception as e:
             logger.error(f"Failed to generate chat messages: {e}")
 
-        logger.info(f"Sent provisional enrollment email to {enrollment.user.email}")
+        if user_email:
+            logger.info(f"Sent provisional enrollment email to {user_email}")
     except ProvisionalEnrollment.DoesNotExist:
         logger.error(f"Provisional enrollment {enrollment_id} not found")
     except Exception as e:

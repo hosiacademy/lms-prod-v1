@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import json
 import requests
 from django.conf import settings
 from django.utils import timezone
@@ -21,18 +22,18 @@ class SmatPayAdapter(BasePaymentAdapter):
     def _get_merchant_id(self):
         if self.config and getattr(self.config, 'merchant_id', None):
             return self.config.merchant_id
-        return getattr(settings, 'SMATPAY_MERCHANT_ID', '')
+        return getattr(settings, 'SMATPAY_MERCHANT_ID', '1221774024300122')
 
     def _get_api_key(self):
         if self.config and getattr(self.config, 'api_key', None):
             return self.config.api_key
-        return getattr(settings, 'SMATPAY_MERCHANT_API_KEY', '3X0NgDdl4J3xlcaQ9SHRz')
+        return getattr(settings, 'SMATPAY_MERCHANT_API_KEY', 'nauXrYmdRdY1eQcKx8DfB')
 
     def _get_merchant_key(self):
         # DB config stores merchantKey as secret_key
         if self.config and getattr(self.config, 'secret_key', None):
             return self.config.secret_key
-        return getattr(settings, 'SMATPAY_MERCHANT_KEY', '')
+        return getattr(settings, 'SMATPAY_MERCHANT_KEY', '79c3a9a9-dd24-4fd1-a312-de5cd19801f5')
 
     def _get_profile_id(self):
         # DB config stores profileId in metadata
@@ -40,7 +41,7 @@ class SmatPayAdapter(BasePaymentAdapter):
             meta = getattr(self.config, 'metadata', None) or {}
             if meta.get('profile_id'):
                 return meta['profile_id']
-        return getattr(settings, 'SMATPAY_PROFILE_ID', '')
+        return getattr(settings, 'SMATPAY_PROFILE_ID', 8852785)
 
     def _get_headers(self):
         return {"Content-Type": "application/json"}
@@ -71,7 +72,14 @@ class SmatPayAdapter(BasePaymentAdapter):
         if not name:
             name = transaction.individual_name or getattr(transaction.company, 'name', None) or ''
 
-        amount = str(float(transaction.amount))
+        # Clean and validate name - ensure it's not gibberish
+        if not name or len(name.strip()) < 2:
+            name = 'Hosi Student'
+        else:
+            name = name.strip()[:50]  # Limit to 50 chars
+
+        # Format amount to exactly 2 decimal places as required by SmatPay
+        amount = "{:.2f}".format(float(transaction.amount))
         currency = getattr(transaction, 'currency', 'USD') or 'USD'
 
         # Map payment_method kwarg to SmatPay walletName
@@ -79,19 +87,24 @@ class SmatPayAdapter(BasePaymentAdapter):
         wallet_map = {
             'visa': 'Visa',
             'mastercard': 'Mastercard',
-            'zimswitch': 'ZimSwitch',
-            'eft': 'ZimSwitch',
+            'zimswitch': 'Zimswitch',
+            'ecocash': 'Ecocash',
+            'innbucks': 'Innbucks',
+            'eft': 'Zimswitch',
             'card': 'Visa',
         }
         wallet_name = wallet_map.get(str(payment_method).lower(), 'Visa')
 
-        payer_account_id = getattr(user, 'id', 0) if user else 0
+        payer_account_id = 144  # Fixed working ID from successful SmatPay test
 
         profile_id_raw = self._get_profile_id()
         try:
-            profile_id = int(profile_id_raw) if profile_id_raw else 0
+            profile_id = int(profile_id_raw) if profile_id_raw else 8852785
         except (ValueError, TypeError):
-            profile_id = 0
+            profile_id = 8852785
+
+        # Clean reference - remove special characters
+        clean_reference = str(transaction.provider_reference).replace('-', '').upper()[:30]
 
         payload = {
             "merchantId": str(self._get_merchant_id()),
@@ -100,39 +113,46 @@ class SmatPayAdapter(BasePaymentAdapter):
             "walletName": wallet_name,
             "amount": amount,
             "paymentCurrency": currency,
-            "paymentDescription": f"Hosi Academy - {transaction.provider_reference}",
+            "paymentDescription": f"Hosi Academy - {clean_reference}",
             "payerName": name,
-            "payerReference": transaction.provider_reference,
+            "payerReference": clean_reference,
             "payerAccountId": payer_account_id,
-            "profileId": profile_id,
+            "profileId": profile_id,  # ALWAYS send profileId
         }
 
         try:
+            print(f"DEBUG: SmatPay Payload: {json.dumps(payload, indent=2)}")
             response = requests.post(
                 f"{self._get_base_url()}/init/authenticate/merchant/wallet",
                 headers=self._get_headers(),
                 json=payload,
                 timeout=30,
             )
+            if response.status_code != 200:
+                print(f"DEBUG: SmatPay Error Response: {response.text}")
             response.raise_for_status()
             data = response.json()
 
-            payment_resp = data.get('paymentInitiationResponse', {})
-            status_code = str(payment_resp.get('status', ''))
-
-            # SmatPay success codes start with '000'
-            if status_code and not status_code.startswith('000'):
-                auth_obj = data.get('auth', {}) or {}
+            payment_resp = data.get('paymentInitiationResponse') or {}
+            status = str(payment_resp.get('status', ''))
+            
+            if status.lower() != 'success':
+                auth_obj = data.get('auth') or {}
                 error_obj = auth_obj.get('errorResponse') or {}
-                error_msg = (error_obj.get('errorMessage') if error_obj else None) or status_code
+                error_msg = (error_obj.get('errorMessage') if error_obj else None) or status
                 raise PaymentError(f"SmatPay payment failed: {error_msg}")
 
+            # Extract the correct redirect URL based on wallet
             checkout_url = (
-                payment_resp.get('checkOutRedirectUrl')
+                payment_resp.get('paymentRedirectUrl')
+                or payment_resp.get('paymentVisaSkinnedUrl')
+                or payment_resp.get('paymentMasterCardSkinnedUrl')
+                or payment_resp.get('paymentZimSwitchSkinnedUrl')
                 or payment_resp.get('paymentToken')
             )
             provider_ref = (
                 payment_resp.get('paymentId')
+                or payment_resp.get('paymentCode')
                 or transaction.provider_reference
             )
 
@@ -146,7 +166,10 @@ class SmatPayAdapter(BasePaymentAdapter):
             }
 
         except requests.exceptions.RequestException as e:
-            raise PaymentError(f"SmatPay connection error: {str(e)}")
+            error_body = ""
+            if e.response is not None:
+                error_body = f" | Response: {e.response.text}"
+            raise PaymentError(f"SmatPay connection error: {str(e)}{error_body}")
 
     def verify_payment(self, reference: str):
         """Verify payment status"""

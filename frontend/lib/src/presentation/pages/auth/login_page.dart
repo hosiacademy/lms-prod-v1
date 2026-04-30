@@ -76,20 +76,25 @@ class _LoginPageState extends State<LoginPage> {
         final prefs = await SharedPreferences.getInstance();
         final isSuperuser = prefs.getBool('is_superuser') ?? false;
         
+        String normalizedRole = savedRole?.toLowerCase().replaceAll(' ', '_').replaceAll(',', '').replaceAll('&', 'and') ?? '';
+        
         String welcomePath;
-        switch (savedRole) {
-          case 'admin': 
-            welcomePath = isSuperuser ? '/welcome/universal' : '/welcome/admin'; 
-            break;
-          case 'payment_admin': welcomePath = '/welcome/payment-admin'; break;
-          case 'hr_admin': welcomePath = '/welcome/hr-admin'; break;
-          case 'executive_admin': welcomePath = '/welcome/executive-admin'; break;
-          case 'instructor':
-          case 'facilitator': welcomePath = '/welcome/instructor'; break;
-          case 'marketing_admin': welcomePath = '/welcome/marketing-admin'; break;
-          case 'payment_sales_marketing_admin': welcomePath = '/welcome/payment-admin'; break;
-          case 'learner':
-          default: welcomePath = '/welcome/student'; break;
+        if (normalizedRole.contains('system_admin') || normalizedRole == 'admin' || isSuperuser) {
+          welcomePath = isSuperuser ? '/welcome/universal' : '/welcome/admin';
+        } else if (normalizedRole.contains('executive')) {
+          welcomePath = '/welcome/executive-admin';
+        } else if (normalizedRole.contains('hr_admin') || normalizedRole == 'hr_admin') {
+          welcomePath = '/welcome/hr-admin';
+        } else if (normalizedRole.contains('sales_and_marketing') || normalizedRole.contains('payment_sales')) {
+          welcomePath = '/welcome/payment-admin';
+        } else if (normalizedRole.contains('marketing')) {
+          welcomePath = '/welcome/marketing-admin';
+        } else if (normalizedRole.contains('payment')) {
+          welcomePath = '/welcome/payment-admin';
+        } else if (normalizedRole.contains('instructor') || normalizedRole.contains('facilitator')) {
+          welcomePath = '/welcome/instructor';
+        } else {
+          welcomePath = '/welcome/student';
         }
         context.go(welcomePath, extra: firstName);
       }
@@ -167,13 +172,9 @@ class _LoginPageState extends State<LoginPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Hosi Academy Family',
-                          style: TextStyle( 
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
-                          ),
+                        Image.asset(
+                          'assets/images/logo.png',
+                          height: 80,
                         ),
                         const SizedBox(height: 16),
                         Text(

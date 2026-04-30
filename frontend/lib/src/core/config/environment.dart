@@ -239,12 +239,7 @@ class Environment {
     return envCrash.isNotEmpty ? envCrash == 'true' : isProduction;
   }
 
-  static bool get enableSentry {
-    const envSentry = String.fromEnvironment('ENABLE_SENTRY');
-    if (envSentry.isNotEmpty) return envSentry == 'true';
-    // Disable Sentry in development if it's causing 403 errors and log spam
-    return isProduction;
-  }
+
 
   // ========== App Metadata ==========
 
