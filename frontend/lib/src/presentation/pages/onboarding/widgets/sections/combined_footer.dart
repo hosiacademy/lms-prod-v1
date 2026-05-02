@@ -107,13 +107,18 @@ class CombinedFooterSection extends StatelessWidget {
               child: const Icon(Icons.school_rounded, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 14),
-            const Text(
-              'Hosi Academy',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 24,
-                letterSpacing: -0.5,
+            Image.asset(
+              'assets/images/logo.png',
+              height: 40,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Text(
+                'Hosi Academy',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
           ],

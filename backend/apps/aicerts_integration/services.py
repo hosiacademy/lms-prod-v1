@@ -557,9 +557,16 @@ class EnrollmentSyncService:
 
         # Enroll on AICERTs
         try:
+            # Use lms_course_id (Standard) or lms_id (Industry Course)
+            lms_id = getattr(course, 'lms_course_id', getattr(course, 'lms_id', None))
+            
+            if not lms_id:
+                logger.error(f"Course {course.id} ({course.title}) has no LMS ID")
+                raise AICERTsEnrollmentError(f"Course has no LMS ID assigned")
+
             aicerts_result = SSOService.enroll_user(
                 aicerts_user_id=aicerts_user_id,
-                course_id=course.lms_course_id,  # Use lms_course_id (Moodle ID), not external_id (WordPress product ID)
+                course_id=lms_id,
                 email=user.email
             )
         except AICERTsEnrollmentError as e:

@@ -1,4 +1,4 @@
-﻿// lib/src/presentation/pages/payment/payment_provider_selection_page.dart
+// lib/src/presentation/pages/payment/payment_provider_selection_page.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -137,6 +137,17 @@ class _PaymentProviderSelectionPageState
 
       final providers =
           List<Map<String, dynamic>>.from(response.data['providers'] ?? []);
+
+      // Fallback for SmatPay if it's missing from the card category
+      if (category == 'card' && !providers.any((p) => p['code'].toString().contains('smatpay'))) {
+        providers.add({
+          'code': 'smatpay',
+          'name': 'Card Payment (SmatPay)',
+          'methods': ['card', 'credit_card', 'debit_card'],
+          'fees': {'percentage': 0, 'fixed': 0},
+          'description': 'Secure card payment via SmatPay (Visa/Mastercard worldwide)',
+        });
+      }
 
       setState(() {
         _providers = providers;

@@ -271,13 +271,65 @@ def send_payment_confirmation_email(self, transaction_id: str, target_user_id: i
         }
 
         if enrollment:
+            program_object = enrollment.content_object
+            program_title = getattr(program_object, 'title', str(program_object))
+            
             context['enrollment'] = {
-                'program_title': enrollment.content_object.title if hasattr(enrollment.content_object, 'title') else str(enrollment.content_object),
+                'program_title': program_title,
                 'enrollment_code': enrollment.enrollment_code,
                 'learner_name': enrollment.learner_full_name,
             }
             
             from apps.payments.models import EnrollmentType
+            
+            # ✅ LEARNERSHIP SPECIFIC: Handle breakdown and phases
+            template_name = 'notifications/emails/payment_confirmation.html' # Default
+            if enrollment.enrollment_type == EnrollmentType.LEARNERSHIP:
+                # Use learnership-specific template
+                template_name = 'users/emails/cybersecurity_enrollment.html'
+                
+                # Fetch breakdown from metadata (populated during provisioning)
+                context.update({
+                    'learnership_title': program_title,
+                    'platform_cost': enrollment.metadata.get('platform_cost', 0),
+                    'instructor_cost': enrollment.metadata.get('instructor_cost', 0),
+                    'total_cert_cost': enrollment.metadata.get('total_cert_cost', 0),
+                    'total_cost': enrollment.metadata.get('total_programme_cost', transaction.amount),
+                    'currency_symbol': '$' if transaction.currency == 'USD' else 'R',
+                    'instructor_name': 'Senior Cybersecurity Lead', # Default
+                    'instructor_email': 'academy@hosiafrica.com',
+                    'lms_url': 'https://portal.hosiacademy.africa',
+                    'currency': transaction.currency,
+                })
+                
+                # Try to fetch actual phases from track if linked
+                track_id = enrollment.metadata.get('certification_track_id')
+                if track_id:
+                    try:
+                        from apps.learnerships.models import CertificationTrack
+                        track = CertificationTrack.objects.get(id=track_id)
+                        
+                        phases = {}
+                        for item in track.certifications.all():
+                            phase_key = item.phase
+                            if phase_key not in phases:
+                                phases[phase_key] = {
+                                    'name': item.get_phase_display(),
+                                    'certifications': [],
+                                    'phase_total': 0
+                                }
+                            
+                            phases[phase_key]['certifications'].append({
+                                'name': item.name,
+                                'description': item.description,
+                                'cost': float(item.cert_cost)
+                            })
+                            phases[phase_key]['phase_total'] += float(item.cert_cost)
+                        
+                        context['phases'] = phases
+                    except Exception as e:
+                        logger.error(f"Failed to fetch track phases for email: {e}")
+            
             if enrollment.enrollment_type in [EnrollmentType.CUSTOM_SELECTION, EnrollmentType.INDUSTRY_TRAINING]:
                 try:
                     from apps.aicerts_integration.services import SSOService
@@ -299,7 +351,7 @@ def send_payment_confirmation_email(self, transaction_id: str, target_user_id: i
 
         # Render email
         html_content = render_to_string(
-            'notifications/emails/payment_confirmation.html',
+            template_name if 'template_name' in locals() else 'notifications/emails/payment_confirmation.html',
             context
         )
         text_content = strip_tags(html_content)

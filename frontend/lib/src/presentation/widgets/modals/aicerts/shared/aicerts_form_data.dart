@@ -99,9 +99,20 @@ class AicertsLearnerFormData {
     if (idNumberController.text.trim().isEmpty) return false;
     if (dobController.text.trim().isEmpty) return false;
     if (selectedGender == null) return false;
+    if (addressController.text.trim().isEmpty) return false;
+    if (postalCodeController.text.trim().isEmpty) return false;
     if (selectedCountry == null) return false;
     if (selectedState == null) return false;
+    if (selectedCity == null) return false; 
     
+    if (occupationController.text.trim().isEmpty) return false;
+    if (selectedEducationLevel == null) return false;
+    if (institutionController.text.trim().isEmpty) return false;
+    
+    if (emergencyNameController.text.trim().isEmpty) return false;
+    if (emergencyPhoneController.text.trim().isEmpty) return false;
+    if (selectedEmergencyRelationship == null) return false;
+
     // AICERTS-specific validation
     if (!termsAccepted) return false;
     if (!aicertsPlatformAgreement) return false;
@@ -126,6 +137,12 @@ class AicertsLearnerFormData {
       'city_id': selectedCity?.id,
       'state_id': selectedState?.id,
       'country_id': selectedCountry?.id,
+      'country_name': selectedCountryName ?? selectedCountry?.name,
+      'city': selectedCity?.name, // ✅ Added for backend compatibility
+      'state': selectedState?.name, // ✅ Added for backend compatibility
+      'selected_country': selectedCountry?.toJson(), // ✅ Full object persistence
+      'selected_state': selectedState?.toJson(),
+      'selected_city': selectedCity?.toJson(),
       'occupation': occupationController.text.trim(),
       'education_level': selectedEducationLevel,
       'institution': institutionController.text.trim(),
@@ -157,6 +174,19 @@ class AicertsLearnerFormData {
     selectedGender = json['gender'];
     addressController.text = json['address'] ?? '';
     postalCodeController.text = json['postal_code'] ?? '';
+    
+    // Restore location objects
+    if (json['selected_country'] != null) {
+      selectedCountry = location_models.Country.fromJson(json['selected_country']);
+      selectedCountryName = selectedCountry?.name;
+    }
+    if (json['selected_state'] != null) {
+      selectedState = location_models.State.fromJson(json['selected_state']);
+    }
+    if (json['selected_city'] != null) {
+      selectedCity = location_models.City.fromJson(json['selected_city']);
+    }
+
     occupationController.text = json['occupation'] ?? '';
     selectedEducationLevel = json['education_level'];
     institutionController.text = json['institution'] ?? '';

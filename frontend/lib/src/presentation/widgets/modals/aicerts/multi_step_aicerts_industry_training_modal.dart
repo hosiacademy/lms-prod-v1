@@ -528,7 +528,9 @@ class _MultiStepAICERTSIndustryTrainingModalState
       final totalUSD = _calculateTotalPrice();
       final localizedAmount = currencySvc.convertFromUSD(totalUSD);
       final userCurrency = currencySvc.userCurrency;
-      final country = _learners.isNotEmpty ? (_learners.first.selectedCountryName ?? currencySvc.countryCode) : currencySvc.countryCode;
+      final country = _learners.isNotEmpty 
+          ? (_learners.first.selectedCountry?.code ?? currencySvc.countryCode) 
+          : currencySvc.countryCode;
 
       final enrollmentData = {
         'courses': widget.courses.map((c) => c.id).toList(),
@@ -545,6 +547,9 @@ class _MultiStepAICERTSIndustryTrainingModalState
         'experience_level': _selectedExperienceLevel,
         if (_isCorporate) ..._buildCompanyData(),
         'learners': _learners.map((learner) => learner.toJson()).toList(),
+        'individual_details': _isCorporate 
+            ? {'email': _companyEmailController.text.trim(), 'name': _companyNameController.text.trim()}
+            : (_learners.isNotEmpty ? _learners.first.toJson() : {}),
       };
 
       // Cascade form data back to student profile (best-effort)
@@ -552,18 +557,38 @@ class _MultiStepAICERTSIndustryTrainingModalState
         await _cascadeProfileUpdate(_learners.first);
       }
 
-      // Show payment modal with LOCALISED values
+      // 1. Initiate Payment with Backend to get a valid reference
+      final response = await ApiClient.initiatePayment(
+        programId: widget.courses.first.id.toString(),
+        type: 'industry_training',
+        amount: localizedAmount,
+        metadata: {
+          ...enrollmentData,
+          'individual_details': _isCorporate 
+              ? {'email': _companyEmailController.text.trim(), 'name': _companyNameController.text.trim()}
+              : (_learners.isNotEmpty ? _learners.first.toJson() : {}),
+          'course_count': widget.courses.length,
+          'learner_count': _quantity,
+        },
+      );
+
+      if (!mounted) return;
+
+      // 2. Show payment modal with REAL reference
       await PaymentProviderSelectionPage.show(
         context,
-        reference: 'AICERTS-IT-${DateTime.now().millisecondsSinceEpoch}',
+        reference: response['reference'] as String,
         amount: localizedAmount,
         currency: userCurrency,
         country: country,
-        programId: widget.courses.first.id,
+        programId: widget.courses.first.id.toString(),
         programType:
             widget.courses.length > 1 ? 'role_training' : 'industry_training',
         paymentMetadata: {
           ...enrollmentData,
+          'individual_details': _isCorporate 
+              ? {'email': _companyEmailController.text.trim(), 'name': _companyNameController.text.trim()}
+              : (_learners.isNotEmpty ? _learners.first.toJson() : {}),
           'course_count': widget.courses.length,
           'learner_count': _quantity,
         },

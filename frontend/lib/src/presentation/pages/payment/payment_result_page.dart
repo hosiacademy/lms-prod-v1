@@ -111,13 +111,17 @@ class _PaymentResultPageState extends State<PaymentResultPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Payment Result'),
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).maybePop(),
+          tooltip: 'Back',
+        ),
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: const [
                   CircularProgressIndicator(),
                   SizedBox(height: 24),
                   Text(

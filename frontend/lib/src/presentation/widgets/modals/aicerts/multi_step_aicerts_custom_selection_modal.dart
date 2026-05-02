@@ -1,6 +1,7 @@
 // lib/src/presentation/widgets/modals/aicerts/multi_step_aicerts_custom_selection_modal.dart
 // AICERTS Custom Selection Pathway Enrollment Modal
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -25,12 +26,14 @@ import 'shared/aicerts_form_data.dart';
 /// For enrolling learners in AICERTS-powered custom selection courses
 class MultiStepAICERTSCustomSelectionModal extends StatefulWidget {
   final List<Course> courses; // AICERTS courses for custom selection
+  final String enrollmentType; // 'custom_selection', 'industry_training', 'single_course'
   final VoidCallback? onEnrollmentComplete;
   final bool allowPrefill; // NEW: Control pre-population from profile
 
   const MultiStepAICERTSCustomSelectionModal({
     super.key,
     required this.courses,
+    this.enrollmentType = 'custom_selection',
     this.onEnrollmentComplete,
     this.allowPrefill = true, // Default true for backward compatibility
   });
@@ -48,10 +51,10 @@ class _MultiStepAICERTSCustomSelectionModalState
   bool _isCorporate = false;
   bool _isProcessing = false;
   bool _isSubmitting = false;
-  
+
   // Stream type detection (Technical vs Professional)
   String _streamType = 'technical'; // Default
-  
+
   // Form keys for validation
   final _formKey0 = GlobalKey<FormState>();
   final _formKey1 = GlobalKey<FormState>();
@@ -62,7 +65,8 @@ class _MultiStepAICERTSCustomSelectionModalState
   final _companyNameController = TextEditingController();
   final _companyRegistrationController = TextEditingController();
   final _companyTaxNumberController = TextEditingController();
-  final _companyContactPersonController = TextEditingController(); // Contact Person
+  final _companyContactPersonController =
+      TextEditingController(); // Contact Person
   final _companyEmailController = TextEditingController();
   final _companyPhoneController = TextEditingController();
   String _companyPhoneIsoCode = 'ZA';
@@ -98,7 +102,7 @@ class _MultiStepAICERTSCustomSelectionModalState
     _selectedCourses = List<bool>.filled(widget.courses.length, true);
     _detectStreamType();
     CurrencyService.instance.addListener(_onCurrencyChanged);
-    
+
     // Initialize with stored progress
     _loadStoredProgress().then((_) {
       if (widget.allowPrefill) {
@@ -111,14 +115,15 @@ class _MultiStepAICERTSCustomSelectionModalState
   Future<void> _loadStoredProgress() async {
     final programId = widget.courses.map((c) => c.id).join('_').hashCode;
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Load step and metadata
     _currentStep = prefs.getInt('aicerts_step_$programId') ?? 0;
     _isCorporate = prefs.getBool('aicerts_is_corporate_$programId') ?? false;
     _quantity = prefs.getInt('aicerts_quantity_$programId') ?? 1;
-    
+
     // Load course selections
-    final selectedStr = prefs.getStringList('aicerts_selected_courses_$programId');
+    final selectedStr =
+        prefs.getStringList('aicerts_selected_courses_$programId');
     if (selectedStr != null && selectedStr.length == _selectedCourses.length) {
       _selectedCourses = selectedStr.map((s) => s == 'true').toList();
     }
@@ -127,10 +132,14 @@ class _MultiStepAICERTSCustomSelectionModalState
     while (_learners.length < _quantity) {
       _learners.add(AicertsLearnerFormData());
     }
-    
+
     for (int i = 0; i < _learners.length; i++) {
-      await _learners[i].loadFromStorage('aicerts_learner_${programId}_$i');
+      final key = 'aicerts_learner_${programId}_$i';
+      await _learners[i].loadFromStorage(key);
     }
+    
+    // Load corporate data
+    await _loadCorporateFromStorage();
 
     if (mounted) setState(() {});
   }
@@ -141,9 +150,9 @@ class _MultiStepAICERTSCustomSelectionModalState
     await prefs.setInt('aicerts_step_$programId', _currentStep);
     await prefs.setBool('aicerts_is_corporate_$programId', _isCorporate);
     await prefs.setInt('aicerts_quantity_$programId', _quantity);
-    await prefs.setStringList('aicerts_selected_courses_$programId', 
+    await prefs.setStringList('aicerts_selected_courses_$programId',
         _selectedCourses.map((b) => b.toString()).toList());
-    
+
     // Ensure all learners have the detected stream type
     for (var learner in _learners) {
       learner.selectedStreamType = _streamType;
@@ -152,24 +161,105 @@ class _MultiStepAICERTSCustomSelectionModalState
 
   void _setupListeners() {
     final programId = widget.courses.map((c) => c.id).join('_').hashCode;
-    
+
     // Metadata listeners (can be triggered manually)
 
     // Learner listeners
     for (int i = 0; i < _learners.length; i++) {
       final learner = _learners[i];
       final key = 'aicerts_learner_${programId}_$i';
-      
+
       void saveLearner() => learner.saveToStorage(key);
-      
+
       learner.firstNameController.addListener(saveLearner);
       learner.lastNameController.addListener(saveLearner);
       learner.emailController.addListener(saveLearner);
       learner.phoneController.addListener(saveLearner);
       learner.idNumberController.addListener(saveLearner);
+      learner.dobController.addListener(saveLearner);
       learner.addressController.addListener(saveLearner);
       learner.postalCodeController.addListener(saveLearner);
       learner.occupationController.addListener(saveLearner);
+      learner.institutionController.addListener(saveLearner);
+    }
+
+    // Add Corporate auto-save listeners
+    void saveCorporate() => _saveCorporateToStorage();
+    _companyNameController.addListener(saveCorporate);
+    _companyRegistrationController.addListener(saveCorporate);
+    _companyTaxNumberController.addListener(saveCorporate);
+    _poNumberController.addListener(saveCorporate);
+    _companyAddressController.addListener(saveCorporate);
+    _companyPostalCodeController.addListener(saveCorporate);
+    _companyContactPersonController.addListener(saveCorporate);
+    _companyEmailController.addListener(saveCorporate);
+    _companyPhoneController.addListener(saveCorporate);
+    _companyWebsiteController.addListener(saveCorporate);
+    _billingContactNameController.addListener(saveCorporate);
+    _billingContactEmailController.addListener(saveCorporate);
+    _billingContactPhoneController.addListener(saveCorporate);
+  }
+
+  Future<void> _saveCorporateToStorage() async {
+    final programId = widget.courses.map((c) => c.id).join('_').hashCode;
+    final key = 'aicerts_corporate_$programId';
+    final prefs = await SharedPreferences.getInstance();
+    
+    final data = {
+      'company_name': _companyNameController.text.trim(),
+      'company_reg': _companyRegistrationController.text.trim(),
+      'vat_number': _companyTaxNumberController.text.trim(),
+      'po_number': _poNumberController.text.trim(),
+      'address': _companyAddressController.text.trim(),
+      'postal_code': _companyPostalCodeController.text.trim(),
+      'hr_name': _companyContactPersonController.text.trim(),
+      'hr_email': _companyEmailController.text.trim(),
+      'hr_phone': _companyPhoneController.text.trim(),
+      'website': _companyWebsiteController.text.trim(),
+      'billing_name': _billingContactNameController.text.trim(),
+      'billing_email': _billingContactEmailController.text.trim(),
+      'billing_phone': _billingContactPhoneController.text.trim(),
+      'selected_country': _selectedCompanyCountry?.toJson(),
+      'selected_state': _selectedCompanyState?.toJson(),
+      'selected_city': _selectedCompanyCity?.toJson(),
+      'company_size': _selectedCompanySize,
+    };
+    
+    await prefs.setString(key, jsonEncode(data));
+  }
+
+  Future<void> _loadCorporateFromStorage() async {
+    final programId = widget.courses.map((c) => c.id).join('_').hashCode;
+    final key = 'aicerts_corporate_$programId';
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(key);
+    
+    if (saved != null) {
+      final data = jsonDecode(saved);
+      _companyNameController.text = data['company_name'] ?? '';
+      _companyRegistrationController.text = data['company_reg'] ?? '';
+      _companyTaxNumberController.text = data['vat_number'] ?? '';
+      _poNumberController.text = data['po_number'] ?? '';
+      _companyAddressController.text = data['address'] ?? '';
+      _companyPostalCodeController.text = data['postal_code'] ?? '';
+      _companyContactPersonController.text = data['hr_name'] ?? '';
+      _companyEmailController.text = data['hr_email'] ?? '';
+      _companyPhoneController.text = data['hr_phone'] ?? '';
+      _companyWebsiteController.text = data['website'] ?? '';
+      _billingContactNameController.text = data['billing_name'] ?? '';
+      _billingContactEmailController.text = data['billing_email'] ?? '';
+      _billingContactPhoneController.text = data['billing_phone'] ?? '';
+      
+      if (data['selected_country'] != null) {
+        _selectedCompanyCountry = location_models.Country.fromJson(data['selected_country']);
+      }
+      if (data['selected_state'] != null) {
+        _selectedCompanyState = location_models.State.fromJson(data['selected_state']);
+      }
+      if (data['selected_city'] != null) {
+        _selectedCompanyCity = location_models.City.fromJson(data['selected_city']);
+      }
+      _selectedCompanySize = data['company_size'];
     }
   }
 
@@ -188,7 +278,10 @@ class _MultiStepAICERTSCustomSelectionModalState
           l.lastNameController.text =
               parts.length > 1 ? parts.sublist(1).join(' ') : '';
         }
-        if (email.isNotEmpty) l.emailController.text = email;
+        if (email.isNotEmpty) {
+          l.emailController.text = email;
+          l.emailVerified = true; // Auto-verify for logged in user
+        }
         _fillString(l.phoneController, p['phone']);
         _fillString(l.idNumberController, p['id_number']);
         _fillString(l.dobController, p['date_of_birth']);
@@ -198,9 +291,11 @@ class _MultiStepAICERTSCustomSelectionModalState
         _fillString(l.institutionController, p['qualification_institution']);
         _fillString(l.emergencyNameController, p['emergency_contact_name']);
         _fillString(l.emergencyPhoneController, p['emergency_contact_phone']);
-        if ((p['gender'] as String? ?? '').isNotEmpty) l.selectedGender = p['gender'] as String;
+        if ((p['gender'] as String? ?? '').isNotEmpty)
+          l.selectedGender = p['gender'] as String;
         if ((p['emergency_contact_relationship'] as String? ?? '').isNotEmpty)
-          l.selectedEmergencyRelationship = p['emergency_contact_relationship'] as String;
+          l.selectedEmergencyRelationship =
+              p['emergency_contact_relationship'] as String;
         if ((p['highest_qualification'] as String? ?? '').isNotEmpty)
           l.selectedEducationLevel = p['highest_qualification'] as String;
       }
@@ -212,6 +307,96 @@ class _MultiStepAICERTSCustomSelectionModalState
     } catch (_) {}
   }
 
+  bool _termsRead = false;
+
+  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 20)),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: Theme.of(context).colorScheme.primary,
+                  onPrimary: Theme.of(context).colorScheme.onPrimary,
+                  surface: Theme.of(context).colorScheme.surface,
+                  onSurface: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        controller.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  void _showTermsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Terms and Conditions'),
+        content: SizedBox(
+          width: 600,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Hosi Academy & AICERTS LMS Terms of Service',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '1. Enrollment and Access\n'
+                  'By enrolling in an AICERTS program, you gain access to the Hosi Academy LMS and AICERTS training platform. Access is personal and non-transferable.',
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '2. Refund Policy\n'
+                  'AI CERTs® and Hosi Academy maintain a strict NO-REFUND policy. All sales are final. Registrations and fees are non-refundable, non-transferable, and non-exchangeable, regardless of circumstances such as cancellations or non-utilization. Technical errors verified by our team may be reviewed within 30 days.',
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '3. Enrollment Pathways & Positions\n'
+                  'AICERTS training is organized into four strategic pathways:\n'
+                  '• Technical Pathway: For roles such as AI/Blockchain Developer, Security Specialist, Ethical Hacker, and Network Security Engineer.\n'
+                  '• Professional Pathway: For Business Analysts, Consultants, Project Managers, and Cryptocurrency Analysts.\n'
+                  '• Executive Pathway: For Leadership, Strategy, and Governance roles (Chief AI Officer, Strategy Lead).\n'
+                  '• Foundation Pathway: For practitioners and enthusiasts seeking fundamental knowledge (RSAIF, etc.).',
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '4. Certifications\n'
+                  'Certification is subject to passing the required examinations. Exam vouchers are valid for the specified period and cannot be extended or refunded.',
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '5. Privacy and Data\n'
+                  'Your data will be shared with AICERTS for the purpose of platform access, certification issuance, and progress tracking.',
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() => _termsRead = true);
+              Navigator.pop(context);
+            },
+            child: const Text('I have read and understand'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _fillString(TextEditingController ctrl, dynamic value) {
     final s = (value as String? ?? '').trim();
     if (s.isNotEmpty) ctrl.text = s;
@@ -219,22 +404,40 @@ class _MultiStepAICERTSCustomSelectionModalState
 
   Future<void> _cascadeProfileUpdate(AicertsLearnerFormData l) async {
     final data = <String, dynamic>{};
-    if (l.phoneController.text.trim().isNotEmpty) data['phone'] = l.phoneController.text.trim();
-    if (l.idNumberController.text.trim().isNotEmpty) data['id_number'] = l.idNumberController.text.trim();
-    if (l.dobController.text.trim().isNotEmpty) data['date_of_birth'] = l.dobController.text.trim();
-    if (l.addressController.text.trim().isNotEmpty) data['address'] = l.addressController.text.trim();
-    if (l.postalCodeController.text.trim().isNotEmpty) data['postal_code'] = l.postalCodeController.text.trim();
-    if (l.occupationController.text.trim().isNotEmpty) data['job_title'] = l.occupationController.text.trim();
-    if (l.institutionController.text.trim().isNotEmpty) data['qualification_institution'] = l.institutionController.text.trim();
-    if (l.emergencyNameController.text.trim().isNotEmpty) data['emergency_contact_name'] = l.emergencyNameController.text.trim();
-    if (l.emergencyPhoneController.text.trim().isNotEmpty) data['emergency_contact_phone'] = l.emergencyPhoneController.text.trim();
+    if (l.phoneController.text.trim().isNotEmpty)
+      data['phone'] = l.phoneController.text.trim();
+    if (l.idNumberController.text.trim().isNotEmpty)
+      data['id_number'] = l.idNumberController.text.trim();
+    if (l.dobController.text.trim().isNotEmpty)
+      data['date_of_birth'] = l.dobController.text.trim();
+    if (l.addressController.text.trim().isNotEmpty)
+      data['address'] = l.addressController.text.trim();
+    if (l.postalCodeController.text.trim().isNotEmpty)
+      data['postal_code'] = l.postalCodeController.text.trim();
+    if (l.occupationController.text.trim().isNotEmpty)
+      data['job_title'] = l.occupationController.text.trim();
+    if (l.institutionController.text.trim().isNotEmpty)
+      data['qualification_institution'] = l.institutionController.text.trim();
+    if (l.emergencyNameController.text.trim().isNotEmpty)
+      data['emergency_contact_name'] = l.emergencyNameController.text.trim();
+    if (l.emergencyPhoneController.text.trim().isNotEmpty)
+      data['emergency_contact_phone'] = l.emergencyPhoneController.text.trim();
     if (l.selectedGender != null) data['gender'] = l.selectedGender;
-    if (l.selectedEmergencyRelationship != null) data['emergency_contact_relationship'] = l.selectedEmergencyRelationship;
-    if (l.selectedEducationLevel != null) data['highest_qualification'] = l.selectedEducationLevel;
+    if (l.selectedEmergencyRelationship != null)
+      data['emergency_contact_relationship'] = l.selectedEmergencyRelationship;
+    if (l.selectedEducationLevel != null)
+      data['highest_qualification'] = l.selectedEducationLevel;
     if (l.selectedCountry != null) data['country'] = l.selectedCountry!.id;
     if (l.selectedState != null) data['state'] = l.selectedState!.id;
     if (l.selectedCity != null) data['city'] = l.selectedCity!.id;
-    if (data.isNotEmpty) await ApiClient.updateStudentProfile(data);
+    if (data.isNotEmpty) {
+      try {
+        await ApiClient.updateStudentProfile(data);
+      } catch (e) {
+        debugPrint('Failed to cascade profile update: $e');
+        // Continue anyway - this is best effort and may fail if not logged in
+      }
+    }
   }
 
   void _detectStreamType() {
@@ -243,15 +446,15 @@ class _MultiStepAICERTSCustomSelectionModalState
       final industry = (course.industry ?? '').toLowerCase();
       final streamType = (course.streamType ?? '').toLowerCase();
       final categories = (course.categories ?? '').toLowerCase();
-      
-      if (industry.contains('technical') || 
-          streamType.contains('technical') || 
+
+      if (industry.contains('technical') ||
+          streamType.contains('technical') ||
           categories.contains('technical')) {
         _streamType = 'technical';
         break;
-      } else if (industry.contains('professional') || 
-                 streamType.contains('professional') || 
-                 categories.contains('professional')) {
+      } else if (industry.contains('professional') ||
+          streamType.contains('professional') ||
+          categories.contains('professional')) {
         _streamType = 'professional';
         break;
       }
@@ -304,14 +507,18 @@ class _MultiStepAICERTSCustomSelectionModalState
         try {
           final learner = _learners[_currentLearnerIndex];
           final email = learner.emailController.text.trim().toLowerCase();
-          final exists = await ApiClient.checkEmailExists(email);
-          if (exists) {
-            if (mounted) {
-              _showError(
-                  'Learner email "$email" is already registered. Please sign in or use a different email.');
+          
+          // Only check existence if it's NOT the current user's prefilled email
+          if (_prefillEmail == null || email != _prefillEmail?.toLowerCase()) {
+            final exists = await ApiClient.checkEmailExists(email);
+            if (exists) {
+              if (mounted) {
+                _showError(
+                    'Learner email "$email" is already registered. Please sign in or use a different email.');
+              }
+              setState(() => _isProcessing = false);
+              return;
             }
-            setState(() => _isProcessing = false);
-            return;
           }
         } catch (e) {
           debugPrint('Error checking email: $e');
@@ -331,12 +538,12 @@ class _MultiStepAICERTSCustomSelectionModalState
       setState(() {
         _currentStep++;
       });
-      
+
       // Sync stream type to all learners whenever moving forward
       for (var learner in _learners) {
         learner.selectedStreamType = _streamType;
       }
-      
+
       _saveMetadata();
     }
   }
@@ -397,6 +604,14 @@ class _MultiStepAICERTSCustomSelectionModalState
             _showError('Company Country is required');
             return false;
           }
+          if (_selectedCompanyState == null) {
+            _showError('Company State/Province is required');
+            return false;
+          }
+          if (_selectedCompanyCity == null) {
+            _showError('Company City is required');
+            return false;
+          }
           if (_companyPostalCodeController.text.trim().isEmpty) {
             _showError('Company Postal Code is required for invoicing');
             return false;
@@ -431,10 +646,13 @@ class _MultiStepAICERTSCustomSelectionModalState
           learner.selectedStreamType = _streamType;
         }
         if (!learner.validate()) {
-          if (learner.firstNameController.text.trim().isEmpty || learner.lastNameController.text.trim().isEmpty) {
+          if (learner.firstNameController.text.trim().isEmpty ||
+              learner.lastNameController.text.trim().isEmpty) {
             _showError('First and Last Name are required');
           } else if (learner.emailController.text.trim().isEmpty) {
             _showError('Email is required');
+          } else if (!learner.emailVerified) {
+            _showError('Please verify the learner\'s email address');
           } else if (learner.phoneController.text.trim().isEmpty) {
             _showError('Phone is required');
           } else if (learner.idNumberController.text.trim().isEmpty) {
@@ -443,8 +661,28 @@ class _MultiStepAICERTSCustomSelectionModalState
             _showError('Date of Birth is required');
           } else if (learner.selectedGender == null) {
             _showError('Gender is required');
+          } else if (learner.addressController.text.trim().isEmpty) {
+            _showError('Physical Address is required');
+          } else if (learner.postalCodeController.text.trim().isEmpty) {
+            _showError('Postal Code is required');
           } else if (learner.selectedCountry == null) {
             _showError('Country is required');
+          } else if (learner.selectedState == null) {
+            _showError('State/Province is required');
+          } else if (learner.selectedCity == null) {
+            _showError('City is required');
+          } else if (learner.occupationController.text.trim().isEmpty) {
+            _showError('Current Occupation is required');
+          } else if (learner.selectedEducationLevel == null) {
+            _showError('Education Level is required');
+          } else if (learner.institutionController.text.trim().isEmpty) {
+            _showError('Institution/Company is required');
+          } else if (learner.emergencyNameController.text.trim().isEmpty) {
+            _showError('Emergency Contact Name is required');
+          } else if (learner.emergencyPhoneController.text.trim().isEmpty) {
+            _showError('Emergency Contact Phone is required');
+          } else if (learner.selectedEmergencyRelationship == null) {
+            _showError('Emergency Contact Relationship is required');
           } else if (!learner.termsAccepted) {
             _showError('Please accept the terms and conditions');
           } else if (!learner.aicertsPlatformAgreement) {
@@ -485,13 +723,17 @@ class _MultiStepAICERTSCustomSelectionModalState
         final industry = (course.industry ?? '').toLowerCase();
         final streamType = (course.streamType ?? '').toLowerCase();
         final categories = (course.categories ?? '').toLowerCase();
-        
-        if (industry.contains('technical') || streamType.contains('technical') || categories.contains('technical')) {
+
+        if (industry.contains('technical') ||
+            streamType.contains('technical') ||
+            categories.contains('technical')) {
           stream = 'technical';
-        } else if (industry.contains('professional') || streamType.contains('professional') || categories.contains('professional')) {
+        } else if (industry.contains('professional') ||
+            streamType.contains('professional') ||
+            categories.contains('professional')) {
           stream = 'professional';
         }
-        
+
         final coursePrice = (course.price == null || course.price == 0.0)
             ? PricingConstants.getAICertsPrice(streamType: stream)
             : course.price!;
@@ -503,9 +745,9 @@ class _MultiStepAICERTSCustomSelectionModalState
 
   Future<void> _proceedToPayment() async {
     if (_isProcessing || _isSubmitting) return;
-    
+
     setState(() => _isSubmitting = true);
-    
+
     try {
       // Get selected courses
       final selectedCourses = <Course>[];
@@ -514,19 +756,22 @@ class _MultiStepAICERTSCustomSelectionModalState
           selectedCourses.add(widget.courses[i]);
         }
       }
-      
+
       if (selectedCourses.isEmpty) {
         _showError('Please select at least one AICERTS course');
         setState(() => _isSubmitting = false);
         return;
       }
-      
+
       // Get localized amount for payment flow
       final currencySvc = CurrencyService.instance;
       final totalUSD = _calculateTotalPrice();
-      final localizedAmount = currencySvc.convertFromUSD(totalUSD);
+      // Round to 2 decimal places to avoid float precision issues in payment gateways
+      final localizedAmount = (currencySvc.convertFromUSD(totalUSD) * 100).round() / 100.0;
       final userCurrency = currencySvc.userCurrency;
-      final country = _learners.isNotEmpty ? (_learners.first.selectedCountryName ?? currencySvc.countryCode) : currencySvc.countryCode;
+      final countryCode = _learners.isNotEmpty
+          ? (_learners.first.selectedCountry?.code ?? currencySvc.countryCode)
+          : currencySvc.countryCode;
 
       // Prepare enrollment data with BOTH amounts for backend transparency
       final enrollmentData = {
@@ -534,33 +779,57 @@ class _MultiStepAICERTSCustomSelectionModalState
         'is_corporate': _isCorporate,
         'quantity': _quantity,
         'amount': localizedAmount, // Localized amount (e.g. ZAR 3000)
-        'amount_usd': totalUSD,      // Reference USD amount (e.g. 150.0)
+        'amount_usd': totalUSD, // Reference USD amount (e.g. 150.0)
         'currency': userCurrency,
-        'country': country,
+        'country': countryCode,
         'stream_type': _streamType,
-        'enrollment_type': 'custom_selection',
+        'enrollment_type': widget.enrollmentType,
+        'course_type': 'aicerts_${widget.enrollmentType}',
 
         if (_isCorporate) ..._buildCompanyData(),
 
         'learners': _learners.map((learner) => learner.toJson()).toList(),
+        'individual_details': _isCorporate 
+            ? {'email': _companyEmailController.text.trim(), 'name': _companyNameController.text.trim()}
+            : (_learners.isNotEmpty ? _learners.first.toJson() : {}),
       };
-      
+
       // Cascade form data back to student profile (best-effort)
       if (!_isCorporate && _learners.isNotEmpty) {
         await _cascadeProfileUpdate(_learners.first);
       }
 
-      // Show payment modal with LOCALISED values
+      // 1. Initiate Payment with Backend to get a valid reference
+      final response = await ApiClient.initiatePayment(
+        programId: widget.courses.first.id.toString(),
+        type: widget.enrollmentType,
+        amount: localizedAmount,
+        metadata: {
+          ...enrollmentData,
+          'individual_details': _isCorporate 
+              ? {'email': _companyEmailController.text.trim(), 'name': _companyNameController.text.trim()}
+              : (_learners.isNotEmpty ? _learners.first.toJson() : {}),
+          'course_count': selectedCoursesCount(),
+          'learner_count': _quantity,
+        },
+      );
+
+      if (!mounted) return;
+
+      // 2. Show payment modal with REAL reference
       await PaymentProviderSelectionPage.show(
         context,
-        reference: 'AICERTS-CS-${DateTime.now().millisecondsSinceEpoch}',
+        reference: response['reference'] as String,
         amount: localizedAmount,
         currency: userCurrency,
-        country: country,
-        programId: widget.courses.first.id,
-        programType: 'custom_selection',
+        country: countryCode,
+        programId: widget.courses.first.id.toString(),
+        programType: widget.enrollmentType,
         paymentMetadata: {
-          ...enrollmentData, // Pass everything in metadata
+          ...enrollmentData,
+          'individual_details': _isCorporate 
+              ? {'email': _companyEmailController.text.trim(), 'name': _companyNameController.text.trim()}
+              : (_learners.isNotEmpty ? _learners.first.toJson() : {}),
           'course_count': selectedCoursesCount(),
           'learner_count': _quantity,
         },
@@ -623,9 +892,9 @@ class _MultiStepAICERTSCustomSelectionModalState
               Text(
                 'AICERTS-Powered Training',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
               ),
             ],
           ),
@@ -667,7 +936,8 @@ class _MultiStepAICERTSCustomSelectionModalState
           children: [
             // Header
             Padding(
-              padding: EdgeInsets.fromLTRB(contentPad, contentPad, contentPad, 12),
+              padding:
+                  EdgeInsets.fromLTRB(contentPad, contentPad, contentPad, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -676,7 +946,9 @@ class _MultiStepAICERTSCustomSelectionModalState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'AICERTS Custom Selection Enrollment',
+                          widget.enrollmentType == 'industry_training'
+                              ? 'AICERTS Industry Specific Enrollment'
+                              : 'AICERTS Custom Selection Enrollment',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             fontSize: (sw * 0.045).clamp(16.0, 22.0),
@@ -731,11 +1003,16 @@ class _MultiStepAICERTSCustomSelectionModalState
 
   String _getStepTitle() {
     switch (_currentStep) {
-      case 0: return 'Courses & Quantity';
-      case 1: return 'Enrollment Type';
-      case 2: return 'Learner Information';
-      case 3: return 'Review & Payment';
-      default: return '';
+      case 0:
+        return 'Courses & Quantity';
+      case 1:
+        return 'Enrollment Type';
+      case 2:
+        return 'Learner Information';
+      case 3:
+        return 'Review & Payment';
+      default:
+        return '';
     }
   }
 
@@ -743,7 +1020,7 @@ class _MultiStepAICERTSCustomSelectionModalState
     final currencySvc = CurrencyService.instance;
     final totalUSD = _calculateTotalPrice();
     final localizedTotal = currencySvc.convertFromUSD(totalUSD);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
       color: colors.primary.withValues(alpha: 0.05),
@@ -752,11 +1029,13 @@ class _MultiStepAICERTSCustomSelectionModalState
         children: [
           Row(
             children: [
-              Icon(Icons.shopping_cart_outlined, size: 16, color: colors.primary),
+              Icon(Icons.shopping_cart_outlined,
+                  size: 16, color: colors.primary),
               const SizedBox(width: 8),
               Text(
                 'Total Enrollment Cost:',
-                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -795,14 +1074,27 @@ class _MultiStepAICERTSCustomSelectionModalState
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: isCompleted ? colors.primary : (isActive ? colors.primary : colors.surfaceContainerHighest),
+                          color: isCompleted
+                              ? colors.primary
+                              : (isActive
+                                  ? colors.primary
+                                  : colors.surfaceContainerHighest),
                           shape: BoxShape.circle,
-                          border: Border.all(color: isActive ? colors.primary : colors.outline, width: 2),
+                          border: Border.all(
+                              color: isActive ? colors.primary : colors.outline,
+                              width: 2),
                         ),
                         child: Center(
                           child: isCompleted
-                              ? Icon(Icons.check, color: colors.onPrimary, size: 18)
-                              : Text('${index + 1}', style: TextStyle(color: isActive ? colors.onPrimary : colors.onSurface, fontWeight: FontWeight.bold, fontSize: 12)),
+                              ? Icon(Icons.check,
+                                  color: colors.onPrimary, size: 18)
+                              : Text('${index + 1}',
+                                  style: TextStyle(
+                                      color: isActive
+                                          ? colors.onPrimary
+                                          : colors.onSurface,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12)),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -811,7 +1103,8 @@ class _MultiStepAICERTSCustomSelectionModalState
                         style: TextStyle(
                           fontSize: 10,
                           color: isActive ? colors.primary : colors.onSurface,
-                          fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+                          fontWeight:
+                              isActive ? FontWeight.w700 : FontWeight.normal,
                         ),
                       ),
                     ],
@@ -820,7 +1113,11 @@ class _MultiStepAICERTSCustomSelectionModalState
                 if (index < stepLabels.length - 1)
                   SizedBox(
                     width: 20,
-                    child: Divider(color: isCompleted ? colors.primary : colors.outlineVariant, thickness: 2),
+                    child: Divider(
+                        color: isCompleted
+                            ? colors.primary
+                            : colors.outlineVariant,
+                        thickness: 2),
                   ),
               ],
             ),
@@ -872,16 +1169,23 @@ class _MultiStepAICERTSCustomSelectionModalState
               backgroundColor: colors.primary,
               foregroundColor: colors.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
-            child: _isSubmitting 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
-              : Text(_currentStep == 3 ? 'Proceed to Payment' : 'Continue'),
+            child: _isSubmitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white)))
+                : Text(_currentStep == 3 ? 'Proceed to Payment' : 'Continue'),
           ),
         ],
       ),
     );
   }
+
   Widget _buildStep0Content(ThemeData theme, ColorScheme colors) {
     return Form(
       key: _formKey0,
@@ -891,7 +1195,8 @@ class _MultiStepAICERTSCustomSelectionModalState
           // Course Selection
           Text(
             'Selected AICERTS Courses',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           ...widget.courses.map((course) {
@@ -904,7 +1209,8 @@ class _MultiStepAICERTSCustomSelectionModalState
                 });
               },
               title: const SizedBox.shrink(), // Title is in the SVG image
-              subtitle: Text('Stream: ${course.industry ?? 'N/A'}', style: theme.textTheme.bodySmall),
+              subtitle: Text('Stream: ${course.industry ?? 'N/A'}',
+                  style: theme.textTheme.bodySmall),
               secondary: SizedBox(
                 width: 120,
                 child: AICERTSCourseCardImage(
@@ -916,16 +1222,18 @@ class _MultiStepAICERTSCustomSelectionModalState
                 ),
               ),
               controlAffinity: ListTileControlAffinity.leading,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             );
           }).toList(),
-          
+
           const SizedBox(height: 32),
-          
+
           // Quantity Selection
           Text(
             'Number of Learners',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Container(
@@ -951,7 +1259,8 @@ class _MultiStepAICERTSCustomSelectionModalState
                 const SizedBox(width: 24),
                 Text(
                   _quantity.toString(),
-                  style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: colors.primary),
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold, color: colors.primary),
                 ),
                 const SizedBox(width: 24),
                 IconButton.filledTonal(
@@ -968,7 +1277,8 @@ class _MultiStepAICERTSCustomSelectionModalState
                 const Spacer(),
                 Text(
                   'learner${_quantity > 1 ? 's' : ''} total',
-                  style: theme.textTheme.titleMedium?.copyWith(color: colors.onSurfaceVariant),
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(color: colors.onSurfaceVariant),
                 ),
               ],
             ),
@@ -986,7 +1296,8 @@ class _MultiStepAICERTSCustomSelectionModalState
         children: [
           Text(
             'Who is enrolling?',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Row(
@@ -1056,7 +1367,6 @@ class _MultiStepAICERTSCustomSelectionModalState
       child: _buildReviewStep(),
     );
   }
-
 
   Widget _buildEnrollmentTypeCard({
     required IconData icon,
@@ -1430,14 +1740,17 @@ class _MultiStepAICERTSCustomSelectionModalState
 
           // Payment Terms Dropdown *
           DropdownButtonFormField<String>(
-            value: (_selectedPaymentTerms ?? '').isEmpty ? null : _selectedPaymentTerms,
+            value: (_selectedPaymentTerms ?? '').isEmpty
+                ? null
+                : _selectedPaymentTerms,
             decoration: const InputDecoration(
               labelText: 'Payment Terms *',
               border: OutlineInputBorder(),
               hintText: 'Select payment terms',
             ),
             items: const [
-              DropdownMenuItem(value: 'immediate', child: Text('Immediate Payment')),
+              DropdownMenuItem(
+                  value: 'immediate', child: Text('Immediate Payment')),
               DropdownMenuItem(value: 'net7', child: Text('Net 7 Days')),
               DropdownMenuItem(value: 'net15', child: Text('Net 15 Days')),
               DropdownMenuItem(value: 'net30', child: Text('Net 30 Days')),
@@ -1476,7 +1789,9 @@ class _MultiStepAICERTSCustomSelectionModalState
 
           // Company Size Dropdown
           DropdownButtonFormField<String>(
-            value: _selectedCompanySize?.isEmpty ?? true ? null : _selectedCompanySize,
+            value: _selectedCompanySize?.isEmpty ?? true
+                ? null
+                : _selectedCompanySize,
             decoration: const InputDecoration(
               labelText: 'Company Size',
               border: OutlineInputBorder(),
@@ -1484,8 +1799,10 @@ class _MultiStepAICERTSCustomSelectionModalState
             items: const [
               DropdownMenuItem(value: '1-10', child: Text('1-10 employees')),
               DropdownMenuItem(value: '11-50', child: Text('11-50 employees')),
-              DropdownMenuItem(value: '51-200', child: Text('51-200 employees')),
-              DropdownMenuItem(value: '201-500', child: Text('201-500 employees')),
+              DropdownMenuItem(
+                  value: '51-200', child: Text('51-200 employees')),
+              DropdownMenuItem(
+                  value: '201-500', child: Text('201-500 employees')),
               DropdownMenuItem(value: '500+', child: Text('500+ employees')),
             ],
             onChanged: (value) {
@@ -1504,20 +1821,19 @@ class _MultiStepAICERTSCustomSelectionModalState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Personal Details
+        // Personal Details - First and Last Name
         Row(
           children: [
             Expanded(
               child: TextFormField(
                 controller: learner.firstNameController,
                 decoration: const InputDecoration(
-                  labelText: 'First Name',
+                  labelText: 'First Name *',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Required';
-                  }
+                  if (value == null || value.isEmpty)
+                    return 'First name is required';
                   return null;
                 },
               ),
@@ -1527,13 +1843,12 @@ class _MultiStepAICERTSCustomSelectionModalState
               child: TextFormField(
                 controller: learner.lastNameController,
                 decoration: const InputDecoration(
-                  labelText: 'Last Name',
+                  labelText: 'Last Name *',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Required';
-                  }
+                  if (value == null || value.isEmpty)
+                    return 'Last name is required';
                   return null;
                 },
               ),
@@ -1541,35 +1856,36 @@ class _MultiStepAICERTSCustomSelectionModalState
           ],
         ),
         const SizedBox(height: 16),
+
+        // Email Field
         TextFormField(
           controller: learner.emailController,
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
-            labelText: 'Email',
+            labelText: 'Email *',
             border: OutlineInputBorder(),
           ),
           validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Email is required';
-            }
+            if (value == null || value.isEmpty) return 'Email is required';
             if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-              return 'Please enter a valid email';
+              return 'Enter a valid email';
             }
             return null;
           },
         ),
+
+        // Email OTP Verification
         ContactOtpField(
           contactController: learner.emailController,
           contactType: 'email',
           onVerifiedChanged: (verified) =>
               setState(() => learner.emailVerified = verified),
         ),
-        if (learner.emailVerified) ...[
-          const SizedBox(height: 16),
-        
-        // Phone with country code
+        const SizedBox(height: 16),
+
+        // Phone Field
         _buildPhoneField(
-          label: 'Phone',
+          label: 'Phone *',
           controller: learner.phoneController,
           currentIso: learner.phoneIsoCode,
           onIsoChanged: (iso) {
@@ -1577,8 +1893,97 @@ class _MultiStepAICERTSCustomSelectionModalState
           },
         ),
         const SizedBox(height: 16),
-        
-        // Location
+
+        // ID / Passport Number
+        TextFormField(
+          controller: learner.idNumberController,
+          decoration: const InputDecoration(
+            labelText: 'ID / Passport Number *',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty)
+              return 'ID/Passport number is required';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Date of Birth
+        // Date of Birth with Picker
+        TextFormField(
+          controller: learner.dobController,
+          readOnly: true,
+          onTap: () => _selectDate(context, learner.dobController),
+          decoration: const InputDecoration(
+            labelText: 'Date of Birth *',
+            border: OutlineInputBorder(),
+            hintText: 'Select your date of birth',
+            suffixIcon: Icon(Icons.calendar_today),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty)
+              return 'Date of Birth is required';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Gender Dropdown
+        DropdownButtonFormField<String>(
+          value: learner.selectedGender,
+          decoration: const InputDecoration(
+            labelText: 'Gender *',
+            border: OutlineInputBorder(),
+          ),
+          items: const [
+            DropdownMenuItem(value: 'male', child: Text('Male')),
+            DropdownMenuItem(value: 'female', child: Text('Female')),
+            DropdownMenuItem(value: 'other', child: Text('Other')),
+            DropdownMenuItem(
+                value: 'prefer_not_to_say', child: Text('Prefer not to say')),
+          ],
+          onChanged: (value) => setState(() => learner.selectedGender = value),
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Gender is required';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Physical Address
+        TextFormField(
+          controller: learner.addressController,
+          maxLines: 2,
+          decoration: const InputDecoration(
+            labelText: 'Physical Address *',
+            border: OutlineInputBorder(),
+            hintText: 'Street address, building, etc.',
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty)
+              return 'Physical Address is required';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Postal Code
+        TextFormField(
+          controller: learner.postalCodeController,
+          decoration: const InputDecoration(
+            labelText: 'Postal Code *',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty)
+              return 'Postal Code is required';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Location Dropdowns (Country, State, City)
         BlocProvider(
           create: (context) => LocationBloc(),
           child: CascadingLocationDropdowns(
@@ -1589,38 +1994,225 @@ class _MultiStepAICERTSCustomSelectionModalState
                 learner.selectedState = state;
                 learner.selectedCity = city;
               });
+              
+              // Persist location change immediately
+              final programId = widget.courses.map((c) => c.id).join('_').hashCode;
+              final key = 'aicerts_learner_${programId}_${_learners.indexOf(learner)}';
+              learner.saveToStorage(key);
             },
             initialCountry: learner.selectedCountry,
             initialState: learner.selectedState,
             initialCity: learner.selectedCity,
-            countryLabel: 'Country',
-            stateLabel: 'State/Province',
-            cityLabel: 'City',
+            isRequired: true, // ✅ Make it required in the UI
+            countryLabel: 'Country *',
+            stateLabel: 'State/Province *',
+            cityLabel: 'City *',
           ),
         ),
         const SizedBox(height: 16),
-        
-        // AICERTS Platform Agreement (also sets termsAccepted)
-        CheckboxListTile(
-          value: learner.aicertsPlatformAgreement,
-          onChanged: (value) {
-            setState(() {
-              learner.aicertsPlatformAgreement = value!;
-              learner.termsAccepted = value;
-            });
+
+        // Current Occupation
+        TextFormField(
+          controller: learner.occupationController,
+          decoration: const InputDecoration(
+            labelText: 'Current Occupation *',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty)
+              return 'Current Occupation is required';
+            return null;
           },
-          title: Text(
-            'I agree to the Hosi Academy & AICERTS platform terms of service',
-            style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 16),
+
+        // Education Level Dropdown
+        DropdownButtonFormField<String>(
+          value: learner.selectedEducationLevel,
+          decoration: const InputDecoration(
+            labelText: 'Highest Education Level *',
+            border: OutlineInputBorder(),
           ),
-          subtitle: Text(
-            'By checking this box, I acknowledge that course access will be provided through the AICERTS platform',
-            style: theme.textTheme.bodySmall,
+          items: const [
+            DropdownMenuItem(
+                value: 'high_school', child: Text('High School / Matric')),
+            DropdownMenuItem(
+                value: 'diploma', child: Text('Diploma / Certificate')),
+            DropdownMenuItem(
+                value: 'bachelors', child: Text('Bachelor\'s Degree')),
+            DropdownMenuItem(value: 'honours', child: Text('Honours Degree')),
+            DropdownMenuItem(value: 'masters', child: Text('Master\'s Degree')),
+            DropdownMenuItem(
+                value: 'doctorate', child: Text('Doctorate / PhD')),
+            DropdownMenuItem(value: 'other', child: Text('Other')),
+          ],
+          onChanged: (value) =>
+              setState(() => learner.selectedEducationLevel = value),
+          validator: (value) {
+            if (value == null) return 'Education Level is required';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Institution/Company
+        TextFormField(
+          controller: learner.institutionController,
+          decoration: const InputDecoration(
+            labelText: 'Institution / Company *',
+            border: OutlineInputBorder(),
           ),
-          controlAffinity: ListTileControlAffinity.leading,
+          validator: (value) {
+            if (value == null || value.isEmpty)
+              return 'Institution/Company is required';
+            return null;
+          },
+        ),
+        const SizedBox(height: 24),
+
+        // Emergency Contact Section Header
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: Colors.grey.withAlpha(51)),
+              bottom: BorderSide(color: Colors.grey.withAlpha(51)),
+            ),
+          ),
+          child: Text(
+            'Emergency Contact',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Emergency Contact Name
+        TextFormField(
+          controller: learner.emergencyNameController,
+          decoration: const InputDecoration(
+            labelText: 'Emergency Contact Name *',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty)
+              return 'Emergency contact name is required';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Emergency Contact Phone
+        _buildPhoneField(
+          label: 'Emergency Contact Phone *',
+          controller: learner.emergencyPhoneController,
+          currentIso: learner.emergencyPhoneIsoCode,
+          onIsoChanged: (iso) {
+            setState(() => learner.emergencyPhoneIsoCode = iso);
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Emergency Contact Relationship Dropdown
+        DropdownButtonFormField<String>(
+          value: learner.selectedEmergencyRelationship,
+          decoration: const InputDecoration(
+            labelText: 'Relationship *',
+            border: OutlineInputBorder(),
+          ),
+          items: const [
+            DropdownMenuItem(value: 'spouse', child: Text('Spouse/Partner')),
+            DropdownMenuItem(value: 'parent', child: Text('Parent')),
+            DropdownMenuItem(value: 'sibling', child: Text('Sibling')),
+            DropdownMenuItem(value: 'child', child: Text('Child')),
+            DropdownMenuItem(value: 'friend', child: Text('Friend')),
+            DropdownMenuItem(value: 'colleague', child: Text('Colleague')),
+            DropdownMenuItem(value: 'other', child: Text('Other')),
+          ],
+          onChanged: (value) =>
+              setState(() => learner.selectedEmergencyRelationship = value),
+          validator: (value) {
+            if (value == null || value.isEmpty)
+              return 'Relationship is required';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Terms Acceptance Checkbox
+        // Terms Acceptance Checkbox (Locked until read)
+        Row(
+          children: [
+            Checkbox(
+              value: learner.termsAccepted,
+              onChanged: _termsRead
+                  ? (value) => setState(() => learner.termsAccepted = value ?? false)
+                  : null, // Disabled until terms are read
+            ),
+            Expanded(
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    'I agree to the ',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  TextButton(
+                    onPressed: _showTermsDialog,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'Terms and Conditions *',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (!_termsRead)
+          Padding(
+            padding: const EdgeInsets.only(left: 48, bottom: 8),
+            child: Text(
+              'Please read the terms and conditions before agreeing.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.orange.shade800,
+                fontSize: 10,
+              ),
+            ),
+          ),
+
+        // AICERTS Platform Agreement
+        Row(
+          children: [
+            Checkbox(
+              value: learner.aicertsPlatformAgreement,
+              onChanged: (value) =>
+                  setState(() => learner.aicertsPlatformAgreement = value ?? false),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => learner.aicertsPlatformAgreement =
+                    !learner.aicertsPlatformAgreement),
+                child: Text(
+                  'I agree to the AICERTS Platform Agreement (Required for certification) *',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
-    ],
     );
   }
 
@@ -1634,9 +2226,11 @@ class _MultiStepAICERTSCustomSelectionModalState
     final theme = Theme.of(context);
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // CHANGE THIS WIDTH FROM 120 TO 140 OR 150
         SizedBox(
-          width: 120,
+          width: 150, // ← Changed from 120 to 150
           child: DropdownButtonFormField<String>(
             value: currentIso,
             decoration: const InputDecoration(
@@ -1644,8 +2238,7 @@ class _MultiStepAICERTSCustomSelectionModalState
               border: OutlineInputBorder(),
             ),
             items: AfricanPhoneValidator.supportedCountries.map((iso) {
-              final countryInfo =
-                  AfricanPhoneValidator.getInfoForCountry(iso);
+              final countryInfo = AfricanPhoneValidator.getInfoForCountry(iso);
               return DropdownMenuItem<String>(
                 value: iso,
                 child: Row(
@@ -1720,24 +2313,32 @@ class _MultiStepAICERTSCustomSelectionModalState
       children: [
         Text(
           'Final Review',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colors.primary),
+          style: theme.textTheme.titleLarge
+              ?.copyWith(fontWeight: FontWeight.bold, color: colors.primary),
         ),
         const SizedBox(height: 8),
         Text(
           'Please verify your enrollment details before proceeding to secure payment.',
-          style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+          style: theme.textTheme.bodyMedium
+              ?.copyWith(color: colors.onSurfaceVariant),
         ),
         const SizedBox(height: 24),
-        
+
         // Selections Summary Card
         _buildReviewCard(
           title: 'Enrollment Selections',
           icon: Icons.list_alt_rounded,
           content: Column(
             children: [
-              _buildReviewRow('Type', _isCorporate ? 'Corporate Enrollment' : 'Individual Enrollment'),
-              _buildReviewRow('Total Learners', '$_quantity learner${_quantity > 1 ? 's' : ''}'),
-              _buildReviewRow('Courses Selected', '${selectedCoursesCount()} AI Pathways'),
+              _buildReviewRow(
+                  'Type',
+                  _isCorporate
+                      ? 'Corporate Enrollment'
+                      : 'Individual Enrollment'),
+              _buildReviewRow('Total Learners',
+                  '$_quantity learner${_quantity > 1 ? 's' : ''}'),
+              _buildReviewRow(
+                  'Courses Selected', '${selectedCoursesCount()} AI Pathways'),
             ],
           ),
         ),
@@ -1749,7 +2350,11 @@ class _MultiStepAICERTSCustomSelectionModalState
           icon: Icons.receipt_long_rounded,
           content: Column(
             children: [
-              ...widget.courses.asMap().entries.where((e) => _selectedCourses[e.key]).map((e) {
+              ...widget.courses
+                  .asMap()
+                  .entries
+                  .where((e) => _selectedCourses[e.key])
+                  .map((e) {
                 final course = e.value;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
@@ -1779,15 +2384,19 @@ class _MultiStepAICERTSCustomSelectionModalState
                 );
               }).toList(),
               const Divider(height: 24),
-              _buildReviewRow('Subtotal (USD)', currencySvc.formatUSDAmount(totalUSD / _quantity)),
-              _buildReviewRow('Total Reference (USD)', currencySvc.formatUSDAmount(totalUSD), isTotal: true),
+              _buildReviewRow('Subtotal (USD)',
+                  currencySvc.formatUSDAmount(totalUSD / _quantity)),
+              _buildReviewRow('Total Reference (USD)',
+                  currencySvc.formatUSDAmount(totalUSD),
+                  isTotal: true),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: colors.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colors.primary.withValues(alpha: 0.1)),
+                  border:
+                      Border.all(color: colors.primary.withValues(alpha: 0.1)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1795,14 +2404,16 @@ class _MultiStepAICERTSCustomSelectionModalState
                     Expanded(
                       child: Text(
                         'TOTAL DUE (${currencySvc.userCurrency})',
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: colors.primary),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w900, color: colors.primary),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       currencySvc.formatPrice(localizedTotal),
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: colors.primary),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900, color: colors.primary),
                     ),
                   ],
                 ),
@@ -1810,7 +2421,7 @@ class _MultiStepAICERTSCustomSelectionModalState
             ],
           ),
         ),
-        
+
         if (_isCorporate) ...[
           const SizedBox(height: 16),
           _buildReviewCard(
@@ -1820,13 +2431,15 @@ class _MultiStepAICERTSCustomSelectionModalState
               children: [
                 _buildReviewRow('Company', _companyNameController.text),
                 _buildReviewRow('Reg No.', _companyRegistrationController.text),
-                _buildReviewRow('VAT/Tax No.', _companyTaxNumberController.text),
-                _buildReviewRow('Billing Email', _billingContactEmailController.text),
+                _buildReviewRow(
+                    'VAT/Tax No.', _companyTaxNumberController.text),
+                _buildReviewRow(
+                    'Billing Email', _billingContactEmailController.text),
               ],
             ),
           ),
         ],
-        
+
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(16),
@@ -1842,7 +2455,8 @@ class _MultiStepAICERTSCustomSelectionModalState
               Expanded(
                 child: Text(
                   'Secure checkout powered by Hosi Academy. Your data is protected.',
-                  style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: colors.onSurfaceVariant),
                 ),
               ),
             ],
@@ -1852,7 +2466,10 @@ class _MultiStepAICERTSCustomSelectionModalState
     );
   }
 
-  Widget _buildReviewCard({required String title, required IconData icon, required Widget content}) {
+  Widget _buildReviewCard(
+      {required String title,
+      required IconData icon,
+      required Widget content}) {
     final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1861,7 +2478,10 @@ class _MultiStepAICERTSCustomSelectionModalState
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
         boxShadow: [
-          BoxShadow(color: colors.shadow.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: colors.shadow.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -1871,7 +2491,9 @@ class _MultiStepAICERTSCustomSelectionModalState
             children: [
               Icon(icon, size: 20, color: colors.primary),
               const SizedBox(width: 10),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           const SizedBox(height: 16),
@@ -1888,12 +2510,16 @@ class _MultiStepAICERTSCustomSelectionModalState
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(label,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           Text(
             value,
             style: theme.textTheme.bodySmall?.copyWith(
               fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              color: isTotal ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+              color: isTotal
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurface,
             ),
           ),
         ],

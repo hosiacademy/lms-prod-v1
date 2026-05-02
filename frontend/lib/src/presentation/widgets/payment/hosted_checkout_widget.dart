@@ -137,73 +137,99 @@ class _HostedCheckoutWidgetState extends State<HostedCheckoutWidget> {
     final pad = (w * 0.1).clamp(20.0, 48.0);
 
     if (_isLoading) {
-      return Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: EdgeInsets.all(pad),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: colors.primary),
-              SizedBox(height: (w * 0.05).clamp(12.0, 24.0)),
-              Text(
-                'Connecting to ${widget.provider.toUpperCase()}...',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontSize: (w * 0.04).clamp(13.0, 18.0),
-                ),
-                textAlign: TextAlign.center,
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+        ),
+        body: Center(
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: EdgeInsets.all(pad),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: colors.primary),
+                  SizedBox(height: (w * 0.05).clamp(12.0, 24.0)),
+                  Text(
+                    'Connecting to ${widget.provider.toUpperCase()}...',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: (w * 0.04).clamp(13.0, 18.0),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please wait while we prepare your secure payment page',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                      fontSize: (w * 0.033).clamp(11.0, 14.0),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Please wait while we prepare your secure payment page',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  fontSize: (w * 0.033).clamp(11.0, 14.0),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+            ),
           ),
         ),
       );
     }
 
     if (_errorMessage != null) {
-      return Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: EdgeInsets.all((w * 0.06).clamp(16.0, 24.0)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: (w * 0.14).clamp(40.0, 64.0), color: colors.error),
-              const SizedBox(height: 16),
-              Text(
-                'Payment Initiation Failed',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.error,
-                  fontSize: (w * 0.045).clamp(14.0, 20.0),
-                ),
-                textAlign: TextAlign.center,
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+        ),
+        body: Center(
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: EdgeInsets.all((w * 0.06).clamp(16.0, 24.0)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, size: (w * 0.14).clamp(40.0, 64.0), color: colors.error),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Payment Initiation Failed',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colors.error,
+                      fontSize: (w * 0.045).clamp(14.0, 20.0),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _errorMessage!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: (w * 0.033).clamp(11.0, 14.0),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () => _initiatePayment(),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Try Again'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                _errorMessage!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: (w * 0.033).clamp(11.0, 14.0),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () => _initiatePayment(),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Try Again'),
-              ),
-            ],
+            ),
           ),
         ),
       );

@@ -99,12 +99,6 @@ class _SplashModalState extends State<SplashModal> with SingleTickerProviderStat
                 borderRadius: BorderRadius.circular(28),
                 child: Stack(
                   children: [
-                    // Afrocentric Kente-pattern background
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _KentePainter(),
-                      ),
-                    ),
                     // Dark overlay on the pattern for readability
                     Positioned.fill(
                       child: Container(
@@ -294,62 +288,3 @@ class _CirclingTrianglePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _KentePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = AppTheme.hosiMidnight,
-    );
-    _drawKenteStripes(canvas, size);
-    _drawAdinkraCorners(canvas, size);
-  }
-
-  void _drawKenteStripes(Canvas canvas, Size size) {
-    final colors = [
-      AppTheme.hosiPeach.withValues(alpha: 0.12),
-      AppTheme.hosiBrown.withValues(alpha: 0.10),
-      AppTheme.hosiPeach.withValues(alpha: 0.06),
-      Colors.white.withValues(alpha: 0.04),
-    ];
-    const stripeWidth = 32.0;
-    const step = stripeWidth * 2.5;
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    for (double x = -size.height; x < size.width + size.height; x += step) {
-      for (int i = 0; i < colors.length; i++) {
-        paint.color = colors[i % colors.length];
-        final path = Path();
-        final offset = x + i * stripeWidth * 0.8;
-        path.moveTo(offset, 0);
-        path.lineTo(offset + stripeWidth * 0.6, 0);
-        path.lineTo(offset + stripeWidth * 0.6 + size.height, size.height);
-        path.lineTo(offset + size.height, size.height);
-        path.close();
-        canvas.drawPath(path, paint);
-      }
-    }
-  }
-
-  void _drawAdinkraCorners(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppTheme.hosiPeach.withValues(alpha: 0.08)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    final corners = [
-      Offset(24, 24),
-      Offset(size.width - 24, 24),
-      Offset(24, size.height - 24),
-      Offset(size.width - 24, size.height - 24),
-    ];
-
-    for (final c in corners) {
-      canvas.drawRect(Rect.fromCenter(center: c, width: 20, height: 20), paint);
-      canvas.drawRect(Rect.fromCenter(center: c, width: 12, height: 12), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_KentePainter oldDelegate) => false;
-}

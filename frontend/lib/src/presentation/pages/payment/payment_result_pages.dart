@@ -101,6 +101,15 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
 
     if (_isFinalizing) {
       return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+        extendBodyBehindAppBar: true,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -1,4 +1,4 @@
-﻿// lib/src/presentation/pages/payment/payment_password_setup.dart
+// lib/src/presentation/pages/payment/payment_password_setup.dart
 // Shared password creation dialog â€” shown immediately after any payment is confirmed.
 
 import 'package:flutter/material.dart';
@@ -115,14 +115,9 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Could not save password. You can set it later via "Forgot Password" on the login page.';
+        _error = 'Could not save password. Please try again, or use "Forgot Password" on the login page.';
       });
     }
-  }
-
-  void _skip() {
-    Navigator.pop(context);
-    widget.onDone();
   }
 
   void _showTermsModal(BuildContext context) {
@@ -323,10 +318,6 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _isLoading ? null : _skip,
-          child: const Text('Skip for now'),
-        ),
         FilledButton(
           onPressed: _isLoading ? null : _save,
           style: FilledButton.styleFrom(
@@ -337,7 +328,7 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
                   height: 18, width: 18,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
-              : const Text('Save Password'),
+              : const Text('Create Password & Continue'),
         ),
       ],
     );

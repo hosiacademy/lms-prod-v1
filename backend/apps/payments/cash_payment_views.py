@@ -1,4 +1,4 @@
-﻿# apps/payments/cash_payment_views.py
+# apps/payments/cash_payment_views.py
 """
 Cash Payment Instructions View
 Provides pathway-specific cash payment instructions for all enrollment types.
@@ -116,10 +116,10 @@ class CashPaymentInstructionsView(views.APIView):
                 'heading': 'Where to Pay',
                 'content': 'We have payment offices in major cities across Kenya, Zimbabwe, Zambia, and Botswana.',
                 'locations': [
-                    {'country': 'Kenya', 'cities': ['Nairobi', 'Mombasa', 'Kisumu']},
-                    {'country': 'Zimbabwe', 'cities': ['Harare', 'Bulawayo']},
-                    {'country': 'Zambia', 'cities': ['Lusaka', 'Ndola']},
-                    {'country': 'Botswana', 'cities': ['Gaborone', 'Francistown']}
+                    {'country': 'South Africa', 'cities': ['Johannesburg']},
+                    {'country': 'Kenya', 'cities': ['Nairobi']},
+                    {'country': 'Zimbabwe', 'cities': ['Harare']},
+                    {'country': 'Zambia', 'cities': ['Lusaka']}
                 ]
             },
             'timeline': {
@@ -223,10 +223,10 @@ class CashPaymentInstructionsView(views.APIView):
                 'heading': 'Where to Pay',
                 'content': 'Learnership payments are processed at our main regional offices with SETA accreditation support.',
                 'locations': [
-                    {'country': 'Kenya', 'cities': ['Nairobi (Head Office)'], 'note': 'SETA liaison office'},
-                    {'country': 'Zimbabwe', 'cities': ['Harare (Main Office)'], 'note': 'Full documentation support'},
-                    {'country': 'Zambia', 'cities': ['Lusaka (Regional Office)'], 'note': 'Complete enrollment services'},
-                    {'country': 'Botswana', 'cities': ['Gaborone (Office)'], 'note': 'Full learnership support'}
+                    {'country': 'South Africa', 'cities': ['Johannesburg (Head Office)'], 'note': 'SETA liaison office'},
+                    {'country': 'Kenya', 'cities': ['Nairobi (Regional Office)'], 'note': 'Full documentation support'},
+                    {'country': 'Zimbabwe', 'cities': ['Harare (Main Office)'], 'note': 'Complete enrollment services'},
+                    {'country': 'Zambia', 'cities': ['Lusaka (Regional Office)'], 'note': 'Complete enrollment services'}
                 ]
             },
             'timeline': {
@@ -327,10 +327,10 @@ class CashPaymentInstructionsView(views.APIView):
                 'heading': 'Where to Pay',
                 'content': 'Industry training payments accepted at all our offices and partner locations.',
                 'locations': [
-                    {'country': 'Kenya', 'cities': ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru']},
-                    {'country': 'Zimbabwe', 'cities': ['Harare', 'Bulawayo', 'Mutare']},
-                    {'country': 'Zambia', 'cities': ['Lusaka', 'Ndola', 'Kitwe']},
-                    {'country': 'Botswana', 'cities': ['Gaborone', 'Francistown', 'Maun']}
+                    {'country': 'South Africa', 'cities': ['Johannesburg']},
+                    {'country': 'Kenya', 'cities': ['Nairobi']},
+                    {'country': 'Zimbabwe', 'cities': ['Harare']},
+                    {'country': 'Zambia', 'cities': ['Lusaka']}
                 ]
             },
             'timeline': {
@@ -426,10 +426,10 @@ class CashPaymentInstructionsView(views.APIView):
                 'heading': 'Where to Pay',
                 'content': 'Custom course payments accepted at all our offices nationwide.',
                 'locations': [
-                    {'country': 'Kenya', 'cities': ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret']},
-                    {'country': 'Zimbabwe', 'cities': ['Harare', 'Bulawayo', 'Mutare', 'Gweru']},
-                    {'country': 'Zambia', 'cities': ['Lusaka', 'Ndola', 'Kitwe', 'Livingstone']},
-                    {'country': 'Botswana', 'cities': ['Gaborone', 'Francistown', 'Maun', 'Kasane']}
+                    {'country': 'South Africa', 'cities': ['Johannesburg']},
+                    {'country': 'Kenya', 'cities': ['Nairobi']},
+                    {'country': 'Zimbabwe', 'cities': ['Harare']},
+                    {'country': 'Zambia', 'cities': ['Lusaka']}
                 ]
             },
             'timeline': {
@@ -523,10 +523,10 @@ class CashPaymentInstructionsView(views.APIView):
                 'heading': 'Where to Pay',
                 'content': 'Role training payments accepted at all offices. Career consultation available at main offices.',
                 'locations': [
-                    {'country': 'Kenya', 'cities': ['Nairobi (Career Center)', 'Mombasa', 'Kisumu']},
-                    {'country': 'Zimbabwe', 'cities': ['Harare (Career Center)', 'Bulawayo']},
-                    {'country': 'Zambia', 'cities': ['Lusaka (Career Center)', 'Ndola']},
-                    {'country': 'Botswana', 'cities': ['Gaborone (Career Center)']}
+                    {'country': 'South Africa', 'cities': ['Johannesburg (Career Center)']},
+                    {'country': 'Kenya', 'cities': ['Nairobi (Career Center)']},
+                    {'country': 'Zimbabwe', 'cities': ['Harare (Career Center)']},
+                    {'country': 'Zambia', 'cities': ['Lusaka (Career Center)']}
                 ]
             },
             'timeline': {

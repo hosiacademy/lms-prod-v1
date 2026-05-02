@@ -1,5 +1,4 @@
-// lib/src/presentation/pages/splash/signin_prompt_modal.dart
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
@@ -28,16 +27,46 @@ class SignInPromptModal extends StatefulWidget {
 class _SignInPromptModalState extends State<SignInPromptModal> {
   GreetingData? _greeting;
   bool _loading = true;
+  int _cycleCount = 0;
+  Timer? _cycleTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadGreeting();
+    _startGreetingCycle();
   }
 
-  Future<void> _loadGreeting() async {
+  void _startGreetingCycle() {
+    // Show 3 random greetings fast before settling
+    _cycleTimer = Timer.periodic(const Duration(milliseconds: 1100), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
+      if (_cycleCount < 3) {
+        setState(() {
+          final all = LocalizationService.allAfricanGreetings;
+          _greeting = all[(DateTime.now().millisecondsSinceEpoch + _cycleCount) % all.length];
+          _loading = false;
+        });
+        _cycleCount++;
+      } else {
+        timer.cancel();
+        _loadFinalGreeting();
+      }
+    });
+  }
+
+  Future<void> _loadFinalGreeting() async {
     final g = await LocalizationService.fetchGreeting();
-    if (mounted) setState(() { _greeting = g; _loading = false; });
+    if (mounted) setState(() { _greeting = g; });
+  }
+
+  @override
+  void dispose() {
+    _cycleTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -133,36 +162,45 @@ class _SignInPromptModalState extends State<SignInPromptModal> {
                                 const SizedBox(height: 24),
 
                                 // Flag + country greeting
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      g.flag,
-                                      style: const TextStyle(fontSize: 28),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          g.localGreeting,
-                                          style: TextStyle( 
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppTheme.hosiPeach,
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 500),
+                                  transitionBuilder: (child, animation) => 
+                                    FadeTransition(opacity: animation, child: SlideTransition(
+                                      position: Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(animation),
+                                      child: child,
+                                    )),
+                                  child: Row(
+                                    key: ValueKey(_greeting?.localGreeting ?? 'loading'),
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        g.flag,
+                                        style: const TextStyle(fontSize: 28),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            g.localGreeting,
+                                            style: TextStyle( 
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w800,
+                                              color: AppTheme.hosiPeach,
+                                            ),
                                           ),
-                                        ),
-                                        Text(
-                                          '${g.officialGreeting}  ·  ${g.localLanguage}',
-                                          style: TextStyle( 
-                                            fontSize: 11,
-                                            color: Colors.white.withValues(alpha: 0.4),
+                                          Text(
+                                            '${g.officialGreeting}  ·  ${g.localLanguage}',
+                                            style: TextStyle( 
+                                              fontSize: 11,
+                                              color: Colors.white.withValues(alpha: 0.4),
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ).animate().fadeIn(delay: 300.ms).slideY(begin: -0.1, end: 0),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
 
                                 const SizedBox(height: 32),
 

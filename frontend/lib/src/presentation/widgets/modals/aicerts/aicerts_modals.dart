@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../../data/models/course.dart';
 import '../../enrollment/enrollment_form_widget.dart';
 import '../../../pages/payment/payment_provider_selection_page.dart';
+import 'multi_step_aicerts_custom_selection_modal.dart';
 
 /// AICERTS modal utilities and helpers
 class AicertsModals {
@@ -47,7 +48,7 @@ class AicertsModals {
     }
   }
 
-  /// Show industry training enrollment modal using EnrollmentFormWidget
+  /// Show industry training enrollment modal using MultiStepAICERTSCustomSelectionModal
   static Future<void> _showIndustryTrainingModal({
     required BuildContext context,
     required List<Course> courses,
@@ -55,247 +56,30 @@ class AicertsModals {
     String? role,
     VoidCallback? onEnrollmentComplete,
   }) async {
-    final course = courses.first;
-    final totalPrice = _calculateCoursesTotal(courses, streamType: course.streamType ?? 'technical');
-    
     return showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(20),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.school, color: Colors.white),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Enroll in ${course.title}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ),
-              // Enrollment form
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: EnrollmentFormWidget(
-                    enrollmentType: 'industry_training',
-                    trainingId: int.tryParse(course.id) ?? 0,
-                    trainingTitle: course.title,
-                    enrollmentFee: totalPrice,
-                    currency: 'USD',
-                    onSubmit: (enrollmentData) async {
-                      if (enrollmentData['learner_full_name'] == null || 
-                          enrollmentData['learner_email'] == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please fill in all required fields'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-                      
-                      try {
-                        final enhancedData = {
-                          ...enrollmentData,
-                          'industry': industry != 'all' ? industry : 'general',
-                          'role': role != 'all' ? role : null,
-                          'course_type': 'aicerts_industry_training',
-                          'stream_type': course.streamType ?? 'technical',
-                        };
-                        
-                        await PaymentProviderSelectionPage.show(
-                          context,
-                          reference: 'IT-${course.id}-${DateTime.now().millisecondsSinceEpoch}',
-                          amount: totalPrice,
-                          currency: 'USD',
-                          country: enrollmentData['selected_country'] != null ? 'ZA' : 'ZA',
-                          programId: course.id.toString(),
-                          programType: 'industry_training',
-                          paymentMetadata: {
-                            'industry': industry != 'all' ? industry : 'general',
-                            'role': role != 'all' ? role : null,
-                            'course_title': course.title,
-                          },
-                          enrollmentPayload: enhancedData,
-                        );
-                        
-                        Navigator.of(context).pop();
-                        onEnrollmentComplete?.call();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Enrollment submitted successfully!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    },
-                    onCancel: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      builder: (context) => MultiStepAICERTSCustomSelectionModal(
+        courses: courses,
+        enrollmentType: 'industry_training',
+        onEnrollmentComplete: onEnrollmentComplete,
       ),
     );
   }
 
-  /// Show custom selection enrollment modal using EnrollmentFormWidget
+  /// Show custom selection enrollment modal using MultiStepAICERTSCustomSelectionModal
   static Future<void> _showCustomSelectionModal({
     required BuildContext context,
     required List<Course> courses,
     VoidCallback? onEnrollmentComplete,
   }) async {
-    final totalPrice = _calculateCoursesTotal(courses);
-    
     return showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(20),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.shopping_cart, color: Colors.white),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        courses.length == 1 
-                          ? 'Enroll in ${courses.first.title}'
-                          : 'Enroll in Custom Selection Package',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ),
-              // Enrollment form
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: EnrollmentFormWidget(
-                    enrollmentType: 'custom_selection',
-                    trainingId: int.tryParse(courses.first.id) ?? 0,
-                    trainingTitle: courses.length == 1 
-                      ? courses.first.title
-                      : 'Custom Selection Package',
-                    enrollmentFee: totalPrice,
-                    currency: 'USD',
-                    onSubmit: (enrollmentData) async {
-                      if (enrollmentData['learner_full_name'] == null || 
-                          enrollmentData['learner_email'] == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please fill in all required fields'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-                      
-                      try {
-                        final enhancedData = {
-                          ...enrollmentData,
-                          'course_type': 'aicerts_custom_selection',
-                          'course_count': courses.length,
-                          'courses': courses.map((c) => c.id).toList(),
-                          'course_titles': courses.map((c) => c.title).toList(),
-                        };
-                        
-                        await PaymentProviderSelectionPage.show(
-                          context,
-                          reference: 'CS-${DateTime.now().millisecondsSinceEpoch}',
-                          amount: totalPrice,
-                          currency: 'USD',
-                          country: enrollmentData['selected_country'] != null ? 'ZA' : 'ZA',
-                          programId: 'custom_selection',
-                          programType: 'custom_selection',
-                          paymentMetadata: {
-                            'course_count': courses.length,
-                            'total_price': totalPrice,
-                            'is_bundle': courses.length > 1,
-                          },
-                          enrollmentPayload: enhancedData,
-                        );
-                        
-                        Navigator.of(context).pop();
-                        onEnrollmentComplete?.call();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Enrollment submitted successfully!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    },
-                    onCancel: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      builder: (context) => MultiStepAICERTSCustomSelectionModal(
+        courses: courses,
+        enrollmentType: 'custom_selection',
+        onEnrollmentComplete: onEnrollmentComplete,
       ),
     );
   }
@@ -306,11 +90,14 @@ class AicertsModals {
     required List<Course> courses,
     VoidCallback? onEnrollmentComplete,
   }) async {
-    // For single courses, treat as custom selection with one course
-    return _showCustomSelectionModal(
+    return showDialog(
       context: context,
-      courses: courses,
-      onEnrollmentComplete: onEnrollmentComplete,
+      barrierDismissible: false,
+      builder: (context) => MultiStepAICERTSCustomSelectionModal(
+        courses: courses,
+        enrollmentType: 'single_course',
+        onEnrollmentComplete: onEnrollmentComplete,
+      ),
     );
   }
 

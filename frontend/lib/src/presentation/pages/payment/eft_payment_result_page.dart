@@ -360,7 +360,11 @@ Program: ${widget.programTitle}
     return Scaffold(
       appBar: AppBar(
         title: Text('EFT Payment Status'),
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).maybePop(),
+          tooltip: 'Back',
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),

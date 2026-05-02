@@ -10,6 +10,7 @@ import '../../../core/constants/pricing_constants.dart';
 import '../../widgets/aicerts/aicerts_image_widget.dart';
 import '../../widgets/aicerts/aicerts_course_viewer.dart';
 import '../../widgets/modals/aicerts/aicerts_modals.dart';
+import '../../../core/utils/string_utils.dart';
 
 /// AICERTS Course Detail Page
 ///
@@ -317,7 +318,8 @@ class _AICERTSCourseDetailPageState extends State<AICERTSCourseDetailPage> {
             title: 'What You\'ll Learn',
             icon: Icons.psychology_outline,
             child: Text(
-              widget.course.description ?? 'Master industry-standard tools and techniques in this comprehensive certification course.',
+              StringUtils.stripHtml(widget.course.description ??
+                  'Master industry-standard tools and techniques in this comprehensive certification course.'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.onSurface.withValues(alpha: 0.8),
                 height: 1.6,
