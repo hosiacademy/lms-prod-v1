@@ -242,13 +242,14 @@ services:
 
   # Flutter Frontend (optional - for web version)
   frontend:
-    image: lms-prod-frontend
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: nginx:alpine
+    container_name: lms-prod-frontend-1
     ports:
       - "7000:80"
-    # depends_on:
+    volumes:
+      - ./frontend/prebuilt_web:/usr/share/nginx/html:ro
+    networks:
+      - lms_network
     restart: unless-stopped
 
 volumes:

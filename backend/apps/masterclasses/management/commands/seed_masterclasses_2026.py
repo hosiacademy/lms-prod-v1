@@ -21,6 +21,7 @@ CALENDAR = [
     ("AI+ Developer™", "technical", "Zimbabwe",  "ZW", "Harare", "2026-04-13", "2026-04-17"),
     ("AI+ Developer™", "technical", "Kenya",     "KE", "Nairobi", "2026-04-20", "2026-04-24"),
     ("AI+ Finance™", "professional", "Zambia",   "ZM", "Lusaka", "2026-04-20", "2026-04-22"),
+    ("AI+ Developer™", "technical", "South Africa", "ZA", "Johannesburg", "2026-04-20", "2026-04-24"),
     ("AI+ Developer™", "technical", "Zambia",    "ZM", "Lusaka", "2026-04-27", "2026-05-01"),
     # ── MAY 2026 ──
     ("AI+ Human Resources™", "professional", "Zimbabwe", "ZW", "Harare", "2026-05-04", "2026-05-06"),
@@ -28,6 +29,7 @@ CALENDAR = [
     ("AI+ Engineer™", "technical", "Zimbabwe",   "ZW", "Harare", "2026-05-11", "2026-05-15"),
     ("AI+ Engineer™", "technical", "Kenya",      "KE", "Nairobi", "2026-05-18", "2026-05-22"),
     ("AI+ Human Resources™", "professional", "Zambia", "ZM", "Lusaka", "2026-05-18", "2026-05-20"),
+    ("AI+ Engineer™", "technical", "South Africa", "ZA", "Sandton", "2026-05-18", "2026-05-22"),
     ("AI+ Engineer™", "technical", "Zambia",     "ZM", "Lusaka", "2026-05-25", "2026-05-29"),
     # ── JUNE 2026 ──
     ("AI+ Supply Chain™", "professional", "Zimbabwe", "ZW", "Harare", "2026-06-01", "2026-06-03"),
@@ -35,6 +37,7 @@ CALENDAR = [
     ("AI+ Vibe Coder™", "technical", "Zimbabwe",  "ZW", "Harare", "2026-06-08", "2026-06-12"),
     ("AI+ Vibe Coder™", "technical", "Kenya",     "KE", "Nairobi", "2026-06-15", "2026-06-19"),
     ("AI+ Supply Chain™", "professional", "Zambia", "ZM", "Lusaka", "2026-06-15", "2026-06-17"),
+    ("AI+ Vibe Coder™", "technical", "South Africa", "ZA", "Johannesburg", "2026-06-15", "2026-06-19"),
     ("AI+ Vibe Coder™", "technical", "Zambia",    "ZM", "Lusaka", "2026-06-22", "2026-06-26"),
     # ── JULY 2026 ──
     ("AI+ Project Manager™", "professional", "Zimbabwe", "ZW", "Harare", "2026-07-06", "2026-07-08"),
@@ -45,6 +48,7 @@ CALENDAR = [
     ("AI+ Prompt Engineer Level 2™", "technical", "Zimbabwe", "ZW", "Harare", "2026-07-20", "2026-07-24"),
     ("AI+ Prompt Engineer Level 2™", "technical", "Kenya",    "KE", "Nairobi", "2026-07-27", "2026-07-31"),
     ("AI+ Project Management Practitioner™", "professional", "Zambia", "ZM", "Lusaka", "2026-07-27", "2026-07-29"),
+    ("AI+ Prompt Engineer Level 2™", "technical", "South Africa", "ZA", "Sandton", "2026-07-27", "2026-07-31"),
     ("AI+ Prompt Engineer Level 2™", "technical", "Zambia",   "ZM", "Lusaka", "2026-08-03", "2026-08-07"),
     # ── AUGUST 2026 ──
     ("AI+ Agile Project Management Fundamentals™", "professional", "Zimbabwe", "ZW", "Harare", "2026-08-03", "2026-08-05"),
@@ -55,6 +59,7 @@ CALENDAR = [
     ("AI+ Context Engineering™", "technical", "Zimbabwe", "ZW", "Harare", "2026-08-17", "2026-08-21"),
     ("AI+ Context Engineering™", "technical", "Kenya",    "KE", "Nairobi", "2026-08-24", "2026-08-28"),
     ("AI+ Program Director – Practitioner™", "professional", "Zambia", "ZM", "Lusaka", "2026-08-24", "2026-08-26"),
+    ("AI+ Context Engineering™", "technical", "South Africa", "ZA", "Johannesburg", "2026-08-24", "2026-08-28"),
     ("AI+ Context Engineering™", "technical", "Zambia",   "ZM", "Lusaka", "2026-08-31", "2026-09-04"),
     # ── SEPTEMBER 2026 ──
     ("AI+ Legal™", "professional", "Zimbabwe", "ZW", "Harare", "2026-09-07", "2026-09-09"),
@@ -185,7 +190,8 @@ class Command(BaseCommand):
                     start_date=start_date,
                     end_date=end_date,
                     status=status,
-                    price=PRICE_MAP.get(stream_type, "500.00"),
+                    price_physical=PRICE_MAP.get(stream_type, "500.00"),
+                    price_online=PRICE_MAP.get(stream_type, "500.00"),
                     currency="USD",
                     focus_area=FOCUS_AREA_MAP.get(stream_type, "AI Business"),
                     description=(
@@ -204,7 +210,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"✓ Masterclass calendar seeded: {created_count} created, {updated_count} updated. "
+                f"[OK] Masterclass calendar seeded: {created_count} created, {updated_count} updated. "
                 f"Total: {created_count + updated_count} sessions."
             )
         )

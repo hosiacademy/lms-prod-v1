@@ -268,7 +268,7 @@ class MasterclassCalendarState extends State<MasterclassCalendar> {
             });
           },
           child: Container(
-            height: 44,
+            height: 48,
             decoration: BoxDecoration(
               color: backgroundColor,
               borderRadius: BorderRadius.circular(4),

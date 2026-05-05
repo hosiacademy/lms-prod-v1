@@ -123,11 +123,12 @@ services:
       - frontend
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: nginx:alpine
+    container_name: lms-prod-frontend-1
     ports:
       - "7000:80"    # Main frontend port
+    volumes:
+      - ./frontend/prebuilt_web:/usr/share/nginx/html:ro
     restart: unless-stopped
 
   socketio:

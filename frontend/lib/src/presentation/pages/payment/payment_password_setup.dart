@@ -110,12 +110,24 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
         'new_password': _passwordController.text,
         'reference_code': widget.reference,
       });
+
+      // ✅ AUTO-LOGIN: Ensure user is authenticated immediately
+      if (widget.email.isNotEmpty) {
+        await AuthService.login(
+          email: widget.email,
+          password: _passwordController.text,
+        );
+      }
+
       if (mounted) Navigator.pop(context);
       widget.onDone();
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Could not save password. Please try again, or use "Forgot Password" on the login page.';
+      setState(() {
+        _isLoading = false;
+        _error = 'Account verified, but could not sign in automatically. Please log in manually.';
+      });
       });
     }
   }
@@ -194,9 +206,9 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color: colors.primaryContainer.withOpacity(0.5),
+                  color: colors.primaryContainer.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: colors.primary.withOpacity(0.3)),
+                  border: Border.all(color: colors.primary.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,6 +255,7 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
                 ),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
+              style: TextStyle(color: colors.onSurface),
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Required';
                 if (v.length < 8) return 'Minimum 8 characters';
@@ -264,6 +277,7 @@ class _PasswordSetupDialogState extends State<_PasswordSetupDialog> {
                 ),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
+              style: TextStyle(color: colors.onSurface),
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Required';
                 if (v != _passwordController.text) return 'Passwords do not match';

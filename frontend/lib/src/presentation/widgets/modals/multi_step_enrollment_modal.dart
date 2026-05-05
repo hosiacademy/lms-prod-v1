@@ -2037,6 +2037,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     const SizedBox(height: 20),
                     TextField(
                       controller: _companyNameController,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Company Name *',
                         border: OutlineInputBorder(),
@@ -2045,6 +2046,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _companyRegistrationController,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Registration Number *',
                         border: OutlineInputBorder(),
@@ -2053,6 +2055,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _companyEmailController,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Email *',
                         border: OutlineInputBorder(),
@@ -2073,6 +2076,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     TextField(
                       controller: _companyAddressController,
                       maxLines: 2,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Address *',
                         border: OutlineInputBorder(),
@@ -2105,6 +2109,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _companyPostalCodeController,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Postal Code *',
                         border: OutlineInputBorder(),
@@ -2114,6 +2119,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _companyTaxNumberController,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Tax/VAT Number *',
                         border: OutlineInputBorder(),
@@ -2123,6 +2129,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _companyWebsiteController,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Website (Optional)',
                         border: OutlineInputBorder(),
@@ -2141,6 +2148,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _billingContactNameController,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Billing Contact Name *',
                         border: OutlineInputBorder(),
@@ -2151,6 +2159,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     TextField(
                       controller: _billingContactEmailController,
                       keyboardType: TextInputType.emailAddress,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Billing Contact Email *',
                         border: OutlineInputBorder(),
@@ -2179,6 +2188,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _companyIndustryController,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Industry (Optional)',
                         border: OutlineInputBorder(),
@@ -2191,6 +2201,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                       value: (_selectedCompanySize ?? '').isEmpty
                           ? null
                           : _selectedCompanySize,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Company Size',
                         border: OutlineInputBorder(),
@@ -2217,6 +2228,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                       value: (_selectedPaymentTerms ?? '').isEmpty
                           ? null
                           : _selectedPaymentTerms,
+                      style: TextStyle(color: colors.onSurface),
                       decoration: const InputDecoration(
                         labelText: 'Preferred Payment Terms',
                         border: OutlineInputBorder(),
@@ -2333,6 +2345,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                       Expanded(
                         child: TextFormField(
                           controller: learner.firstNameController,
+                          style: TextStyle(color: colors.onSurface),
                           decoration: const InputDecoration(
                             labelText: 'First Name *',
                             border: OutlineInputBorder(),
@@ -2350,6 +2363,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                       Expanded(
                         child: TextFormField(
                           controller: learner.lastNameController,
+                          style: TextStyle(color: colors.onSurface),
                           decoration: const InputDecoration(
                             labelText: 'Last Name *',
                             border: OutlineInputBorder(),
@@ -2368,6 +2382,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                 ] else ...[
                   TextFormField(
                     controller: learner.firstNameController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'First Name *',
                       border: OutlineInputBorder(),
@@ -2382,6 +2397,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: learner.lastNameController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'Last Name *',
                       border: OutlineInputBorder(),
@@ -2397,6 +2413,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: learner.emailController,
+                  style: TextStyle(color: colors.onSurface),
                   decoration: const InputDecoration(
                     labelText: 'Email Address *',
                     border: OutlineInputBorder(),
@@ -2433,6 +2450,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: learner.idNumberController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'ID / Passport Number *',
                       border: OutlineInputBorder(),
@@ -2446,6 +2464,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: learner.dobController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: InputDecoration(
                       labelText: 'Date of Birth *',
                       border: const OutlineInputBorder(),
@@ -2471,6 +2490,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                       labelText: 'Gender *',
                       border: OutlineInputBorder(),
                     ),
+                    style: TextStyle(color: colors.onSurface),
                     items: const [
                       DropdownMenuItem(value: 'Male', child: Text('Male')),
                       DropdownMenuItem(value: 'Female', child: Text('Female')),
@@ -2521,6 +2541,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: learner.addressController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'Physical Address',
                       border: OutlineInputBorder(),
@@ -2530,6 +2551,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: learner.postalCodeController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'Postal Code',
                       border: OutlineInputBorder(),
@@ -2538,6 +2560,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: learner.occupationController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'Occupation / Job Title',
                       border: OutlineInputBorder(),
@@ -2554,6 +2577,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                       labelText: 'Highest Education Level',
                       border: OutlineInputBorder(),
                     ),
+                    style: TextStyle(color: colors.onSurface),
                     items: const [
                       DropdownMenuItem(
                         value: 'High School',
@@ -2582,6 +2606,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: learner.institutionController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'Institution (if applicable)',
                       border: OutlineInputBorder(),
@@ -2599,6 +2624,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: learner.emergencyNameController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'Emergency Contact Name',
                       border: OutlineInputBorder(),
@@ -2625,6 +2651,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                       labelText: 'Relationship to Emergency Contact',
                       border: OutlineInputBorder(),
                     ),
+                    style: TextStyle(color: colors.onSurface),
                     items: const [
                       DropdownMenuItem(value: 'Parent', child: Text('Parent')),
                       DropdownMenuItem(value: 'Spouse', child: Text('Spouse')),
@@ -2644,6 +2671,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 24),
                   TextFormField(
                     controller: learner.dietaryController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'Dietary Requirements (if any)',
                       border: OutlineInputBorder(),
@@ -2652,6 +2680,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: learner.accessibilityController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'Accessibility / Special Needs',
                       border: OutlineInputBorder(),
@@ -2660,6 +2689,7 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: learner.notesController,
+                    style: TextStyle(color: colors.onSurface),
                     decoration: const InputDecoration(
                       labelText: 'Additional Notes',
                       border: OutlineInputBorder(),
@@ -2667,27 +2697,28 @@ class _MultiStepEnrollmentModalState extends State<MultiStepEnrollmentModal> {
                     maxLines: 3,
                   ),
                   const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: learner.termsAccepted,
-                        onChanged: (value) {
-                          setState(() {
-                            learner.termsAccepted = value ?? false;
-                          });
-                        },
-                      ),
-                      const Expanded(
-                        child: Text(
-                          'I accept the terms and conditions and privacy policy',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    ],
-                  ),
                 ] else ...[
                   _buildContactsLockedNotice(colors, learner),
                 ],
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: learner.termsAccepted,
+                      onChanged: (value) {
+                        setState(() {
+                          learner.termsAccepted = value ?? false;
+                        });
+                      },
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'I accept the terms and conditions and privacy policy',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
